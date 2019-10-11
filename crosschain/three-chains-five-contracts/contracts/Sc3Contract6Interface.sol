@@ -14,5 +14,5 @@ pragma solidity >=0.4.23;
 
 interface Sc3Contract6Interface {
 
-    function get(uint256 _val) external returns(uint256);
+    function get(uint256 _val) external view returns(uint256);
 }

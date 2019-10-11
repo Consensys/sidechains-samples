@@ -45,8 +45,7 @@ contract Crosschain {
 
 
 
-    // TODO Solidity is complaining about calling this a view due to the "call" function in assembler for the precompile
-    function crosschainViewUint256(uint256 sidechainId, address addr, bytes memory encodedFunctionCall) internal returns (uint256) {
+    function crosschainViewUint256(uint256 sidechainId, address addr, bytes memory encodedFunctionCall) internal view returns (uint256) {
 
         bytes memory dataBytes = abi.encode(sidechainId, addr, encodedFunctionCall);
         // The "bytes" type has a 32 byte header containing the size in bytes of the actual data,
@@ -66,9 +65,11 @@ contract Crosschain {
 
         assembly {
             // Read: https://medium.com/@rbkhmrcr/precompiles-solidity-e5d29bd428c4
-            //  call(gasLimit, to, value, inputOffset, inputSize, outputOffset, outputSize)
+            // and
+            // https://www.reddit.com/r/ethdev/comments/7p8b86/it_is_possible_to_call_a_precompiled_contracts/
+            //  staticcall(gasLimit, to, inputOffset, inputSize, outputOffset, outputSize)
             // SUBORDINATE_VIEW_PRECOMPILE = 11. Inline assembler doesn't support constants.
-            if iszero(call(not(0), 11, 0, dataBytes, dataBytesRawLength, result, resultLength)) {
+            if iszero(staticcall(not(0), 11, dataBytes, dataBytesRawLength, result, resultLength)) {
                 revert(0, 0)
             }
         }

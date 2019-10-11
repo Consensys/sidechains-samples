@@ -33,7 +33,7 @@ contract Sc3Contract6 is Crosschain, Sc3Contract6Interface {
     }
 
 
-    function get(uint256 _val) external returns(uint256) {
+    function get(uint256 _val) external view returns(uint256) {
         uint256 sc2Val = crosschainViewUint256(sc2, address(contract4), abi.encodeWithSelector(contract4.get.selector, val));
         return _val + sc2Val;
     }

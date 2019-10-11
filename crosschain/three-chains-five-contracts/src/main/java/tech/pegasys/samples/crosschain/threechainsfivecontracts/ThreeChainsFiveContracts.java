@@ -172,6 +172,7 @@ public class ThreeChainsFiveContracts {
         br.close();
 
         this.credentials = Credentials.create(privateKey);
+        System.out.println("Using credentials which correspond to account: " + this.credentials.getAddress());
     }
 
 
@@ -182,8 +183,6 @@ public class ThreeChainsFiveContracts {
         this.contract2 = remoteCallContract2.send();
         this.contract2Address = this.contract2.getContractAddress();
         System.out.println(" Contract 2 deployed on sidechain 2 (id=" + SC2_SIDECHAIN_ID + "), at address: " + contract2Address);
-
-        Thread.sleep(2000);
 
         RemoteCall<Sc2Contract4> remoteCallContract4 =
             Sc2Contract4.deployLockable(this.web3jSc2, this.tmSc2, this.freeGasProvider);
@@ -199,7 +198,7 @@ public class ThreeChainsFiveContracts {
 
         RemoteCall<Sc3Contract6> remoteCallContract6 =
             Sc3Contract6.deployLockable(this.web3jSc3, this.tmSc3, this.freeGasProvider, SC2_SIDECHAIN_ID, contract4Address);
-        Sc3Contract6 contract6 = remoteCallContract6.send();
+        this.contract6 = remoteCallContract6.send();
         this.contract6Address = contract6.getContractAddress();
         System.out.println(" Contract 6 deployed on sidechain 3 (id=" + SC2_SIDECHAIN_ID + "), at address: " + contract6Address);
 
@@ -211,8 +210,8 @@ public class ThreeChainsFiveContracts {
 
         RemoteCall<Sc1Contract1> remoteCallContract1 =
             Sc1Contract1.deployLockable(this.web3jSc1, this.tmSc1, this.freeGasProvider, SC2_SIDECHAIN_ID, SC3_SIDECHAIN_ID, contract2Address, contract3Address, contract5Address);
-        Sc1Contract1 contract1 = remoteCallContract1.send();
-        this.contract1Address = contract1.getContractAddress();
+        this.contract1 = remoteCallContract1.send();
+        this.contract1Address = this.contract1.getContractAddress();
         System.out.println(" Contract 1 deployed on sidechain 1 (id=" + SC1_SIDECHAIN_ID + "), at address: " + contract1Address);
 
         System.out.println(" addresses: " + contract1Address
@@ -286,7 +285,7 @@ public class ThreeChainsFiveContracts {
 
             // Call to contract 6
             byte[][] subordinateTransactionsAndViewsForC6 = new byte[][] {subordinateViewC4};
-            byte[] subordinateViewC6 = this.contract6.get_AsSignedCrosschainSubordinateTransaction(
+            byte[] subordinateViewC6 = this.contract6.get_AsSignedCrosschainSubordinateView(
                 BigInteger.valueOf(sim.c6Get_val), subordinateTransactionsAndViewsForC6);
 
             // Call to contract 3
@@ -307,6 +306,9 @@ public class ThreeChainsFiveContracts {
             transactionReceipt = this.contract1.doStuff_AsCrosschainTransaction(BigInteger.valueOf(val), subordinateTransactionsAndViewsForC1).send();
             System.out.println("  Tx Receipt: " + transactionReceipt.toString());
             assertTrue(transactionReceipt.isStatusOK());
+
+            // TODO should check to see if contracts unlocked before fetching values.
+            Thread.sleep(5000);
 
             checkExpectedValues(sim.val1, sim.val2, sim.val3, sim.val4, sim.val5, sim.val6);
         }
