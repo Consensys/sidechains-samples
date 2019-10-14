@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.samples.crosschain.threechainsfivecontracts;
+package tech.pegasys.samples.crosschain.threechainssixcontracts;
 
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.crypto.Credentials;
@@ -22,12 +22,12 @@ import org.web3j.tx.CrosschainTransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.tx.gas.StaticGasProvider;
-import tech.pegasys.samples.crosschain.threechainsfivecontracts.soliditywrappers.Sc1Contract1;
-import tech.pegasys.samples.crosschain.threechainsfivecontracts.soliditywrappers.Sc2Contract2;
-import tech.pegasys.samples.crosschain.threechainsfivecontracts.soliditywrappers.Sc2Contract3;
-import tech.pegasys.samples.crosschain.threechainsfivecontracts.soliditywrappers.Sc2Contract4;
-import tech.pegasys.samples.crosschain.threechainsfivecontracts.soliditywrappers.Sc3Contract5;
-import tech.pegasys.samples.crosschain.threechainsfivecontracts.soliditywrappers.Sc3Contract6;
+import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc1Contract1;
+import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc2Contract2;
+import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc2Contract3;
+import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc2Contract4;
+import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc3Contract5;
+import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc3Contract6;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -37,7 +37,7 @@ import java.util.Scanner;
 /**
  * The main class.
  */
-public class ThreeChainsFiveContracts {
+public class ThreeChainsSixContracts {
     private static final BigInteger SC1_SIDECHAIN_ID = BigInteger.valueOf(11);
     private static final String SC1_URI = "http://127.0.0.1:8110/";
     private static final BigInteger SC2_SIDECHAIN_ID = BigInteger.valueOf(22);
@@ -85,10 +85,10 @@ public class ThreeChainsFiveContracts {
 
 
     public static void main(final String args[]) throws Exception {
-        new ThreeChainsFiveContracts().run(args);
+        new ThreeChainsSixContracts().run(args);
     }
 
-    private ThreeChainsFiveContracts() {
+    private ThreeChainsSixContracts() {
 
         this.web3jSc1 = Besu.build(new HttpService(SC1_URI));
         this.web3jSc2 = Besu.build(new HttpService(SC2_URI));
@@ -134,8 +134,8 @@ public class ThreeChainsFiveContracts {
         System.err.println("Usage: tech.pegasys.poc.xweb3j.poc privateKeyFileName [<deploy>] [<addr_contract1>] [<addr_contract2>]");
         System.out.println();
         System.out.println("Example usage:");
-        System.out.println(" tech.pegasys.samples.crosschain.threechainsfivecontract.ThreeChainsFiveContracts privateKeyFileName deploy");
-        System.out.println(" tech.pegasys.samples.crosschain.threechainsfivecontract.ThreeChainsFiveContracts privateKeyFileName 0xda....  followed by six contract addresses");
+        System.out.println(" tech.pegasys.samples.crosschain.threechainsfivecontract.ThreeChainsSixContracts privateKeyFileName deploy");
+        System.out.println(" tech.pegasys.samples.crosschain.threechainsfivecontract.ThreeChainsSixContracts privateKeyFileName 0xda....  followed by six contract addresses");
 
         System.exit(1);
     }

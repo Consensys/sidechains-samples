@@ -1,4 +1,4 @@
-package tech.pegasys.samples.crosschain.threechainsfivecontracts.soliditywrappers;
+package tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers;
 
 import java.io.IOException;
 import java.math.BigInteger;

@@ -3,7 +3,7 @@ apply plugin: 'application'
 
 sourceCompatibility = 1.8
 
-mainClassName = 'tech.pegasys.samples.crosschain.threechainsfivecontracts.ThreeChainsFiveContracts'
+mainClassName = 'tech.pegasys.samples.crosschain.threechainssixcontracts.ThreeChainsSixContracts'
 
     ext.bouncycastleVersion = '1.61'
     ext.jacksonVersion = '2.8.5'
