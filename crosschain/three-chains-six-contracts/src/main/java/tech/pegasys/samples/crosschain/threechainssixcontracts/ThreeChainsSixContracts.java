@@ -12,7 +12,8 @@
  */
 package tech.pegasys.samples.crosschain.threechainssixcontracts;
 
-import org.web3j.abi.datatypes.generated.Uint256;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.core.RemoteCall;
@@ -28,16 +29,27 @@ import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.
 import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc2Contract4;
 import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc3Contract5;
 import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc3Contract6;
+import tech.pegasys.samples.crosschain.threechainssixcontracts.utils.KeyPairGen;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Properties;
 import java.util.Scanner;
 
 /**
  * The main class.
  */
 public class ThreeChainsSixContracts {
+    private static final Logger LOG = LogManager.getLogger(ThreeChainsSixContracts.class);
+
+    // For this sample to work, three Hyperledger Besu Ethereum Clients which represent
+    // three sidechains / blockchains need to be deployed at the addresses shown below,
+    // with the blockchain IDs indicated.
     private static final BigInteger SC1_SIDECHAIN_ID = BigInteger.valueOf(11);
     private static final String SC1_URI = "http://127.0.0.1:8110/";
     private static final BigInteger SC2_SIDECHAIN_ID = BigInteger.valueOf(22);
@@ -50,32 +62,40 @@ public class ThreeChainsSixContracts {
     // Retry reqests to Ethereum Clients up to five times.
     private static final int RETRY = 5;
 
+    // Name of properties file which holds information for this sample code.
+    private static final String SAMPLE_PROPERTIES_FILE_NAME = "sample.properties";
+    // Properties in the file.
+    private static final String PRIVATE_KEY = "PrivateKey";
+    private static final String CONTRACT1_ADDRESS = "Contract1Address";
+    private static final String CONTRACT2_ADDRESS = "Contract2Address";
+    private static final String CONTRACT3_ADDRESS = "Contract3Address";
+    private static final String CONTRACT4_ADDRESS = "Contract4Address";
+    private static final String CONTRACT5_ADDRESS = "Contract5Address";
+    private static final String CONTRACT6_ADDRESS = "Contract6Address";
 
+    // Externally Owned Account key pair.
+    private Credentials credentials;
 
+    // Web services for each blockchain / sidechain.
+    private Besu web3jSc1;
+    private Besu web3jSc2;
+    private Besu web3jSc3;
 
-    private boolean deploy = false;
+    // A gas provider which indicates no gas is charged for transactions.
+    private ContractGasProvider freeGasProvider;
 
+    // Transaction manager for each sidechain.
+    private CrosschainTransactionManager tmSc1;
+    private CrosschainTransactionManager tmSc2;
+    private CrosschainTransactionManager tmSc3;
 
-
-//    private Operation operation;
+    // Smart contract addresses and objected.of contracts.
     private String contract1Address = null;
     private String contract2Address = null;
     private String contract3Address = null;
     private String contract4Address = null;
     private String contract5Address = null;
     private String contract6Address = null;
-    private Credentials credentials;
-
-    private Besu web3jSc1;
-    private Besu web3jSc2;
-    private Besu web3jSc3;
-
-    private ContractGasProvider freeGasProvider;
-
-    private CrosschainTransactionManager tmSc1;
-    private CrosschainTransactionManager tmSc2;
-    private CrosschainTransactionManager tmSc3;
-
     private Sc1Contract1 contract1;
     private Sc2Contract2 contract2;
     private Sc2Contract3 contract3;
@@ -85,181 +105,137 @@ public class ThreeChainsSixContracts {
 
 
     public static void main(final String args[]) throws Exception {
-        new ThreeChainsSixContracts().run(args);
+        LOG.info("Three Chains Six Contracts - started");
+        new ThreeChainsSixContracts().run();
     }
 
-    private ThreeChainsSixContracts() {
+    private void run() throws Exception {
+        if (propertiesFileExists()) {
+            loadProperties();
+            setupBesuServiceTransactionManager();
+            loadContracts();
+        }
+        else {
+            this.credentials = Credentials.create(new KeyPairGen().generateKeyPairForWeb3J());
+            setupBesuServiceTransactionManager();
+            deployContracts();
+            storeProperties();
+        }
+        LOG.info("Using credentials which correspond to account: {}", this.credentials.getAddress());
+
+        core();
+    }
+
+    private void setupBesuServiceTransactionManager() {
+        LOG.info("Setting up Besu service and transaction managers");
 
         this.web3jSc1 = Besu.build(new HttpService(SC1_URI));
         this.web3jSc2 = Besu.build(new HttpService(SC2_URI));
         this.web3jSc3 = Besu.build(new HttpService(SC3_URI));
+        this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, SC1_SIDECHAIN_ID.longValue(), RETRY, POLLING_INTERVAL);
+        this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, SC2_SIDECHAIN_ID.longValue(), RETRY, POLLING_INTERVAL);
+        this.tmSc3 = new CrosschainTransactionManager(this.web3jSc3, this.credentials, SC3_SIDECHAIN_ID.longValue(), RETRY, POLLING_INTERVAL);
 
         // Hyperledger Besu is configured as an IBFT2, free gas network. We need a free gas provider.
         this.freeGasProvider = new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
     }
 
 
-    private void run(final String[] args) throws Exception {
-        processArgs(args);
+    private void loadContracts() {
+        LOG.info("Loading contracts");
+        LOG.info(" Contract 1: {}", this.contract1Address);
+        LOG.info(" Contract 2: {}", this.contract2Address);
+        LOG.info(" Contract 3: {}", this.contract3Address);
+        LOG.info(" Contract 4: {}", this.contract4Address);
+        LOG.info(" Contract 5: {}", this.contract5Address);
+        LOG.info(" Contract 6: {}", this.contract6Address);
 
-        this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, SC1_SIDECHAIN_ID.longValue(), RETRY, POLLING_INTERVAL);
-        this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, SC2_SIDECHAIN_ID.longValue(), RETRY, POLLING_INTERVAL);
-        this.tmSc3 = new CrosschainTransactionManager(this.web3jSc3, this.credentials, SC3_SIDECHAIN_ID.longValue(), RETRY, POLLING_INTERVAL);
-
-        if (this.deploy) {
-            deployContracts();
-        }
-        else {
-            System.out.println("Using contracts deployed at: ");
-            System.out.println(" Contract 1: " + this.contract1Address);
-            System.out.println(" Contract 2: " + this.contract2Address);
-            System.out.println(" Contract 3: " + this.contract3Address);
-            System.out.println(" Contract 4: " + this.contract4Address);
-            System.out.println(" Contract 5: " + this.contract5Address);
-            System.out.println(" Contract 6: " + this.contract6Address);
-
-            this.contract1 = Sc1Contract1.load(this.contract1Address, this.web3jSc1, this.tmSc1, this.freeGasProvider);
-            this.contract2 = Sc2Contract2.load(this.contract2Address, this.web3jSc2, this.tmSc2, this.freeGasProvider);
-            this.contract3 = Sc2Contract3.load(this.contract3Address, this.web3jSc2, this.tmSc2, this.freeGasProvider);
-            this.contract4 = Sc2Contract4.load(this.contract4Address, this.web3jSc2, this.tmSc2, this.freeGasProvider);
-            this.contract5 = Sc3Contract5.load(this.contract5Address, this.web3jSc3, this.tmSc3, this.freeGasProvider);
-            this.contract6 = Sc3Contract6.load(this.contract6Address, this.web3jSc3, this.tmSc3, this.freeGasProvider);
-        }
-
-        runDemo();
+        this.contract1 = Sc1Contract1.load(this.contract1Address, this.web3jSc1, this.tmSc1, this.freeGasProvider);
+        this.contract2 = Sc2Contract2.load(this.contract2Address, this.web3jSc2, this.tmSc2, this.freeGasProvider);
+        this.contract3 = Sc2Contract3.load(this.contract3Address, this.web3jSc2, this.tmSc2, this.freeGasProvider);
+        this.contract4 = Sc2Contract4.load(this.contract4Address, this.web3jSc2, this.tmSc2, this.freeGasProvider);
+        this.contract5 = Sc3Contract5.load(this.contract5Address, this.web3jSc3, this.tmSc3, this.freeGasProvider);
+        this.contract6 = Sc3Contract6.load(this.contract6Address, this.web3jSc3, this.tmSc3, this.freeGasProvider);
     }
-
-
-    private void usageAndExit() {
-        System.err.println("Usage: tech.pegasys.poc.xweb3j.poc privateKeyFileName [<deploy>] [<addr_contract1>] [<addr_contract2>]");
-        System.out.println();
-        System.out.println("Example usage:");
-        System.out.println(" tech.pegasys.samples.crosschain.threechainsfivecontract.ThreeChainsSixContracts privateKeyFileName deploy");
-        System.out.println(" tech.pegasys.samples.crosschain.threechainsfivecontract.ThreeChainsSixContracts privateKeyFileName 0xda....  followed by six contract addresses");
-
-        System.exit(1);
-    }
-
-
-    private void processArgs(String[] args) throws Exception {
-        if (args.length < 2) {
-            usageAndExit();
-        }
-
-        if (args[1].equalsIgnoreCase("deploy")) {
-            if (args.length != 2) {
-                usageAndExit();
-            }
-            this.deploy = true;
-        } else {
-            if (args.length != 7) {
-                usageAndExit();
-            } else {
-                this.contract1Address = args[1];
-                this.contract2Address = args[2];
-                this.contract3Address = args[3];
-                this.contract4Address = args[4];
-                this.contract5Address = args[5];
-                this.contract6Address = args[6];
-            }
-
-        }
-
-        System.err.println(" Private Key file name: " + args[0]);
-
-        BufferedReader br = new BufferedReader(new FileReader(args[0]));
-        String privateKey = br.readLine();
-        br.close();
-
-        this.credentials = Credentials.create(privateKey);
-        System.out.println("Using credentials which correspond to account: " + this.credentials.getAddress());
-    }
-
 
     private void deployContracts() throws Exception {
-        System.out.println("Deploying contracts");
+        LOG.info("Deploying contracts");
         RemoteCall<Sc2Contract2> remoteCallContract2 =
             Sc2Contract2.deployLockable(this.web3jSc2, this.tmSc2, this.freeGasProvider);
         this.contract2 = remoteCallContract2.send();
         this.contract2Address = this.contract2.getContractAddress();
-        System.out.println(" Contract 2 deployed on sidechain 2 (id=" + SC2_SIDECHAIN_ID + "), at address: " + contract2Address);
+        LOG.info(" Contract 2 deployed on sidechain 2 (id={}), at address: {}",  SC2_SIDECHAIN_ID, contract2Address);
 
         RemoteCall<Sc2Contract4> remoteCallContract4 =
             Sc2Contract4.deployLockable(this.web3jSc2, this.tmSc2, this.freeGasProvider);
         this.contract4 = remoteCallContract4.send();
         this.contract4Address = this.contract4.getContractAddress();
-        System.out.println(" Contract 4 deployed on sidechain 2 (id=" + SC2_SIDECHAIN_ID + "), at address: " + contract4Address);
+        LOG.info(" Contract 4 deployed on sidechain 2 (id={}), at address: {}", SC2_SIDECHAIN_ID, contract4Address);
 
         RemoteCall<Sc3Contract5> remoteCallContract5 =
             Sc3Contract5.deployLockable(this.web3jSc3, this.tmSc3, this.freeGasProvider);
         this.contract5 = remoteCallContract5.send();
         this.contract5Address = this.contract5.getContractAddress();
-        System.out.println(" Contract 5 deployed on sidechain 3 (id=" + SC3_SIDECHAIN_ID + "), at address: " + contract5Address);
+        LOG.info(" Contract 5 deployed on sidechain 3 (id={}), at address: {}", SC3_SIDECHAIN_ID, contract5Address);
 
         RemoteCall<Sc3Contract6> remoteCallContract6 =
             Sc3Contract6.deployLockable(this.web3jSc3, this.tmSc3, this.freeGasProvider, SC2_SIDECHAIN_ID, contract4Address);
         this.contract6 = remoteCallContract6.send();
         this.contract6Address = contract6.getContractAddress();
-        System.out.println(" Contract 6 deployed on sidechain 3 (id=" + SC2_SIDECHAIN_ID + "), at address: " + contract6Address);
+        LOG.info(" Contract 6 deployed on sidechain 3 (id={}), at address: {}", SC2_SIDECHAIN_ID,  contract6Address);
 
         RemoteCall<Sc2Contract3> remoteCallContract3 =
             Sc2Contract3.deployLockable(this.web3jSc2, this.tmSc2, this.freeGasProvider, SC3_SIDECHAIN_ID, contract6Address);
         this.contract3 = remoteCallContract3.send();
         this.contract3Address = this.contract3.getContractAddress();
-        System.out.println(" Contract 3 deployed on sidechain 2 (id=" + SC2_SIDECHAIN_ID + "), at address: " + contract3Address);
+        LOG.info(" Contract 3 deployed on sidechain 2 (id={}), at address: {}", SC2_SIDECHAIN_ID, contract3Address);
 
         RemoteCall<Sc1Contract1> remoteCallContract1 =
             Sc1Contract1.deployLockable(this.web3jSc1, this.tmSc1, this.freeGasProvider, SC2_SIDECHAIN_ID, SC3_SIDECHAIN_ID, contract2Address, contract3Address, contract5Address);
         this.contract1 = remoteCallContract1.send();
         this.contract1Address = this.contract1.getContractAddress();
-        System.out.println(" Contract 1 deployed on sidechain 1 (id=" + SC1_SIDECHAIN_ID + "), at address: " + contract1Address);
-
-        System.out.println(" addresses: " + contract1Address
-                + " " + contract2Address
-                + " " + contract3Address
-                + " " + contract4Address
-                + " " + contract5Address
-                + " " + contract6Address);
-        System.out.println();
+        LOG.info(" Contract 1 deployed on sidechain 1 (id={}), at address: ", " + SC1_SIDECHAIN_ID + " + contract1Address);
     }
 
 
 
 
-    private void runDemo() throws Exception {
-        System.out.println("Running Demo");
+    private void core() throws Exception {
+        LOG.info("Running Core Part of Sample Code");
 
-        System.out.println(" Set state in each contract to known values that aren't zero.");
-        System.out.println("  Single-chain transaction: Contract1.set(1)");
+        LOG.info(" Set state in each contract to known values that aren't zero.");
+        LOG.info("  Single-chain transaction: Contract1.set(1)");
         TransactionReceipt transactionReceipt = this.contract1.setVal(BigInteger.valueOf(1)).send();
         assertTrue(transactionReceipt.isStatusOK());
-        System.out.println("  Single-chain transaction: Contract2.set(2)");
+        LOG.info("  Single-chain transaction: Contract2.set(2)");
         transactionReceipt = this.contract2.setVal(BigInteger.valueOf(2)).send();
         assertTrue(transactionReceipt.isStatusOK());
-        System.out.println("  Single-chain transaction: Contract3.set(3)");
+        LOG.info("  Single-chain transaction: Contract3.set(3)");
         transactionReceipt = this.contract3.setVal(BigInteger.valueOf(3)).send();
         assertTrue(transactionReceipt.isStatusOK());
-        System.out.println("  Single-chain transaction: Contract4.set(4)");
+        LOG.info("  Single-chain transaction: Contract4.set(4)");
         transactionReceipt = this.contract4.setVal(BigInteger.valueOf(4)).send();
         assertTrue(transactionReceipt.isStatusOK());
-        System.out.println("  Single-chain transaction: Contract5.set(5)");
+        LOG.info("  Single-chain transaction: Contract5.set(5)");
         transactionReceipt = this.contract5.setVal(BigInteger.valueOf(5)).send();
         assertTrue(transactionReceipt.isStatusOK());
-        System.out.println("  Single-chain transaction: Contract6.set(6)");
+        LOG.info("  Single-chain transaction: Contract6.set(6)");
         transactionReceipt = this.contract6.setVal(BigInteger.valueOf(6)).send();
         assertTrue(transactionReceipt.isStatusOK());
 
         checkExpectedValues(1,2,3,4,5,6);
 
-        Scanner myInput = new Scanner( System.in );
 
+        Scanner myInput = new Scanner( System.in );
         while (true) {
-            System.out.print( " Enter long value to call Contract1.doStuff with: " );
+            String prompt = " Enter long value to call Contract1.doStuff with: ";
+            System.out.println(prompt);
             long val = myInput.nextLong();
             if (val < 0) {
                 System.out.println("  No negative numbers please!");
                 continue;
             }
+            LOG.info("{} {}", prompt, val);
 
             BigInteger c1Val = this.contract1.val().send();
             BigInteger c2Val = this.contract2.val().send();
@@ -268,11 +244,11 @@ public class ThreeChainsSixContracts {
             BigInteger c5Val = this.contract5.val().send();
             BigInteger c6Val = this.contract6.val().send();
 
-            System.out.println("  Executing call simulator to determine parameter values and expected results");
+            LOG.info("  Executing call simulator to determine parameter values and expected results");
             CallSimulator sim = new CallSimulator(c1Val.longValue(), c2Val.longValue(), c3Val.longValue(), c4Val.longValue(), c5Val.longValue(), c6Val.longValue());
             sim.c1DoStuff(val);
 
-            System.out.println("  Constructing Nested Crosschain Transaction");
+            LOG.info("  Constructing Nested Crosschain Transaction");
             // Call to contract 2
             byte[] subordinateViewC2 = this.contract2.get_AsSignedCrosschainSubordinateView(null);
 
@@ -293,8 +269,6 @@ public class ThreeChainsSixContracts {
             byte[] subordinateTransC3 = this.contract3.process_AsSignedCrosschainSubordinateTransaction(BigInteger.valueOf(sim.c3Process_val), subordinateTransactionsAndViewsForC3);
 
             // Call to contract 1
-            Uint256[] params = new Uint256[]{};
-            params = new Uint256[]{new Uint256(BigInteger.valueOf(val))};
             byte[][] subordinateTransactionsAndViewsForC1;
             if (sim.c1IsIfTaken) {
                 subordinateTransactionsAndViewsForC1 = new byte[][]{subordinateViewC2, subordinateViewC5, subordinateTransC3};
@@ -302,9 +276,9 @@ public class ThreeChainsSixContracts {
             else {
                 subordinateTransactionsAndViewsForC1 = new byte[][] {subordinateViewC2};
             }
-            System.out.println("  Executing Crosschain Transaction");
+            LOG.info("  Executing Crosschain Transaction");
             transactionReceipt = this.contract1.doStuff_AsCrosschainTransaction(BigInteger.valueOf(val), subordinateTransactionsAndViewsForC1).send();
-            System.out.println("  Tx Receipt: " + transactionReceipt.toString());
+            LOG.info("  Transaction Receipt: {}", transactionReceipt.toString());
             assertTrue(transactionReceipt.isStatusOK());
 
             // TODO should check to see if contracts unlocked before fetching values.
@@ -316,105 +290,101 @@ public class ThreeChainsSixContracts {
 
 
     private void checkExpectedValues(long v1, long v2, long v3, long v4, long v5, long v6) throws Exception {
-        System.out.println(" Check values have been set");
+        LOG.info(" Check values have been set as expected");
         BigInteger result = this.contract1.val().send();
-        System.out.println("  Contract1.val = " + result.intValue()  + ", expecting " + v1);
+        LOG.info("  Contract1.val = {}, expecting {}", result.intValue(), v1);
         assertTrue(result.equals(BigInteger.valueOf(v1)));
         result = this.contract2.val().send();
-        System.out.println("  Contract2.val = " + result.intValue()  + ", expecting " + v2);
+        LOG.info("  Contract2.val = {}, expecting {}", result.intValue(), v2);
         assertTrue(result.equals(BigInteger.valueOf(v2)));
         result = this.contract3.val().send();
-        System.out.println("  Contract3.val = " + result.intValue()  + ", expecting " + v3);
+        LOG.info("  Contract3.val = {}, expecting {}", result.intValue(), v3);
         assertTrue(result.equals(BigInteger.valueOf(v3)));
         result = this.contract4.val().send();
-        System.out.println("  Contract4.val = " + result.intValue()  + ", expecting " + v4);
+        LOG.info("  Contract4.val = {}, expecting {}", result.intValue(), v4);
         assertTrue(result.equals(BigInteger.valueOf(v4)));
         result = this.contract5.val().send();
-        System.out.println("  Contract5.val = " + result.intValue()  + ", expecting " + v5);
+        LOG.info("  Contract5.val = {}, expecting {}", result.intValue(), v5);
         assertTrue(result.equals(BigInteger.valueOf(v5)));
         result = this.contract6.val().send();
-        System.out.println("  Contract6.val = " + result.intValue()  + ", expecting " + v6);
+        LOG.info("  Contract6.val = {}, expecting {}", result.intValue(), v6);
         assertTrue(result.equals(BigInteger.valueOf(v6)));
     }
 
 
-
-
-    static void assertTrue(boolean val) {
+    private static void assertTrue(boolean val) {
         if (!val) {
             throw new Error("Unexpected Result");
         }
     }
 
 
-    class CallSimulator {
-        long val1;
-        long val2;
-        long val3;
-        long val4;
-        long val5;
-        long val6;
-
-        boolean c1IsIfTaken = false;
-        long c5Calculate_val1;
-        long c5Calculate_val2;
-        long c3Process_val;
-        long c6Get_val;
-        long c4Get_val;
-
-        CallSimulator(long v1, long v2, long v3, long v4, long v5, long v6) {
-            this.val1 = v1;
-            this.val2 = v2;
-            this.val3 = v3;
-            this.val4 = v4;
-            this.val5 = v5;
-            this.val6 = v6;
-        }
-
-        void c1DoStuff(long _val) {
-            long sc2Val = c2Get();
-            this.val1 = sc2Val;
-
-            this.c1IsIfTaken = false;
-            if (_val > sc2Val) {
-                this.c1IsIfTaken = true;
-                long calc = c5Calculate(_val, sc2Val);
-                c3Process(calc);
-                this.val1 = calc;
-            }
 
 
-        }
-
-        long c2Get() {
-            return this.val2;
-        }
-
-        long c5Calculate(long _val1, long _val2) {
-            // TODO this assumes this function is only called once with one paramter set.
-            this.c5Calculate_val1 = _val1;
-            this.c5Calculate_val2 = _val2;
-            return this.val5 + _val1 + _val2;
-        }
-
-        void c3Process(long _val) {
-            this.c3Process_val = _val;
-            long sc3Val = c6Get(this.val3);
-            this.val3 = _val + sc3Val;
-        }
-
-        long c6Get(long _val) {
-            this.c6Get_val = _val;
-            long sc2Val = c4Get(this.val6);
-            return _val + sc2Val;
-        }
-
-        long c4Get(long _val) {
-            this.c4Get_val = _val;
-            return this.val4 + _val;
-        }
-
-
+    private boolean propertiesFileExists() {
+        return Files.exists(getSamplePropertiesPath());
     }
 
+    // Load the private key and contract addresses from disk.
+    //
+    // ******                                                                         ******
+    // ****** NOTE that in a production environment, extreme care should be exercised ******
+    // ****** with the storage of the private key.                                    ******
+    // ******                                                                         ******
+    private void loadProperties() {
+        Path path = getSamplePropertiesPath();
+        LOG.info("Loading Properties from {}", path.toString());
+        try {
+            FileInputStream fis = new FileInputStream(getSamplePropertiesPath().toFile());
+            Properties properties = new Properties();
+            properties.load(fis);
+
+            String privateKey = properties.getProperty(PRIVATE_KEY);
+            this.credentials = Credentials.create(privateKey);
+            this.contract1Address = properties.getProperty(CONTRACT1_ADDRESS);
+            this.contract2Address = properties.getProperty(CONTRACT2_ADDRESS);
+            this.contract3Address = properties.getProperty(CONTRACT3_ADDRESS);
+            this.contract4Address = properties.getProperty(CONTRACT4_ADDRESS);
+            this.contract5Address = properties.getProperty(CONTRACT5_ADDRESS);
+            this.contract6Address = properties.getProperty(CONTRACT6_ADDRESS);
+
+        } catch (IOException ioEx) {
+            // By the time we have reached the loadProperties method, we should be sure the file
+            // exists. As such, just throw an exception to stop.
+            throw new RuntimeException(ioEx);
+        }
+    }
+
+    // Store the private key and contract addresses to disk.
+    //
+    // ******                                                                         ******
+    // ****** NOTE that in a production environment, extreme care should be exercised ******
+    // ****** with the storage of the private key.                                    ******
+    // ******                                                                         ******
+    private void storeProperties() {
+        Path path = getSamplePropertiesPath();
+        LOG.info("Storing Properties to {}", path.toString());
+        try {
+            final FileOutputStream fos = new FileOutputStream(path.toFile());
+            final Properties properties = new Properties();
+            String privateKey = this.credentials.getEcKeyPair().getPrivateKey().toString(16);
+            properties.setProperty(PRIVATE_KEY, privateKey);
+            properties.setProperty(CONTRACT1_ADDRESS, this.contract1Address);
+            properties.setProperty(CONTRACT2_ADDRESS, this.contract2Address);
+            properties.setProperty(CONTRACT3_ADDRESS, this.contract3Address);
+            properties.setProperty(CONTRACT4_ADDRESS, this.contract4Address);
+            properties.setProperty(CONTRACT5_ADDRESS, this.contract5Address);
+            properties.setProperty(CONTRACT6_ADDRESS, this.contract6Address);
+            properties.store(fos, "Sample code properties file");
+
+        } catch (IOException ioEx) {
+            // By the time we have reached the loadProperties method, we should be sure the file
+            // exists. As such, just throw an exception to stop.
+            throw new RuntimeException(ioEx);
+        }
+    }
+
+    private Path getSamplePropertiesPath() {
+        return Paths.get(System.getProperty("user.dir"), SAMPLE_PROPERTIES_FILE_NAME);
+    }
 }
