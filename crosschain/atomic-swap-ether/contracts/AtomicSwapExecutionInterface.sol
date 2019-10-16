@@ -12,12 +12,7 @@
  */
 pragma solidity >=0.4.23;
 
-/**
- * This contract defines the functions whcih can be called from Contract1.
- */
-interface Sidechain2Contract2Interface {
+interface AtomicSwapExecutionInterface {
 
-    function set(uint256 _val) external;
-
-    function get(uint256 _val) external view returns(uint256);
+    function get() external view returns(uint256);
 }
