@@ -14,5 +14,6 @@ pragma solidity >=0.4.23;
 
 interface AtomicSwapExecutionInterface {
 
-    function get() external view returns(uint256);
+    function exchange(uint256 _amount) payable external;
+    function getBalance() external view returns (uint256);
 }

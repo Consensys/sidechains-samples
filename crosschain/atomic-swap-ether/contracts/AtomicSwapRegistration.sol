@@ -32,11 +32,11 @@ contract AtomicSwapRegistration {
 
 
     /**
-  * Function modifier to ensure only unmasked sidechain participants can call the function.
-  *
-  * @param _sidechainId The 256 bit identifier of the Sidechain.
-  * @dev Throws if the message sender isn't a participant in the sidechain, or if the sidechain doesn't exist.
-  */
+     * Function modifier to ensure only owners of a offer can deregister the offer or change the exchange rate.
+     *
+     * @param _sidechainId The 256 bit identifier of the Sidechain.
+     * @dev Throws if the message sender isn't a participant in the sidechain, or if the sidechain doesn't exist.
+     */
     modifier onlyOfferOwner(uint256 _sidechainId, address payable _executionContract) {
         require(exchangeOffers[_sidechainId].offers[_executionContract].owner == msg.sender);
         _;
@@ -82,7 +82,7 @@ contract AtomicSwapRegistration {
 
     function getTenOfferExchangeRates(uint256 _sidechainId, uint256 offset) external view returns(uint256) {
 
-        /* memory */ uint256[] result = new uint256[TEN];
+        uint256[] memory result = new uint256[TEN];
         for (int i = 0; i < TEN; i++) {
             result[i] = getOfferExchangeRate(_sidechainId, offset+i);
         }
