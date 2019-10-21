@@ -12,16 +12,13 @@
  */
 pragma solidity >=0.4.23;
 
+import "./AtomicSwapSender.sol";
+
+/*
+ *
+ */
 contract AtomicSwapRegistration {
-    // Implementation version of this contract.
-    uint16 constant public VERSION = 1;
-
-
-    uint256 private constant TEN = 10;
-
-
     struct ExchangeOffer {
-        address owner;
         uint256 exchangeRate;
     }
     struct ExchangeOffers {
@@ -31,64 +28,24 @@ contract AtomicSwapRegistration {
     mapping(uint256=>ExchangeOffers) private exchangeOffers;
 
 
-    /**
-     * Function modifier to ensure only owners of a offer can deregister the offer or change the exchange rate.
-     *
-     * @param _sidechainId The 256 bit identifier of the Sidechain.
-     * @dev Throws if the message sender isn't a participant in the sidechain, or if the sidechain doesn't exist.
-     */
-    modifier onlyOfferOwner(uint256 _sidechainId, address payable _executionContract) {
-        require(exchangeOffers[_sidechainId].offers[_executionContract].owner == msg.sender);
-        _;
-    }
 
-    function register(uint256 _sidechainId, address payable _executionContract, uint256 _exchangeRate) external {
-        // TODO
-    }
-    function changeExchangeRate(uint256 _sidechainId, address payable _executionContract, uint256 _exchangeRate)
-        external onlyOfferOwner(_sidechainId, _executionContract){
-        // TODO
-    }
-
-    function deregister(uint256 _sidechainId, address payable _executionContract, uint256 _exchangeRate)
-        external onlyOfferOwner(_sidechainId, _executionContract) {
-        // TODO
-
-    }
-
-    function compactOffers(uint256 _sidechainId) {
-        // TODO
-
+    function register(address payable _senderContract) external {
+        AtomicSwapSender senderContract = AtomicSwapSender(_senderContract);
+        uint256 receiverSidechainId = senderContract.receiverSidechainId();
+        exchangeOffers[receiverSidechainId].offers[_senderContract].exchangeRate = senderContract.exchangeRate();
+        exchangeOffers[receiverSidechainId].offerAddresses.push(_senderContract);
     }
 
     function getOfferAddressesSize(uint256 _sidechainId) external view returns(uint256) {
         return exchangeOffers[_sidechainId].offerAddresses.length;
     }
 
+    function getOfferSenderContract(uint256 _sidechainId, uint256 offset) public view returns(address) {
+        return exchangeOffers[_sidechainId].offerAddresses[offset];
+    }
+
     function getOfferExchangeRate(uint256 _sidechainId, uint256 offset) external view returns(uint256) {
-        address addr = exchangeOffers[_sidechainId].offerAddresses[offset];
-        if (addr == 0) {
-            return 0;
-        }
+        address addr = getOfferSenderContract(_sidechainId, offset);
         return exchangeOffers[_sidechainId].offers[addr].exchangeRate;
     }
-    function getOfferOwner(uint256 _sidechainId, uint256 offset) external view returns(address) {
-        address addr = exchangeOffers[_sidechainId].offerAddresses[offset];
-        if (addr == 0) {
-            return 0;
-        }
-        return exchangeOffers[_sidechainId].offers[addr].owner;
-    }
-
-    function getTenOfferExchangeRates(uint256 _sidechainId, uint256 offset) external view returns(uint256) {
-
-        uint256[] memory result = new uint256[TEN];
-        for (int i = 0; i < TEN; i++) {
-            result[i] = getOfferExchangeRate(_sidechainId, offset+i);
-        }
-        return result;
-    }
-
-
-
 }

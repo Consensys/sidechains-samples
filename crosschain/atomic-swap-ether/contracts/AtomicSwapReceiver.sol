@@ -12,6 +12,8 @@
  */
 pragma solidity >=0.4.23;
 
+import "./AtomicSwapReceiverInterface.sol";
+
 
 /*
  * This contract works with the AtomicSwapExecutionSender contract to affect
@@ -25,7 +27,7 @@ pragma solidity >=0.4.23;
  * contract's exchange function. This function will call the exchange function on this
  * sidechain which completes the exchange.
  */
-contract AtomicSwapExecutionReceiver {
+contract AtomicSwapReceiver is AtomicSwapReceiverInterface {
     address public owner;
     address public senderContract;
     uint256 public senderSidechainId;
@@ -35,26 +37,24 @@ contract AtomicSwapExecutionReceiver {
         _;
     }
 
-
-
-    constructor(uint256 _senderSidechainId, address _senderContract) external payable {
+    constructor(uint256 _senderSidechainId) public payable {
         owner = msg.sender;
-        senderContract = _senderContract;
         senderSidechainId = _senderSidechainId;
+    }
+
+    function setSenderContract(address _senderContract) external {
+        senderContract = _senderContract;
     }
 
     function deposit() external payable onlyOwner {
     }
 
-    function withdraw(uint256 _amount) external ownlyOwner {
+    function withdraw(uint256 _amount) external onlyOwner {
         msg.sender.transfer(_amount);
     }
 
-    function withdraw() external ownlyOwner {
-        msg.sender.transfer(address(this).balance);
-    }
-
     function exchange(uint256 _amount) payable external {
+        require(senderContract != address(0));
         // TODO check that the sending Sidechain ID and Contract are the expected ones.
         // TODO this will achieved by two precompiles
 
@@ -62,7 +62,7 @@ contract AtomicSwapExecutionReceiver {
     }
 
     function getBalance() external view returns (uint256) {
-        return this.balance;
+        return address(this).balance;
     }
 
 }

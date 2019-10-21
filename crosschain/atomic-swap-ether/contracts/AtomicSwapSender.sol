@@ -15,47 +15,37 @@ import "./AtomicSwapReceiverInterface.sol";
 import "./Crosschain.sol";
 import "./AtomicSwapReceiver.sol";
 
-contract AtomicSwapExecution is Crosschain {
+contract AtomicSwapSender is Crosschain {
     uint256 private constant DECIMAL_POINT = 2**128;
 
     address public owner;
-    address public registrationContract;
     uint256 public exchangeRate;
-
-    uint256 receiverSidechainId;
-    AtomicSwapExecutionReceiverInterface receiverContract;
+    uint256 public receiverSidechainId;
+    AtomicSwapReceiverInterface public receiverContract;
 
     modifier onlyOwner() {
         require(msg.sender == owner);
         _;
     }
 
-    modifier onlyRegistrationContract() {
-        require(msg.sender == registrationContract);
-        _;
-    }
-
-
-    constructor(address _registrationContract, uint256 _receiverSidechainId, address _receiverContract) {
+    constructor(uint256 _receiverSidechainId, address _receiverContract, uint256 _exchangeRate) public {
         owner = msg.sender;
-        registrationContract = _registrationContract;
-        receiverContract = AtomicSwapExecutionReceiverInterface(_receiverContract);
         receiverSidechainId = _receiverSidechainId;
+        receiverContract = AtomicSwapReceiverInterface(_receiverContract);
+        exchangeRate = _exchangeRate;
     }
 
-    function changeExchangeRate(uint256 _newExchangeRate, uint256 _receiverSidechainId) external {
-        require(msg.sender == registrationContract);
-        require(_receiverSidechainId == receiverSidechainId);
-        exchangeRate = _newExchangeRate;
-    }
 
-    function withdraw() external ownlyOwner {
+    function withdraw() external onlyOwner {
         msg.sender.transfer(address(this).balance);
     }
 
-    function exchange(uint256 expectedExchangeRate) payable external {
+    function exchange(uint256 _expectedExchangeRate) payable external {
+        require(msg.value < DECIMAL_POINT);
+
         // Check that the exchange rate hasn't changed unexpectedly.
-        require(expectedExchangeRate == exchangeRate);
+        require(0 != exchangeRate);
+        require(_expectedExchangeRate == exchangeRate);
 
         // Determine the amount of Ether in the other contract.
         uint256 receiverBalance = crosschainViewUint256(receiverSidechainId, address(receiverContract), abi.encodeWithSelector(receiverContract.getBalance.selector));
@@ -72,7 +62,7 @@ contract AtomicSwapExecution is Crosschain {
             swapAmountThisChain = msg.value;
         }
 
-        uint256 swapAmoutOtherChain = swapAmountThisChain * exchangeRate / DECIMAL_POINT;
+        uint256 swapAmountOtherChain = swapAmountThisChain * exchangeRate / DECIMAL_POINT;
 
         crosschainTransaction(receiverSidechainId, address(receiverContract), abi.encodeWithSelector(receiverContract.exchange.selector, swapAmountOtherChain) );
 
@@ -82,13 +72,4 @@ contract AtomicSwapExecution is Crosschain {
 
     }
 
-
-
-    function setVal(uint256 _val) external {
-        val = _val;
-    }
-
-    function get() external view returns(uint256) {
-        return val;
-    }
 }
