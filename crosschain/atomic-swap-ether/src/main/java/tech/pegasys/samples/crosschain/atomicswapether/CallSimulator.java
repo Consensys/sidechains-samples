@@ -12,78 +12,39 @@
  */
 package tech.pegasys.samples.crosschain.atomicswapether;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
 /**
  * Simulate the call flow through the Solidity contracts. Based on the current values,
  * determine the expected values. These expected values can be used to create the nested
  * crosschain transaction.
  */
 class CallSimulator {
-  long val1;
-  long val2;
-  long val3;
-  long val4;
-  long val5;
-  long val6;
+  public boolean atomicSwapSenderError1;
 
-  boolean c1IsIfTaken = false;
-  long c5Calculate_val1;
-  long c5Calculate_val2;
-  long c3Process_val;
-  long c6Get_val;
-  long c4Get_val;
+  public BigInteger atomicSwapSender_Exchange_exchangeRate;
+  public BigInteger atomicSwapReceiver_Exchange_amount;
 
-  CallSimulator(long v1, long v2, long v3, long v4, long v5, long v6) {
-    this.val1 = v1;
-    this.val2 = v2;
-    this.val3 = v3;
-    this.val4 = v4;
-    this.val5 = v5;
-    this.val6 = v6;
+  private BigInteger DECIMAL_POINT = BigInteger.TWO.pow(128);
+
+  CallSimulator() {
+    this.atomicSwapSender_Exchange_exchangeRate = AtomicSwapEther.getAdjustedExchangeRate(AtomicSwapEther.EXCHANGE_RATE);
   }
 
-  // Simulate Sc1Contract1's doStuff function.
-  void c1DoStuff(long _val) {
-    long sc2Val = c2Get();
-    this.val1 = sc2Val;
-
-    this.c1IsIfTaken = false;
-    if (_val > sc2Val) {
-      this.c1IsIfTaken = true;
-      long calc = c5Calculate(_val, sc2Val);
-      c3Process(calc);
-      this.val1 = calc;
+  // Simulate AtomicSwapSender's exchange function.
+  void exchange(final BigInteger amountInWei, final BigInteger receiverBalanceInWei) {
+    atomicSwapSenderError1 = receiverBalanceInWei.compareTo(DECIMAL_POINT) == 1;
+    if (atomicSwapSenderError1) {
+      return;
     }
-  }
 
-  // Simulate Sc2Contract2's get function.
-  private long c2Get() {
-    return this.val2;
-  }
+    BigInteger amountGivenReceiver = receiverBalanceInWei.divide(this.atomicSwapSender_Exchange_exchangeRate);
+    BigInteger amountToTransferInWei = amountInWei;
+    if (amountGivenReceiver.compareTo(amountInWei) == -1) {
+      amountToTransferInWei = amountGivenReceiver;
+    }
 
-  // Simulate Sc3Contract5's calculate function.
-  private long c5Calculate(long _val1, long _val2) {
-    this.c5Calculate_val1 = _val1;
-    this.c5Calculate_val2 = _val2;
-    return this.val5 + _val1 + _val2;
-  }
-
-  // Simulate Sc2Contract3's process function.
-  private void c3Process(long _val) {
-    this.c3Process_val = _val;
-    long sc3Val = c6Get(this.val3);
-    this.val3 = _val + sc3Val;
-  }
-
-  // Simulate Sc3Contract6's get function.
-  private long c6Get(long _val) {
-    this.c6Get_val = _val;
-    long sc2Val = c4Get(this.val6);
-    return _val + sc2Val;
-  }
-
-  // Simulate Sc2Contract4's get function.
-  private long c4Get(long _val) {
-    this.c4Get_val = _val;
-    return this.val4 + _val;
+    this.atomicSwapReceiver_Exchange_amount = this.atomicSwapSender_Exchange_exchangeRate.multiply(amountToTransferInWei);
   }
 }

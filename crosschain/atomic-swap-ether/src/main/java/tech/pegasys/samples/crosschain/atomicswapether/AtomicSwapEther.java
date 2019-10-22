@@ -55,7 +55,7 @@ public class AtomicSwapEther {
     public static final String STARTING_POINT_ACCEPTING_ETHER_SC1 = "11";
     public static final String STARTING_POINT_OFFERING_ETHER_SC2 = "10";
     public static final String AMOUNT_OFFERED = "5";
-    public static final String EXCHANGE_RATE = "2.0";
+    public static final double EXCHANGE_RATE = 2.0;
 
 
     // For this sample to work, three Hyperledger Besu Ethereum Clients which represent
@@ -123,18 +123,18 @@ public class AtomicSwapEther {
         if (propertiesFileExists()) {
             loadProperties();
             setupBesuServiceTransactionManager();
+            setupEther();
             loadContracts();
         }
         else {
             this.entityOfferingEtherCredentials = Credentials.create(new KeyPairGen().generateKeyPairForWeb3J());
             this.entityAcceptingOfferCredentials = Credentials.create(new KeyPairGen().generateKeyPairForWeb3J());
             setupBesuServiceTransactionManager();
+            setupEther();
             deployContracts();
             storeProperties();
         }
         LOG.info("Using entityOfferingEtherCredentials which correspond to account: {}", this.entityOfferingEtherCredentials.getAddress());
-
-        setupEther();
 
         core();
     }
@@ -156,59 +156,87 @@ public class AtomicSwapEther {
         this.freeGasProvider = new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
     }
 
+    private final static int LESS_THAN = -1;
     /*
      * Set-up the starting point for the demo.
      */
     private void setupEther() throws Exception {
+
         LOG.info("Set-up Ether");
         showBalances();
 
+        TransactionReceipt transactionReceipt;
         // Transfer all Ether from Entity Accepting Ether on SC2 and from Entity Offering
         // Ether on SC1.
         BigInteger offeringSc1Wei = getBalance(this.web3jSc1, this.entityOfferingEtherCredentials.getAddress());
-        RemoteCall<TransactionReceipt> transactionReceipt = Transfer.sendFunds(this.web3jSc1, this.entityOfferingEtherCredentials,
-            FAUCET_ADDRESS, new BigDecimal(offeringSc1Wei), Convert.Unit.WEI);
+        if (offeringSc1Wei.compareTo(BigInteger.ZERO) != 0) {
+            transactionReceipt = Transfer.sendFunds(this.web3jSc1, this.entityOfferingEtherCredentials,
+                FAUCET_ADDRESS, new BigDecimal(offeringSc1Wei), Convert.Unit.WEI).send();
+        }
         BigInteger acceptingSc2Wei = getBalance(this.web3jSc2, this.entityAcceptingOfferCredentials.getAddress());
-        transactionReceipt = Transfer.sendFunds(this.web3jSc2, this.entityAcceptingOfferCredentials,
-            FAUCET_ADDRESS, new BigDecimal(acceptingSc2Wei), Convert.Unit.WEI);
+        if (acceptingSc2Wei.compareTo(BigInteger.ZERO) == 0) {
+            transactionReceipt = Transfer.sendFunds(this.web3jSc2, this.entityAcceptingOfferCredentials,
+                FAUCET_ADDRESS, new BigDecimal(acceptingSc2Wei), Convert.Unit.WEI).send();
+        }
 
+        // Check the faucets have enough Ether.
+        BigInteger faucetSc1Bal = getBalance(this.web3jSc1, FAUCET_ADDRESS);
+        if (faucetSc1Bal.compareTo(Convert.toWei(STARTING_POINT_ACCEPTING_ETHER_SC1, Convert.Unit.ETHER).toBigInteger()) == LESS_THAN) {
+            LOG.info("Faucet on sidechain 1 does not have enough Ether");
+        }
+        BigInteger faucetSc2Bal = getBalance(this.web3jSc2, FAUCET_ADDRESS);
+        if (faucetSc2Bal.compareTo(Convert.toWei(STARTING_POINT_OFFERING_ETHER_SC2, Convert.Unit.ETHER).toBigInteger()) == LESS_THAN) {
+            LOG.info("Faucet on sidechain 2 does not have enough Ether");
+        }
 
         BigInteger targetStartingPoint = Convert.toWei(STARTING_POINT_ACCEPTING_ETHER_SC1, Convert.Unit.ETHER).toBigInteger();
         BigInteger acceptingSc1Wei = getBalance(this.web3jSc1, this.entityAcceptingOfferCredentials.getAddress());
-        if (targetStartingPoint.compareTo(acceptingSc1Wei) == -1) {
-            LOG.info("sending from accepting to faucet {} ", targetStartingPoint.subtract(acceptingSc1Wei).toString());
-            transactionReceipt = Transfer.sendFunds(this.web3jSc1, this.entityAcceptingOfferCredentials,
-                FAUCET_ADDRESS, new BigDecimal(targetStartingPoint.subtract(acceptingSc1Wei)), Convert.Unit.WEI);
-        } else {
-            LOG.info("sending from faucet to accepting {} ", acceptingSc1Wei.subtract(targetStartingPoint).toString());
-            transactionReceipt = Transfer.sendFunds(this.web3jSc1, this.entityAcceptingOfferCredentials,
-                FAUCET_ADDRESS, new BigDecimal(acceptingSc1Wei.subtract(targetStartingPoint)), Convert.Unit.WEI);
+        BigInteger amount = targetStartingPoint.subtract(acceptingSc1Wei);
+        boolean transfersNeeded = false;
+        if (amount.compareTo(BigInteger.ZERO) != 0) {
+            transfersNeeded = true;
+            if (targetStartingPoint.compareTo(acceptingSc1Wei) == LESS_THAN) {
+                amount = amount.negate();
+                LOG.info("sending from accepting to faucet {} Wei", amount.toString());
+                transactionReceipt = Transfer.sendFunds(this.web3jSc1, this.entityAcceptingOfferCredentials,
+                    FAUCET_ADDRESS, new BigDecimal(amount), Convert.Unit.WEI).send();
+            } else {
+                LOG.info("sending from faucet to accepting {} Wei", amount.toString());
+                transactionReceipt = Transfer.sendFunds(this.web3jSc1, this.faucetCredentials,
+                    this.entityAcceptingOfferCredentials.getAddress(), new BigDecimal(amount), Convert.Unit.WEI).send();
+            }
         }
 
         targetStartingPoint = Convert.toWei(STARTING_POINT_OFFERING_ETHER_SC2, Convert.Unit.ETHER).toBigInteger();
         BigInteger offeringSc2Wei = getBalance(this.web3jSc2, this.entityOfferingEtherCredentials.getAddress());
-        if (targetStartingPoint.compareTo(offeringSc2Wei) == -1) {
-            LOG.info("sending from offering to faucet {} ", targetStartingPoint.subtract(offeringSc2Wei).toString());
-            transactionReceipt = Transfer.sendFunds(this.web3jSc2, this.entityOfferingEtherCredentials,
-                FAUCET_ADDRESS, new BigDecimal(targetStartingPoint.subtract(offeringSc2Wei)), Convert.Unit.WEI);
-        } else {
-            LOG.info("sending from faucet to offering {} ", offeringSc2Wei.subtract(targetStartingPoint).toString());
-            transactionReceipt = Transfer.sendFunds(this.web3jSc2, this.entityAcceptingOfferCredentials,
-                FAUCET_ADDRESS, new BigDecimal(offeringSc2Wei.subtract(targetStartingPoint)), Convert.Unit.WEI);
+        amount = targetStartingPoint.subtract(offeringSc2Wei);
+        if (amount.compareTo(BigInteger.ZERO) != 0) {
+            transfersNeeded = true;
+            if (targetStartingPoint.compareTo(offeringSc2Wei) == LESS_THAN) {
+                amount = amount.negate();
+                LOG.info("sending from offering to faucet {} Wei", amount.toString());
+                transactionReceipt = Transfer.sendFunds(this.web3jSc2, this.entityOfferingEtherCredentials,
+                    FAUCET_ADDRESS, new BigDecimal(amount), Convert.Unit.WEI).send();
+            } else {
+                LOG.info("sending from faucet to offering {} Wei", amount.toString());
+                transactionReceipt = Transfer.sendFunds(this.web3jSc2, this.faucetCredentials,
+                    this.entityOfferingEtherCredentials.getAddress(), new BigDecimal(amount), Convert.Unit.WEI).send();
+            }
         }
 
-
-        showBalances();
+        if (transfersNeeded) {
+            showBalances();
+        }
     }
 
     private void showBalances() throws Exception {
         LOG.info("Balances");
         LOG.info(" Faucet Account on SC1: {}", getBalanceAsString(this.web3jSc1, FAUCET_ADDRESS));
-        LOG.info(" Faucet Account on SC2: {}", getBalanceAsString(this.web3jSc1, FAUCET_ADDRESS));
+        LOG.info(" Faucet Account on SC2: {}", getBalanceAsString(this.web3jSc2, FAUCET_ADDRESS));
         LOG.info(" Offering Account on SC1: {}", getBalanceAsString(this.web3jSc1, this.entityOfferingEtherCredentials.getAddress()));
-        LOG.info(" Offering Account on SC2: {}", getBalanceAsString(this.web3jSc1, this.entityOfferingEtherCredentials.getAddress()));
+        LOG.info(" Offering Account on SC2: {}", getBalanceAsString(this.web3jSc2, this.entityOfferingEtherCredentials.getAddress()));
         LOG.info(" Accepting Account on SC1: {}", getBalanceAsString(this.web3jSc1, this.entityAcceptingOfferCredentials.getAddress()));
-        LOG.info(" Accepting Account on SC2: {}", getBalanceAsString(this.web3jSc1, this.entityAcceptingOfferCredentials.getAddress()));
+        LOG.info(" Accepting Account on SC2: {}", getBalanceAsString(this.web3jSc2, this.entityAcceptingOfferCredentials.getAddress()));
     }
 
     private String getBalanceAsString(Besu besu, String address) throws Exception {
@@ -251,40 +279,67 @@ public class AtomicSwapEther {
         this.receiverContractAddress = this.receiverContract.getContractAddress();
         LOG.info(" Receiver Contract deployed on sidechain 2 (id={}), at address: {}", SC2_SIDECHAIN_ID, this.receiverContractAddress);
 
-//        RemoteCall<Sc3Contract5> remoteCallContract5 =
-//            Sc3Contract5.deployLockable(this.web3jSc3, this.tmSc3, this.freeGasProvider);
-//        this.contract5 = remoteCallContract5.send();
-//        this.contract5Address = this.contract5.getContractAddress();
-//        LOG.info(" Contract 5 deployed on sidechain 3 (id={}), at address: {}", SC3_SIDECHAIN_ID, contract5Address);
-//
-//        RemoteCall<Sc3Contract6> remoteCallContract6 =
-//            Sc3Contract6.deployLockable(this.web3jSc3, this.tmSc3, this.freeGasProvider, SC2_SIDECHAIN_ID, contract4Address);
-//        this.contract6 = remoteCallContract6.send();
-//        this.contract6Address = contract6.getContractAddress();
-//        LOG.info(" Contract 6 deployed on sidechain 3 (id={}), at address: {}", SC2_SIDECHAIN_ID,  contract6Address);
-//
-//        RemoteCall<Sc2Contract3> remoteCallContract3 =
-//            Sc2Contract3.deployLockable(this.web3jSc2, this.entityOfferingTmSc2, this.freeGasProvider, SC3_SIDECHAIN_ID, contract6Address);
-//        this.receiverContract = remoteCallContract3.send();
-//        this.receiverContractAddress = this.receiverContract.getContractAddress();
-//        LOG.info(" Contract 3 deployed on sidechain 2 (id={}), at address: {}", SC2_SIDECHAIN_ID, receiverContractAddress);
-//
-//        RemoteCall<Sc1Contract1> remoteCallContract1 =
-//            Sc1Contract1.deployLockable(this.web3jSc1, this.entityOfferingTmSc1, this.freeGasProvider, SC2_SIDECHAIN_ID, SC3_SIDECHAIN_ID, senderContractAddress, receiverContractAddress, contract5Address);
-//        this.registrationContract = remoteCallContract1.send();
-//        this.registrationContractAddress = this.registrationContract.getContractAddress();
-//        LOG.info(" Contract 1 deployed on sidechain 1 (id={}), at address: ", " + SC1_SIDECHAIN_ID + " + registrationContractAddress);
+        RemoteCall<AtomicSwapSender> remoteCallSenderContract =
+            AtomicSwapSender.deployLockable(this.web3jSc1, this.entityOfferingTmSc1, this.freeGasProvider,
+                SC2_SIDECHAIN_ID, this.receiverContractAddress, getAdjustedExchangeRate(EXCHANGE_RATE));
+        this.senderContract = remoteCallSenderContract.send();
+        this.senderContractAddress = this.senderContract.getContractAddress();
+        LOG.info(" Sender Contract deployed on sidechain 1 (id={}), at address: {}", SC1_SIDECHAIN_ID, this.senderContractAddress);
     }
-
-
 
 
     private void core() throws Exception {
         LOG.info("Running Core Part of Sample Code");
 
+        //checkExpectedValues(1,2,3,4,5,6);
+
+        showBalances();
+
+        Scanner myInput = new Scanner( System.in );
+        while (true) {
+            String prompt = " Enter sidechain 1 amount to transfer in Ether (for example 0.5, 1.0, or 2.0): ";
+            System.out.println(prompt);
+            double transferAmount = myInput.nextDouble();
+            LOG.info("{} {}", prompt, transferAmount);
+
+            LOG.info("  Executing call simulator to determine parameter values and expected results");
+            CallSimulator sim = new CallSimulator();
+            sim.exchange(Convert.toWei(new BigDecimal(transferAmount), Convert.Unit.ETHER).toBigInteger(), getBalance(this.web3jSc2, this.receiverContractAddress));
+            if (sim.atomicSwapSenderError1) {
+                LOG.info("Simulator detected error while processing request");
+                continue;
+            }
+
+            LOG.info("  Constructing Nested Crosschain Transaction");
+            byte[] subordinateView = this.receiverContract.getBalance_AsSignedCrosschainSubordinateView(null);
+            byte[] subordinateTrans = this.receiverContract.exchange_AsSignedCrosschainSubordinateTransaction(sim.atomicSwapReceiver_Exchange_amount, null);
+
+            // Call to contract 1
+            byte[][] subordinateTransactionsAndViews = new byte[][]{subordinateView, subordinateTrans};
+            LOG.info("  Executing Crosschain Transaction");
+            TransactionReceipt transactionReceipt = this.senderContract.exchange_AsCrosschainTransaction(
+                sim.atomicSwapSender_Exchange_exchangeRate,
+                subordinateTransactionsAndViews).send();
+            LOG.info("  Transaction Receipt: {}", transactionReceipt.toString());
+            assertTrue(transactionReceipt.isStatusOK());
+
+            // TODO should check to see if contracts unlocked before fetching values.
+            Thread.sleep(5000);
+
+            showBalances();
+//            checkExpectedValues(sim.val1, sim.val2, sim.val3, sim.val4, sim.val5, sim.val6);
+        }
 
 
     }
+
+    public static BigInteger getAdjustedExchangeRate(double exchangeRate) {
+        BigDecimal exRate = new BigDecimal(exchangeRate);
+        BigInteger scalingFactor = BigInteger.TWO.pow(128);
+        BigDecimal result = exRate.multiply(new BigDecimal(scalingFactor));
+        return result.toBigInteger();
+    }
+
 //
 //        LOG.info(" Set state in each contract to known values that aren't zero.");
 //        LOG.info("  Single-chain transaction: Contract1.set(1)");
