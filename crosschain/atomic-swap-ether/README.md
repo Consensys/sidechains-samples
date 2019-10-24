@@ -5,7 +5,8 @@ of this sample, they should be considered the same thing.
 
 ## Introduction
 This sample demonstrates:
- * TODO
+ * Swapping Ether on one blockchain for Ether on another blockchain.
+ * Using a non-lockable registration contract with lockable contracts.
 
 ## Running the Sample Code
 

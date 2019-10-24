@@ -57,8 +57,6 @@ public class KeyPairGen {
     KeyPair rawKeyPair = this.keyPairGenerator.generateKeyPair();
     final BCECPrivateKey privateKey = (BCECPrivateKey) rawKeyPair.getPrivate();
     final BigInteger privateKeyValue = privateKey.getD();
-
-    System.out.println(privateKeyValue.toString(16));
     return ECKeyPair.create(privateKeyValue);
   }
 

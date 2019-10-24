@@ -12,7 +12,9 @@
  */
 package tech.pegasys.samples.crosschain.atomicswapether;
 
-import java.math.BigDecimal;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.math.BigInteger;
 
 /**
@@ -21,30 +23,62 @@ import java.math.BigInteger;
  * crosschain transaction.
  */
 class CallSimulator {
-  public boolean atomicSwapSenderError1;
+  private static final Logger LOG = LogManager.getLogger(CallSimulator.class);
+
+  public boolean atomicSwapSenderError;
+  public boolean atomicSwapReceiverError;
 
   public BigInteger atomicSwapSender_Exchange_exchangeRate;
   public BigInteger atomicSwapReceiver_Exchange_amount;
 
-  private BigInteger DECIMAL_POINT = BigInteger.TWO.pow(128);
+  public static BigInteger DECIMAL_POINT = BigInteger.TWO.pow(64);
+  private static BigInteger MAX_VALUE = BigInteger.TWO.pow(127);
 
-  CallSimulator() {
-    this.atomicSwapSender_Exchange_exchangeRate = AtomicSwapEther.getAdjustedExchangeRate(AtomicSwapEther.EXCHANGE_RATE);
+
+  public BigInteger receiverBalanceInWei;
+  public BigInteger senderBalanceInWei;
+  public BigInteger accepterBalanceInWei;
+
+  CallSimulator(BigInteger exchangeRate) {
+    this.atomicSwapSender_Exchange_exchangeRate = exchangeRate;
+  }
+
+  void setValues(final BigInteger receiverBalanceInWei, final BigInteger accepterBalanceInWei, final BigInteger senderBalanceInWei) {
+    this.receiverBalanceInWei = receiverBalanceInWei;
+    this.accepterBalanceInWei = accepterBalanceInWei;
+    this.senderBalanceInWei = senderBalanceInWei;
   }
 
   // Simulate AtomicSwapSender's exchange function.
-  void exchange(final BigInteger amountInWei, final BigInteger receiverBalanceInWei) {
-    atomicSwapSenderError1 = receiverBalanceInWei.compareTo(DECIMAL_POINT) == 1;
-    if (atomicSwapSenderError1) {
+  void exchange(final BigInteger amountInWei) {
+    this.senderBalanceInWei.add(amountInWei);
+
+    // require(msg.value < MAX_VALUE);
+    atomicSwapSenderError = amountInWei.compareTo(MAX_VALUE) == 1;
+    if (atomicSwapSenderError) {
       return;
     }
 
-    BigInteger amountGivenReceiver = receiverBalanceInWei.divide(this.atomicSwapSender_Exchange_exchangeRate);
-    BigInteger amountToTransferInWei = amountInWei;
-    if (amountGivenReceiver.compareTo(amountInWei) == -1) {
-      amountToTransferInWei = amountGivenReceiver;
+    // uint256 swapAmountOtherChain = msg.value * exchangeRate / DECIMAL_POINT;
+    BigInteger temp = amountInWei.multiply(this.atomicSwapSender_Exchange_exchangeRate);
+    this.atomicSwapReceiver_Exchange_amount = temp.divide(DECIMAL_POINT);
+
+    //crosschainTransaction(receiverSidechainId, address(receiverContract), abi.encodeWithSelector(receiverContract.exchange.selector, swapAmountOtherChain) );
+    receiverExchange(this.atomicSwapReceiver_Exchange_amount);
+  }
+
+  private void receiverExchange(BigInteger _amount) {
+    // The amount transferred could be the same or less than the amount of Ether
+    // in the contract.
+    //require(address(this).balance >= _amount);
+    this.atomicSwapReceiverError = this.receiverBalanceInWei.compareTo(_amount) == -1;
+    if (this.atomicSwapReceiverError) {
+      return;
     }
 
-    this.atomicSwapReceiver_Exchange_amount = this.atomicSwapSender_Exchange_exchangeRate.multiply(amountToTransferInWei);
+    // msg.sender.transfer(_amount);
+    this.receiverBalanceInWei = this.receiverBalanceInWei.subtract(_amount);
+    this.accepterBalanceInWei = this.accepterBalanceInWei.add(_amount);
   }
+
 }

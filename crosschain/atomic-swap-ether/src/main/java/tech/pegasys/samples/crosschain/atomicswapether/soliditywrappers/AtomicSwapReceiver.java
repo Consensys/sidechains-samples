@@ -28,7 +28,7 @@ import org.web3j.tx.gas.ContractGasProvider;
  */
 @SuppressWarnings("rawtypes")
 public class AtomicSwapReceiver extends CrosschainContract {
-    private static final String BINARY = "60806040526040516102c83803806102c88339818101604052602081101561002657600080fd5b5051600080546001600160a01b0319163317905560025561027c8061004c6000396000f3fe60806040526004361061007b5760003560e01c8063700eac1f1161004e578063700eac1f146101215780638da5cb5b14610136578063d0e30db01461014b578063fc564fc6146101535761007b565b806312065fe0146100805780632e1a7d4d146100a757806353556559146100d357806367f235ea146100f0575b600080fd5b34801561008c57600080fd5b50610095610186565b60408051918252519081900360200190f35b3480156100b357600080fd5b506100d1600480360360208110156100ca57600080fd5b503561018b565b005b6100d1600480360360208110156100e957600080fd5b50356101d3565b3480156100fc57600080fd5b506101056101e8565b604080516001600160a01b039092168252519081900360200190f35b34801561012d57600080fd5b506100956101f7565b34801561014257600080fd5b506101056101fd565b6100d161020c565b34801561015f57600080fd5b506100d16004803603602081101561017657600080fd5b50356001600160a01b0316610225565b303190565b6000546001600160a01b031633146101a257600080fd5b604051339082156108fc029083906000818181858888f193505050501580156101cf573d6000803e3d6000fd5b5050565b6001546001600160a01b03166101a257600080fd5b6001546001600160a01b031681565b60025481565b6000546001600160a01b031681565b6000546001600160a01b0316331461022357600080fd5b565b600180546001600160a01b0319166001600160a01b039290921691909117905556fea265627a7a72305820e4beceb441b42f39fbf2372326a943361313e10ce7cffeaee935638aa27ee0a364736f6c634300050a0032";
+    private static final String BINARY = "60806040526040516102e33803806102e38339818101604052602081101561002657600080fd5b5051600080546001600160a01b031916331790556002556102978061004c6000396000f3fe60806040526004361061007b5760003560e01c8063700eac1f1161004e578063700eac1f1461012e5780638da5cb5b14610143578063d0e30db014610158578063fc564fc6146101605761007b565b806312065fe0146100805780632e1a7d4d146100a757806353556559146100d357806367f235ea146100fd575b600080fd5b34801561008c57600080fd5b50610095610193565b60408051918252519081900360200190f35b3480156100b357600080fd5b506100d1600480360360208110156100ca57600080fd5b5035610198565b005b3480156100df57600080fd5b506100d1600480360360208110156100f657600080fd5b50356101e0565b34801561010957600080fd5b50610112610203565b604080516001600160a01b039092168252519081900360200190f35b34801561013a57600080fd5b50610095610212565b34801561014f57600080fd5b50610112610218565b6100d1610227565b34801561016c57600080fd5b506100d16004803603602081101561018357600080fd5b50356001600160a01b0316610240565b303190565b6000546001600160a01b031633146101af57600080fd5b604051339082156108fc029083906000818181858888f193505050501580156101dc573d6000803e3d6000fd5b5050565b6001546001600160a01b03166101f557600080fd5b30318111156101af57600080fd5b6001546001600160a01b031681565b60025481565b6000546001600160a01b031681565b6000546001600160a01b0316331461023e57600080fd5b565b600180546001600160a01b0319166001600160a01b039290921691909117905556fea265627a7a72305820d834f257805bb39eb662663371f249c04e962511702ad63afa1571ca24aadf9164736f6c634300050a0032";
 
     public static final String FUNC_GETBALANCE = "getBalance";
 
@@ -93,12 +93,12 @@ public class AtomicSwapReceiver extends CrosschainContract {
         return executeRemoteCallCrosschainTransaction(function, nestedSubordinateTransactionsAndViews);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> exchange(BigInteger _amount, BigInteger weiValue) {
+    public RemoteFunctionCall<TransactionReceipt> exchange(BigInteger _amount) {
         final Function function = new Function(
                 FUNC_EXCHANGE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_amount)), 
                 Collections.<TypeReference<?>>emptyList());
-        return executeRemoteCallTransaction(function, weiValue);
+        return executeRemoteCallTransaction(function);
     }
 
     public byte[] exchange_AsSignedCrosschainSubordinateTransaction(BigInteger _amount, final byte[][] nestedSubordinateTransactionsAndViews) throws IOException {
@@ -167,20 +167,20 @@ public class AtomicSwapReceiver extends CrosschainContract {
         return executeRemoteCallTransaction(function, weiValue);
     }
 
-    public byte[] deposit_AsSignedCrosschainSubordinateTransaction(final byte[][] nestedSubordinateTransactionsAndViews) throws IOException {
+    public byte[] deposit_AsSignedCrosschainSubordinateTransaction(final byte[][] nestedSubordinateTransactionsAndViews, BigInteger weiValue) throws IOException {
         final Function function = new Function(
                 FUNC_DEPOSIT, 
                 Arrays.<Type>asList(), 
                 Collections.<TypeReference<?>>emptyList());
-        return createSignedSubordinateTransaction(function, nestedSubordinateTransactionsAndViews);
+        return createSignedSubordinateTransaction(function, nestedSubordinateTransactionsAndViews, weiValue);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> deposit_AsCrosschainTransaction(final byte[][] nestedSubordinateTransactionsAndViews) {
+    public RemoteFunctionCall<TransactionReceipt> deposit_AsCrosschainTransaction(final byte[][] nestedSubordinateTransactionsAndViews, BigInteger weiValue) {
         final Function function = new Function(
                 FUNC_DEPOSIT, 
                 Arrays.<Type>asList(), 
                 Collections.<TypeReference<?>>emptyList());
-        return executeRemoteCallCrosschainTransaction(function, nestedSubordinateTransactionsAndViews);
+        return executeRemoteCallCrosschainTransaction(function, nestedSubordinateTransactionsAndViews, weiValue);
     }
 
     public RemoteFunctionCall<TransactionReceipt> setSenderContract(String _senderContract) {

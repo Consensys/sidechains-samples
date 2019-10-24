@@ -16,7 +16,8 @@ import "./Crosschain.sol";
 import "./AtomicSwapReceiver.sol";
 
 contract AtomicSwapSender is Crosschain {
-    uint256 private constant DECIMAL_POINT = 2**128;
+    uint256 private constant DECIMAL_POINT = 2**64;
+    uint256 private constant MAX_VALUE = 2**127;
 
     address public owner;
     uint256 public exchangeRate;
@@ -29,6 +30,8 @@ contract AtomicSwapSender is Crosschain {
     }
 
     constructor(uint256 _receiverSidechainId, address _receiverContract, uint256 _exchangeRate) public {
+        require(_exchangeRate < MAX_VALUE);
+        require(_exchangeRate != 0);
         owner = msg.sender;
         receiverSidechainId = _receiverSidechainId;
         receiverContract = AtomicSwapReceiverInterface(_receiverContract);
@@ -40,36 +43,10 @@ contract AtomicSwapSender is Crosschain {
         msg.sender.transfer(address(this).balance);
     }
 
-    function exchange(uint256 _expectedExchangeRate) payable external {
-        require(msg.value < DECIMAL_POINT);
-
-        // Check that the exchange rate hasn't changed unexpectedly.
-        require(0 != exchangeRate);
-        require(_expectedExchangeRate == exchangeRate);
-
-        // Determine the amount of Ether in the other contract.
-        uint256 receiverBalance = crosschainViewUint256(receiverSidechainId, address(receiverContract), abi.encodeWithSelector(receiverContract.getBalance.selector));
-        require(receiverBalance < DECIMAL_POINT);
-
-        // Calculate the equivalent amount of Ether on this chain.
-        uint256 receiverSwapBalance = receiverBalance * DECIMAL_POINT / exchangeRate;
-
-        uint256 swapAmountThisChain;
-        if (msg.value >= receiverSwapBalance) {
-            swapAmountThisChain = receiverSwapBalance;
-        }
-        else {
-            swapAmountThisChain = msg.value;
-        }
-
-        uint256 swapAmountOtherChain = swapAmountThisChain * exchangeRate / DECIMAL_POINT;
-
+    function exchange() payable external {
+        require(msg.value < MAX_VALUE);
+        uint256 swapAmountOtherChain = msg.value * exchangeRate / DECIMAL_POINT;
         crosschainTransaction(receiverSidechainId, address(receiverContract), abi.encodeWithSelector(receiverContract.exchange.selector, swapAmountOtherChain) );
-
-
-        // TODO if too much Ether has been submitted, then the extra Ether needs to be returned.
-        msg.sender.transfer(msg.value - swapAmountThisChain);
-
     }
 
 }

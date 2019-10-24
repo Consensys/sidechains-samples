@@ -20,7 +20,6 @@ import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.methods.response.EthGetBalance;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
-import org.web3j.protocol.exceptions.TransactionException;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.CrosschainTransactionManager;
 import org.web3j.tx.RawTransactionManager;
@@ -47,14 +46,13 @@ import java.util.Properties;
 import java.util.Scanner;
 
 /**
- * The main class.
+ * Swap Ether on one blockchain for Ether on another blockchain.
  */
 public class AtomicSwapEther {
     private static final Logger LOG = LogManager.getLogger(AtomicSwapEther.class);
 
     public static final String STARTING_POINT_ACCEPTING_ETHER_SC1 = "11";
     public static final String STARTING_POINT_OFFERING_ETHER_SC2 = "10";
-    public static final String AMOUNT_OFFERED = "5";
     public static final double EXCHANGE_RATE = 2.0;
 
 
@@ -109,8 +107,10 @@ public class AtomicSwapEther {
     private String senderContractAddress = null;
     private String receiverContractAddress = null;
     private AtomicSwapRegistration registrationContract;
-    private AtomicSwapSender senderContract;
-    private AtomicSwapReceiver receiverContract;
+    private AtomicSwapSender entityOfferingSenderContract;
+    private AtomicSwapReceiver entityOfferingReceiverContract;
+    private AtomicSwapSender entityAcceptingOfferSenderContract;
+    private AtomicSwapReceiver entityAcceptingOfferReceiverContract;
 
 
     public static void main(final String args[]) throws Exception {
@@ -121,12 +121,14 @@ public class AtomicSwapEther {
     private void run() throws Exception {
         this.faucetCredentials = Credentials.create(FAUCET_PRIVATE_KEY);
         if (propertiesFileExists()) {
+            // If the contracts have been deployed, then just load the contracts.
             loadProperties();
             setupBesuServiceTransactionManager();
             setupEther();
             loadContracts();
         }
         else {
+            // If the contracts haven't been deployed, then create some demo credentials and deploy the contracts.
             this.entityOfferingEtherCredentials = Credentials.create(new KeyPairGen().generateKeyPairForWeb3J());
             this.entityAcceptingOfferCredentials = Credentials.create(new KeyPairGen().generateKeyPairForWeb3J());
             setupBesuServiceTransactionManager();
@@ -134,7 +136,7 @@ public class AtomicSwapEther {
             deployContracts();
             storeProperties();
         }
-        LOG.info("Using entityOfferingEtherCredentials which correspond to account: {}", this.entityOfferingEtherCredentials.getAddress());
+        loadContractsPart2();
 
         core();
     }
@@ -142,8 +144,8 @@ public class AtomicSwapEther {
     private void setupBesuServiceTransactionManager() {
         LOG.info("Setting up Besu service and transaction managers");
 
-        this.web3jSc1 = Besu.build(new HttpService(SC1_URI));
-        this.web3jSc2 = Besu.build(new HttpService(SC2_URI));
+        this.web3jSc1 = Besu.build(new HttpService(SC1_URI), POLLING_INTERVAL);
+        this.web3jSc2 = Besu.build(new HttpService(SC2_URI), POLLING_INTERVAL);
 
         this.faucetTmSc1 = new RawTransactionManager(this.web3jSc1, this.faucetCredentials, SC1_SIDECHAIN_ID.longValue(), RETRY, POLLING_INTERVAL);
         this.faucetTmSc2 = new RawTransactionManager(this.web3jSc2, this.faucetCredentials, SC2_SIDECHAIN_ID.longValue(), RETRY, POLLING_INTERVAL);
@@ -237,6 +239,12 @@ public class AtomicSwapEther {
         LOG.info(" Offering Account on SC2: {}", getBalanceAsString(this.web3jSc2, this.entityOfferingEtherCredentials.getAddress()));
         LOG.info(" Accepting Account on SC1: {}", getBalanceAsString(this.web3jSc1, this.entityAcceptingOfferCredentials.getAddress()));
         LOG.info(" Accepting Account on SC2: {}", getBalanceAsString(this.web3jSc2, this.entityAcceptingOfferCredentials.getAddress()));
+        if (this.senderContractAddress != null) {
+            LOG.info(" Sending Contract on SC1: {}", getBalanceAsString(this.web3jSc1, this.senderContractAddress));
+        }
+        if (this.receiverContractAddress != null) {
+            LOG.info(" Receiving Contract on SC2: {}", getBalanceAsString(this.web3jSc2, this.receiverContractAddress));
+        }
     }
 
     private String getBalanceAsString(Besu besu, String address) throws Exception {
@@ -259,8 +267,13 @@ public class AtomicSwapEther {
         LOG.info(" Receiver Contract: {}", this.receiverContractAddress);
 
         this.registrationContract = AtomicSwapRegistration.load(this.registrationContractAddress, this.web3jSc1, this.entityOfferingTmSc1, this.freeGasProvider);
-        this.senderContract = AtomicSwapSender.load(this.senderContractAddress, this.web3jSc1, this.entityOfferingTmSc1, this.freeGasProvider);
-        this.receiverContract = AtomicSwapReceiver.load(this.receiverContractAddress, this.web3jSc2, this.entityOfferingTmSc2, this.freeGasProvider);
+        this.entityOfferingSenderContract = AtomicSwapSender.load(this.senderContractAddress, this.web3jSc1, this.entityOfferingTmSc1, this.freeGasProvider);
+        this.entityOfferingReceiverContract = AtomicSwapReceiver.load(this.receiverContractAddress, this.web3jSc2, this.entityOfferingTmSc2, this.freeGasProvider);
+    }
+    private void loadContractsPart2() {
+        LOG.info("Loading contracts from accepting account perspective");
+        this.entityAcceptingOfferSenderContract = AtomicSwapSender.load(this.senderContractAddress, this.web3jSc1, this.entityAcceptingOfferTmSc1, this.freeGasProvider);
+        this.entityAcceptingOfferReceiverContract = AtomicSwapReceiver.load(this.receiverContractAddress, this.web3jSc2, this.entityAcceptingOfferTmSc2, this.freeGasProvider);
     }
 
     private void deployContracts() throws Exception {
@@ -275,59 +288,86 @@ public class AtomicSwapEther {
         BigInteger sc2OfferValue = Convert.toWei(STARTING_POINT_OFFERING_ETHER_SC2, Convert.Unit.ETHER).toBigInteger();
         RemoteCall<AtomicSwapReceiver> remoteCallReceiverContract =
             AtomicSwapReceiver.deployLockable(this.web3jSc2, this.entityOfferingTmSc2, this.freeGasProvider, sc2OfferValue, SC1_SIDECHAIN_ID);
-        this.receiverContract = remoteCallReceiverContract.send();
-        this.receiverContractAddress = this.receiverContract.getContractAddress();
+        this.entityOfferingReceiverContract = remoteCallReceiverContract.send();
+        this.receiverContractAddress = this.entityOfferingReceiverContract.getContractAddress();
         LOG.info(" Receiver Contract deployed on sidechain 2 (id={}), at address: {}", SC2_SIDECHAIN_ID, this.receiverContractAddress);
 
         RemoteCall<AtomicSwapSender> remoteCallSenderContract =
             AtomicSwapSender.deployLockable(this.web3jSc1, this.entityOfferingTmSc1, this.freeGasProvider,
                 SC2_SIDECHAIN_ID, this.receiverContractAddress, getAdjustedExchangeRate(EXCHANGE_RATE));
-        this.senderContract = remoteCallSenderContract.send();
-        this.senderContractAddress = this.senderContract.getContractAddress();
+        this.entityOfferingSenderContract = remoteCallSenderContract.send();
+        this.senderContractAddress = this.entityOfferingSenderContract.getContractAddress();
         LOG.info(" Sender Contract deployed on sidechain 1 (id={}), at address: {}", SC1_SIDECHAIN_ID, this.senderContractAddress);
+
+        // Finally, link the sender contract to the receiver contract.
+        TransactionReceipt txReceipt =  this.entityOfferingReceiverContract.setSenderContract(this.senderContractAddress).send();
+        LOG.info(" Receiver Contract deployed on sidechain 2 (id={}), at address: {}", txReceipt.isStatusOK());
     }
 
 
     private void core() throws Exception {
         LOG.info("Running Core Part of Sample Code");
 
-        //checkExpectedValues(1,2,3,4,5,6);
+        CallSimulator sim = new CallSimulator(AtomicSwapEther.getAdjustedExchangeRate(AtomicSwapEther.EXCHANGE_RATE));
+        LOG.info("   Simulator says: Scaled exchange rate is: 0x{}", sim.atomicSwapSender_Exchange_exchangeRate.toString(16));
+
+        // TODO the sample should include using the registration contract to find the send contract.
+
 
         showBalances();
 
         Scanner myInput = new Scanner( System.in );
         while (true) {
+            LOG.info("Exchange rate is {} Ether in sidechain 2 (id:{}) for 1 Ether in sidechain 1 (id:{})", EXCHANGE_RATE, SC2_SIDECHAIN_ID, SC1_SIDECHAIN_ID);
             String prompt = " Enter sidechain 1 amount to transfer in Ether (for example 0.5, 1.0, or 2.0): ";
             System.out.println(prompt);
-            double transferAmount = myInput.nextDouble();
-            LOG.info("{} {}", prompt, transferAmount);
+            double transferAmountEther = myInput.nextDouble();
+            LOG.info("{} {}", prompt, transferAmountEther);
+            BigInteger transferAmountWei = Convert.toWei(new BigDecimal(transferAmountEther), Convert.Unit.ETHER).toBigInteger();
 
             LOG.info("  Executing call simulator to determine parameter values and expected results");
-            CallSimulator sim = new CallSimulator();
-            sim.exchange(Convert.toWei(new BigDecimal(transferAmount), Convert.Unit.ETHER).toBigInteger(), getBalance(this.web3jSc2, this.receiverContractAddress));
-            if (sim.atomicSwapSenderError1) {
-                LOG.info("Simulator detected error while processing request");
+            BigInteger receiverBalanceInWei = getBalance(this.web3jSc2, this.receiverContractAddress);
+            BigInteger senderBalanceInWei = getBalance(this.web3jSc1, this.senderContractAddress);
+            BigInteger accepterBalanceInWei = getBalance(this.web3jSc2, this.entityAcceptingOfferCredentials.getAddress());
+            sim.setValues(receiverBalanceInWei, accepterBalanceInWei, senderBalanceInWei);
+            sim.exchange(transferAmountWei);
+            if (sim.atomicSwapSenderError) {
+                LOG.info("Simulator detected error while processing request: SenderError");
+                continue;
+            }
+            if (sim.atomicSwapReceiverError) {
+                LOG.info("Simulator detected error while processing request: ReceiverError");
                 continue;
             }
 
+            LOG.info("   Simulator says: Receive amount is: {} Wei", sim.atomicSwapReceiver_Exchange_amount);
+            LOG.info("   Simulator says: Receive contract balance will be: {} Wei", receiverBalanceInWei);
+            LOG.info("   Simulator says: Send contract balance will be: {} Wei", senderBalanceInWei);
+            LOG.info("   Simulator says: Accept account balance will be: {} Wei", accepterBalanceInWei);
+
             LOG.info("  Constructing Nested Crosschain Transaction");
-            byte[] subordinateView = this.receiverContract.getBalance_AsSignedCrosschainSubordinateView(null);
-            byte[] subordinateTrans = this.receiverContract.exchange_AsSignedCrosschainSubordinateTransaction(sim.atomicSwapReceiver_Exchange_amount, null);
+            byte[] subordinateTrans = this.entityAcceptingOfferReceiverContract.exchange_AsSignedCrosschainSubordinateTransaction(sim.atomicSwapReceiver_Exchange_amount, null);
 
             // Call to contract 1
-            byte[][] subordinateTransactionsAndViews = new byte[][]{subordinateView, subordinateTrans};
+            byte[][] subordinateTransactionsAndViews = new byte[][]{subordinateTrans};
             LOG.info("  Executing Crosschain Transaction");
-            TransactionReceipt transactionReceipt = this.senderContract.exchange_AsCrosschainTransaction(
-                sim.atomicSwapSender_Exchange_exchangeRate,
-                subordinateTransactionsAndViews).send();
-            LOG.info("  Transaction Receipt: {}", transactionReceipt.toString());
+            TransactionReceipt transactionReceipt = this.entityAcceptingOfferSenderContract.exchange_AsCrosschainTransaction(subordinateTransactionsAndViews, transferAmountWei).send();
+            LOG.info("   Transaction Receipt: {}", transactionReceipt.toString());
             assertTrue(transactionReceipt.isStatusOK());
 
             // TODO should check to see if contracts unlocked before fetching values.
             Thread.sleep(5000);
 
+            LOG.info("  Executing single blockchain transaction to withdraw money from send contract");
+            transactionReceipt = this.entityOfferingSenderContract.withdraw().send();
+            LOG.info("   Transaction Receipt: {}", transactionReceipt.toString());
+            assertTrue(transactionReceipt.isStatusOK());
+
+
+            // TODO should check to see if contracts unlocked before fetching values.
+            Thread.sleep(5000);
+
             showBalances();
-//            checkExpectedValues(sim.val1, sim.val2, sim.val3, sim.val4, sim.val5, sim.val6);
         }
 
 
@@ -335,118 +375,9 @@ public class AtomicSwapEther {
 
     public static BigInteger getAdjustedExchangeRate(double exchangeRate) {
         BigDecimal exRate = new BigDecimal(exchangeRate);
-        BigInteger scalingFactor = BigInteger.TWO.pow(128);
+        BigInteger scalingFactor = CallSimulator.DECIMAL_POINT;
         BigDecimal result = exRate.multiply(new BigDecimal(scalingFactor));
         return result.toBigInteger();
-    }
-
-//
-//        LOG.info(" Set state in each contract to known values that aren't zero.");
-//        LOG.info("  Single-chain transaction: Contract1.set(1)");
-//        TransactionReceipt transactionReceipt = this.registrationContract.setVal(BigInteger.valueOf(1)).send();
-//        assertTrue(transactionReceipt.isStatusOK());
-//        LOG.info("  Single-chain transaction: Contract2.set(2)");
-//        transactionReceipt = this.senderContract.setVal(BigInteger.valueOf(2)).send();
-//        assertTrue(transactionReceipt.isStatusOK());
-//        LOG.info("  Single-chain transaction: Contract3.set(3)");
-//        transactionReceipt = this.receiverContract.setVal(BigInteger.valueOf(3)).send();
-//        assertTrue(transactionReceipt.isStatusOK());
-//        LOG.info("  Single-chain transaction: Contract4.set(4)");
-//        transactionReceipt = this.contract4.setVal(BigInteger.valueOf(4)).send();
-//        assertTrue(transactionReceipt.isStatusOK());
-//        LOG.info("  Single-chain transaction: Contract5.set(5)");
-//        transactionReceipt = this.contract5.setVal(BigInteger.valueOf(5)).send();
-//        assertTrue(transactionReceipt.isStatusOK());
-//        LOG.info("  Single-chain transaction: Contract6.set(6)");
-//        transactionReceipt = this.contract6.setVal(BigInteger.valueOf(6)).send();
-//        assertTrue(transactionReceipt.isStatusOK());
-//
-//        checkExpectedValues(1,2,3,4,5,6);
-//
-//
-//        Scanner myInput = new Scanner( System.in );
-//        while (true) {
-//            String prompt = " Enter long value to call Contract1.doStuff with: ";
-//            System.out.println(prompt);
-//            long val = myInput.nextLong();
-//            if (val < 0) {
-//                System.out.println("  No negative numbers please!");
-//                continue;
-//            }
-//            LOG.info("{} {}", prompt, val);
-//
-//            BigInteger c1Val = this.registrationContract.val().send();
-//            BigInteger c2Val = this.senderContract.val().send();
-//            BigInteger c3Val = this.receiverContract.val().send();
-//            BigInteger c4Val = this.contract4.val().send();
-//            BigInteger c5Val = this.contract5.val().send();
-//            BigInteger c6Val = this.contract6.val().send();
-//
-//            LOG.info("  Executing call simulator to determine parameter values and expected results");
-//            CallSimulator sim = new CallSimulator(c1Val.longValue(), c2Val.longValue(), c3Val.longValue(), c4Val.longValue(), c5Val.longValue(), c6Val.longValue());
-//            sim.c1DoStuff(val);
-//
-//            LOG.info("  Constructing Nested Crosschain Transaction");
-//            // Call to contract 2
-//            byte[] subordinateViewC2 = this.senderContract.get_AsSignedCrosschainSubordinateView(null);
-//
-//            // Call to contract 4
-//            byte[] subordinateViewC4 = this.contract4.get_AsSignedCrosschainSubordinateView(BigInteger.valueOf(sim.c4Get_val), null);
-//
-//            // Call to contract 5
-//            byte[] subordinateViewC5 = this.contract5.calculate_AsSignedCrosschainSubordinateView(
-//                BigInteger.valueOf(sim.c5Calculate_val1), BigInteger.valueOf(sim.c5Calculate_val2), null);
-//
-//            // Call to contract 6
-//            byte[][] subordinateTransactionsAndViewsForC6 = new byte[][] {subordinateViewC4};
-//            byte[] subordinateViewC6 = this.contract6.get_AsSignedCrosschainSubordinateView(
-//                BigInteger.valueOf(sim.c6Get_val), subordinateTransactionsAndViewsForC6);
-//
-//            // Call to contract 3
-//            byte[][] subordinateTransactionsAndViewsForC3 = new byte[][] {subordinateViewC6};
-//            byte[] subordinateTransC3 = this.receiverContract.process_AsSignedCrosschainSubordinateTransaction(BigInteger.valueOf(sim.c3Process_val), subordinateTransactionsAndViewsForC3);
-//
-//            // Call to contract 1
-//            byte[][] subordinateTransactionsAndViewsForC1;
-//            if (sim.c1IsIfTaken) {
-//                subordinateTransactionsAndViewsForC1 = new byte[][]{subordinateViewC2, subordinateViewC5, subordinateTransC3};
-//            }
-//            else {
-//                subordinateTransactionsAndViewsForC1 = new byte[][] {subordinateViewC2};
-//            }
-//            LOG.info("  Executing Crosschain Transaction");
-//            transactionReceipt = this.registrationContract.doStuff_AsCrosschainTransaction(BigInteger.valueOf(val), subordinateTransactionsAndViewsForC1).send();
-//            LOG.info("  Transaction Receipt: {}", transactionReceipt.toString());
-//            assertTrue(transactionReceipt.isStatusOK());
-//
-//            // TODO should check to see if contracts unlocked before fetching values.
-//            Thread.sleep(5000);
-//
-//            checkExpectedValues(sim.val1, sim.val2, sim.val3, sim.val4, sim.val5, sim.val6);
-//        }
-//    }
-
-
-    private void checkExpectedValues(long v1, long v2, long v3, long v4, long v5, long v6) throws Exception {
-        LOG.info(" Check values have been set as expected");
-//        BigInteger result = this.registrationContract.val().send();
-//        LOG.info("  Contract1.val = {}, expecting {}", result.intValue(), v1);
-//        assertTrue(result.equals(BigInteger.valueOf(v1)));
-//        result = this.senderContract.val().send();
-//        LOG.info("  Contract2.val = {}, expecting {}", result.intValue(), v2);
-//        assertTrue(result.equals(BigInteger.valueOf(v2)));
-//        result = this.receiverContract.val().send();
-//        LOG.info("  Contract3.val = {}, expecting {}", result.intValue(), v3);
-//        assertTrue(result.equals(BigInteger.valueOf(v3)));
-//        result = this.contract4.val().send();
-//        LOG.info("  Contract4.val = {}, expecting {}", result.intValue(), v4);
-//        assertTrue(result.equals(BigInteger.valueOf(v4)));
-//        result = this.contract5.val().send();
-//        LOG.info("  Contract5.val = {}, expecting {}", result.intValue(), v5);
-//        assertTrue(result.equals(BigInteger.valueOf(v5)));
-//        result = this.contract6.val().send();
-//        LOG.info("  Contract6.val = {}, expecting {}", result.intValue(), v6);
-//        assertTrue(result.equals(BigInteger.valueOf(v6)));
     }
 
 
@@ -512,6 +443,7 @@ public class AtomicSwapEther {
             properties.setProperty(SENDER_CONTRACT_ADDRESS, this.senderContractAddress);
             properties.setProperty(RECEIVER_CONTRACT_ADDRESS, this.receiverContractAddress);
             properties.store(fos, "Sample code properties file");
+            fos.close();
 
         } catch (IOException ioEx) {
             // By the time we have reached the loadProperties method, we should be sure the file

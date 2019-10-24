@@ -53,10 +53,14 @@ contract AtomicSwapReceiver is AtomicSwapReceiverInterface {
         msg.sender.transfer(_amount);
     }
 
-    function exchange(uint256 _amount) payable external {
+    function exchange(uint256 _amount) external {
         require(senderContract != address(0));
         // TODO check that the sending Sidechain ID and Contract are the expected ones.
         // TODO this will achieved by two precompiles
+
+        // The amount transferred could be the same or less than the amount of Ether
+        // in the contract.
+        require(address(this).balance >= _amount);
 
         msg.sender.transfer(_amount);
     }
