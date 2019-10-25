@@ -14,6 +14,12 @@ pragma solidity >=0.4.23;
 
 interface AtomicSwapReceiverInterface {
 
+    /**
+    * Send _amount of Wei to the message sender. The function call must be part of
+    * an Atomic Crosschain Transaction. The caller must be the blockchain / sidechain
+    * configured in the AtomicSwapReceiver contract.
+    *
+    * @param _amount The amount of Wei to transfer.
+    */
     function exchange(uint256 _amount) external;
-    function getBalance() external view returns (uint256);
 }
