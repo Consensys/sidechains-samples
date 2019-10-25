@@ -332,18 +332,18 @@ public class AtomicSwapEther {
             sim.setValues(receiverBalanceInWei, accepterBalanceInWei, senderBalanceInWei);
             sim.exchange(transferAmountWei);
             if (sim.atomicSwapSenderError) {
-                LOG.info("Simulator detected error while processing request: SenderError");
+                LOG.info("***Simulator detected error while processing request: SenderError");
                 continue;
             }
             if (sim.atomicSwapReceiverError) {
-                LOG.info("Simulator detected error while processing request: ReceiverError");
+                LOG.info("***Simulator detected error while processing request: ReceiverError");
                 continue;
             }
 
             LOG.info("   Simulator says: Receive amount is: {} Wei", sim.atomicSwapReceiver_Exchange_amount);
-            LOG.info("   Simulator says: Receive contract balance will be: {} Wei", receiverBalanceInWei);
-            LOG.info("   Simulator says: Send contract balance will be: {} Wei", senderBalanceInWei);
-            LOG.info("   Simulator says: Accept account balance will be: {} Wei", accepterBalanceInWei);
+            LOG.info("   Simulator says: Receive contract balance will be: {} Wei", sim.receiverBalanceInWei);
+            LOG.info("   Simulator says: Send contract balance will be: {} Wei", sim.senderBalanceInWei);
+            LOG.info("   Simulator says: Accept account balance will be: {} Wei", sim.accepterBalanceInWei);
 
             LOG.info("  Constructing Nested Crosschain Transaction");
             byte[] subordinateTrans = this.entityAcceptingOfferReceiverContract.exchange_AsSignedCrosschainSubordinateTransaction(sim.atomicSwapReceiver_Exchange_amount, null);
