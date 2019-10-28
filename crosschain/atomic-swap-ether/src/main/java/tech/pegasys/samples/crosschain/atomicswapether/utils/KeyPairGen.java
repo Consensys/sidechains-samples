@@ -53,11 +53,11 @@ public class KeyPairGen {
 
   }
 
-  public ECKeyPair generateKeyPairForWeb3J() {
+  public String generateKeyPairGetPrivateKey() {
     KeyPair rawKeyPair = this.keyPairGenerator.generateKeyPair();
     final BCECPrivateKey privateKey = (BCECPrivateKey) rawKeyPair.getPrivate();
     final BigInteger privateKeyValue = privateKey.getD();
-    return ECKeyPair.create(privateKeyValue);
+    return privateKeyValue.toString(16);
   }
 
 
