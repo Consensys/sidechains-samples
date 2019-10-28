@@ -9,3 +9,7 @@ node_modules
 
 sample.properties
 
+sample.accepting.properties
+sample.faucet.properties
+sample.offering.properties
+sample.registration.properties
