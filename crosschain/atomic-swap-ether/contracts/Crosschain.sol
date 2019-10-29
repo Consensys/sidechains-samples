@@ -13,6 +13,8 @@
 pragma solidity ^0.5.0;
 
 contract Crosschain {
+    uint256 constant private LENGTH_OF_LENGTH_FIELD = 4;
+    uint256 constant private LENGTH_OF_UINT256 = 0x20;
 
     /** Generic calling of functions across chains.
       * Combined with abi.encodeWithSelector, allows to use Solidity function types and arbitrary arguments.
@@ -27,7 +29,7 @@ contract Crosschain {
         // to be corrected.
         // Also, as of Solidity 0.5.11 there is no sane way to convert a dynamic type to a static array.
         // Therefore we hackishly compensate the "bytes" length and deal with it inside the precompile.
-        uint256 dataBytesRawLength = dataBytes.length + 32;
+        uint256 dataBytesRawLength = dataBytes.length + LENGTH_OF_LENGTH_FIELD;
 
         // Note: the tuple being encoded contains a dynamic type itself, which changes its internal representation;
         // but since it is abi.encoded in Solidity, it's transparent.
@@ -54,14 +56,14 @@ contract Crosschain {
         // to be corrected.
         // Also, as of Solidity 0.5.11 there is no sane way to convert a dynamic type to a static array.
         // Therefore we hackishly compensate the "bytes" length and deal with it inside the precompile.
-        uint256 dataBytesRawLength = dataBytes.length + 32;
+        uint256 dataBytesRawLength = dataBytes.length + LENGTH_OF_LENGTH_FIELD;
 
         // Note: the tuple being encoded contains a dynamic type itself, which changes its internal representation;
         // but since it is abi.encoded in Solidity, it's transparent.
         // The problem only appears when using the wrapping "bytes" in Assembly.
 
         uint256[1] memory result;
-        uint256 resultLength = 0x20;
+        uint256 resultLength = LENGTH_OF_UINT256;
 
         assembly {
             // Read: https://medium.com/@rbkhmrcr/precompiles-solidity-e5d29bd428c4
