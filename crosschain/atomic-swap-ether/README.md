@@ -45,7 +45,7 @@ The contracts are shown in the diagram below:
 
 The contracts are:
 * Receiver Contract: A lockable contract deployed on Sidechain 2 by the Entity Offering Ether. 
-The entity funds the contract when deploying it, and can later add funds to the contract.
+The entity funds the contract when deploying it and can later add funds to the contract.
 * Sender Contract: A lockable contract deployed on Sidechain 1 by the Entity Offering Ether.
 The entity can withdraw funds from the contract once an exchange has occurred.
 * Registration Contract: A non-lockable contract deployed on Sidechain 1 by the Registration Owner.
@@ -54,7 +54,7 @@ At a high level, the sequence of events are:
 * Entity Offering Ether deploys Receiver Contract, funding it with some Ether. 
 * Entity Offering Ether deploys Sender Contract linking it to the Receiver Contract and specifying an 
 exchange rate between blockchains.
-* Entity Offering Ether links the Sender Contract to the Sender Contract by calling `setSenderContract`.
+* Entity Offering Ether links the Receiver Contract to the Sender Contract by calling `setSenderContract`.
 * Entity Offering Ether registers the Sender Contract with the Registration Contract by calling `register`.
 * Entity Accepting Offer uses the Registration Contract to locate an appropriate Sender 
 Contract for the sidechain they wish to obtain Ether for, at an exchange rate they find acceptable.
@@ -81,3 +81,18 @@ The Receiver Contract's `exchange` function checks that the function is being ca
 the expected Sender contract. This authentication information is fetched out of the Subordinate
 Transaction. The crosschain transaction will not be committed if the Subordinate Transaction
 information is invalid.
+
+# Modifying the Sampe Code
+## Solidity Code
+To update the Solidity code:
+* Change the contracts in ./contracts
+* Have sidechains-web3j (https://github.com/drinkcoffee/sidechains-web3j) at the same directory 
+level as this repo. 
+* Build the sidechains-web3j using `./gradlew installDist`
+* Extract the crosschain code generator executable using `cd sidechains-web3j/besucodegen/build/distributions`. 
+Then extract the tar file containing the executable `tar xvf NAME_OF_TAR.tar`
+* From this directory, regenerate the Solidity wrapper code using `sh generatewrappers.sh` 
+* Copy the generated Java files from `build/tech/pegasys/samples/crosschain/atomicswapether/soliditywrappers`
+to `src/main/java/tech/pegasys/samples/crosschain/atomicswapether/soliditywrappers` using
+`sh copygeneratedwrappers.sh`.
+* Rebuild the sample code.
