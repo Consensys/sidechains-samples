@@ -76,7 +76,9 @@ public class AtomicSwapEther {
         this.entityAcceptingOffer = new EntityAcceptingOffer(this.web3jSc1, SC1_SIDECHAIN_ID, this.web3jSc2, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
 
         initialFunding();
-        deployRegistrationContract();
+        if (this.registrationContractOwner.getRegistrationContractAddress() == null) {
+            deployRegistrationContract();
+        }
     }
 
     private void initialFunding() throws Exception {
@@ -102,6 +104,7 @@ public class AtomicSwapEther {
             System.out.println("4  Display offers.");
             System.out.println("5  Entity Offering, withdraw funds on SC1");
             System.out.println("6  Entity Offering, deposit funds on SC2");
+            System.out.println("7  Deploy new registration contract");
 
             int option = myInput.nextInt();
             switch (option) {
@@ -136,6 +139,9 @@ public class AtomicSwapEther {
                 case 6:
                     entityOfferingDepositSc2(myInput, 0);
                     break;
+                case 7:
+                    deployRegistrationContract();
+                    break;
                 default:
                     LOG.error("Unknown option {}", option);
                     break;
@@ -166,7 +172,10 @@ public class AtomicSwapEther {
             offerNumber = in.nextInt();
         }
         BigInteger transferAmountWei = Convert.toWei(new BigDecimal(transferAmountEther), Convert.Unit.ETHER).toBigInteger();
-        this.entityAcceptingOffer.prepareForExchange(this.registrationContractOwner.getRegistrationContractAddress(), offerNumber);
+        if (this.entityAcceptingOffer.prepareForExchange(this.registrationContractOwner.getRegistrationContractAddress(), offerNumber)) {
+            // There was an error. We can't continue.
+            return;
+        }
         this.entityAcceptingOffer.swapEther(transferAmountWei);
     }
 

@@ -16,6 +16,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
+import org.web3j.protocol.besu.response.crosschain.CrosschainIsLocked;
+import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.EthGetBalance;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -93,7 +95,7 @@ public class EntityAcceptingOffer {
     }
 
 
-    public void prepareForExchange(String registrationContractAddress, int offerNumber) throws Exception {
+    public boolean prepareForExchange(String registrationContractAddress, int offerNumber) throws Exception {
         LOG.info("Set-up and load contracts");
         AtomicSwapRegistration registrationContract = AtomicSwapRegistration.load(registrationContractAddress, this.web3jSc1, this.tmSc1, this.freeGasProvider);
         BigInteger size = registrationContract.getOfferAddressesSize(this.sc2Id).send();
@@ -101,15 +103,15 @@ public class EntityAcceptingOffer {
         if (offerNumber == -1) {
             if (sizeInt == 0) {
                 LOG.error("No offers available");
-                return;
+                return true;
             }
             LOG.error("Using latest offer");
             offerNumber = sizeInt-1;
         }
         else {
             if (sizeInt <= offerNumber) {
-                LOG.error("No offer at {} offset available");
-                return;
+                LOG.error("No offer at {} offset available", offerNumber);
+                return true;
             }
         }
 
@@ -122,6 +124,7 @@ public class EntityAcceptingOffer {
         this.receiverContractAddress = this.senderContract.receiverContract().send();
         this.receiverContract = AtomicSwapReceiver.load(this.receiverContractAddress, this.web3jSc2, this.tmSc2, this.freeGasProvider);
         this.exchangeRate = exchangeRateOffered;
+        return false;
     }
 
 
@@ -139,11 +142,11 @@ public class EntityAcceptingOffer {
         sim.setValues(receiverBalanceInWei, accepterBalanceInWei, senderBalanceInWei);
         sim.exchange(amountInWei);
         if (sim.atomicSwapSenderError) {
-            LOG.info("***Simulator detected error while processing request: SenderError");
+            LOG.info("***Simulator detected error while processing request: Attempt to send too much Ether");
             return;
         }
         if (sim.atomicSwapReceiverError) {
-            LOG.info("***Simulator detected error while processing request: ReceiverError");
+            LOG.info("***Simulator detected error while processing request: Transfer amount exceeded Receiver Contract balance");
             return;
         }
 
@@ -164,8 +167,24 @@ public class EntityAcceptingOffer {
             throw new Error(transactionReceipt.getStatus());
         }
 
-        // TODO should check to see if contracts unlocked before fetching values.
-        Thread.sleep(5000);
+
+        boolean stillLocked;
+        final int tooLong = 10;
+        int longTimeCount = 0;
+        StringBuffer graphicalCount = new StringBuffer();
+        do {
+            longTimeCount++;
+            if (longTimeCount > tooLong) {
+                LOG.error("Sender contract {} did not unlock", this.senderContractAddress);
+            }
+            Thread.sleep(500);
+            CrosschainIsLocked isLockedObj = this.web3jSc1.crosschainIsLocked(this.senderContractAddress, DefaultBlockParameter.valueOf("latest")).send();
+            stillLocked = isLockedObj.isLocked();
+            if (stillLocked) {
+                graphicalCount.append(".");
+                LOG.info("   Waiting for the sender contract to unlock{}", graphicalCount.toString());
+            }
+        } while (stillLocked);
     }
 
 

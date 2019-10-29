@@ -106,17 +106,29 @@ public class EntityOfferingEther {
 
     public void withdrawSc1() throws Exception {
         LOG.info("Withdrawing funds from sender contract on Sidechain 1");
+        if (this.senderContract == null) {
+            loadContracts();
+        }
         this.senderContract.withdraw().send();
+        LOG.info(" Withdrawl completed");
     }
 
     public void withdrawSc2(BigInteger amountInWei) throws Exception {
         LOG.info("Withdrawing {} wei from receiver contract on Sidechain 2", amountInWei);
+        if (this.receiverContract == null) {
+            loadContracts();
+        }
         this.receiverContract.withdraw(amountInWei).send();
+        LOG.info(" Withdrawl completed");
     }
 
     public void depositSc2(BigInteger amountInWei) throws Exception {
         LOG.info("Deposit {} wei into receiver account", amountInWei);
+        if (this.receiverContract == null) {
+            loadContracts();
+        }
         this.receiverContract.deposit(amountInWei).send();
+        LOG.info(" Deposit completed");
     }
 
     public String accountAddress() {
