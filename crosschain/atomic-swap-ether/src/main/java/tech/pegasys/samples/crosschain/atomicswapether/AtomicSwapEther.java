@@ -14,60 +14,41 @@ package tech.pegasys.samples.crosschain.atomicswapether;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.core.DefaultBlockParameterName;
-import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.methods.response.EthGetBalance;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
-import org.web3j.tx.CrosschainTransactionManager;
-import org.web3j.tx.RawTransactionManager;
-import org.web3j.tx.TransactionManager;
-import org.web3j.tx.Transfer;
-import org.web3j.tx.gas.ContractGasProvider;
-import org.web3j.tx.gas.DefaultGasProvider;
-import org.web3j.tx.gas.StaticGasProvider;
 import org.web3j.utils.Convert;
-import tech.pegasys.samples.crosschain.atomicswapether.soliditywrappers.AtomicSwapReceiver;
-import tech.pegasys.samples.crosschain.atomicswapether.soliditywrappers.AtomicSwapRegistration;
-import tech.pegasys.samples.crosschain.atomicswapether.soliditywrappers.AtomicSwapSender;
-import tech.pegasys.samples.crosschain.atomicswapether.utils.KeyPairGen;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Properties;
 import java.util.Scanner;
+import java.util.concurrent.ExecutionException;
 
 /**
+ * Main Class for sample code.
+ *
  * Swap Ether on one blockchain for Ether on another blockchain.
  */
 public class AtomicSwapEther {
     private static final Logger LOG = LogManager.getLogger(AtomicSwapEther.class);
 
-    static final String ENTITY_ACCEPTING_ALLOCATION = "100";
-    static final String ENTITY_OFFERING_ALLOCATION = "101";
-    static final double EXCHANGE_RATE = 2.0;
+    private static final String ENTITY_ACCEPTING_ALLOCATION = "100";
+    private static final String ENTITY_OFFERING_ALLOCATION = "101";
 
 
     // For this sample to work, three Hyperledger Besu Ethereum Clients which represent
     // the sidechains / blockchains need to be deployed at the addresses shown below,
     // with the blockchain IDs indicated.
-    static final BigInteger SC1_SIDECHAIN_ID = BigInteger.valueOf(11);
+    private static final BigInteger SC1_SIDECHAIN_ID = BigInteger.valueOf(11);
     private static final String SC1_URI = "http://127.0.0.1:8110/";
-    static final BigInteger SC2_SIDECHAIN_ID = BigInteger.valueOf(22);
+    private static final BigInteger SC2_SIDECHAIN_ID = BigInteger.valueOf(22);
     private static final String SC2_URI = "http://127.0.0.1:8220/";
 
     // Have the polling interval equal to the block time.
-    static final int POLLING_INTERVAL = 2000;
+    private static final int POLLING_INTERVAL = 2000;
     // Retry reqests to Ethereum Clients up to five times.
-    static final int RETRY = 5;
+    private static final int RETRY = 5;
 
 
     // Web services for each blockchain / sidechain.
@@ -114,6 +95,7 @@ public class AtomicSwapEther {
         Scanner myInput = new Scanner( System.in );
         while (true) {
             System.out.println("What do you want to do next?");
+            System.out.println("0  Run entire sample.");
             System.out.println("1  Deploy new Sender and Receiver contracts and set-up for an Atomic Swap of Ether.");
             System.out.println("2  Swap Ether.");
             System.out.println("3  Show balances.");
@@ -123,85 +105,126 @@ public class AtomicSwapEther {
 
             int option = myInput.nextInt();
             switch (option) {
+                case 0:
+                    final double sidechain1Ether = 5;
+                    final double sidechain2Ether = 10;
+                    final double exchangeRate = 2.0;
+                    final int offerNumberOfLatest = -1;
+                    LOG.info("Exchange {} Sidechain 2 Ether for {} Sidechain 1 Ether. Exchange rate: {}",
+                        sidechain2Ether, sidechain1Ether, exchangeRate);
+                    showBalances();
+                    setupOffer(null, exchangeRate, sidechain2Ether);
+                    acceptOffer(null, sidechain1Ether, offerNumberOfLatest);
+                    entityOfferingWithdrawlSc1();
+                    showBalances();
+                    break;
                 case 1:
-                    System.out.println("What exchange rate do you want to use? (specify a double, for example 1.5)");
-                    double exchangeRate = myInput.nextDouble();
-                    System.out.println("How much Sidechain 2 Ether do you want to offer? (specify a double, for example 0.1)");
-                    double transferAmountEther = myInput.nextDouble();
-                    LOG.info(" Deploying Sender and Receiver contracts and registering with Registration Contract");
-                    LOG.info(" Specifying exchange rate of {}. Funding the Receiver with {} Ether", exchangeRate, transferAmountEther);
-                    BigInteger adjustedExchangeRate = getAdjustedExchangeRate(exchangeRate);
-                    BigInteger transferAmountWei = Convert.toWei(new BigDecimal(transferAmountEther), Convert.Unit.ETHER).toBigInteger();
-                    this.entityOfferingEther.setUpAndDeployContracts(this.registrationContractOwner.getRegistrationContractAddress(),
-                        adjustedExchangeRate, transferAmountWei);
+                    setupOffer(myInput, 0, 0);
                     break;
                 case 2:
-                    System.out.println("How much Sidechain 1 Ether do you want to exchange? (specify a double, for example 1.5)");
-                    transferAmountEther = myInput.nextDouble();
-                    transferAmountWei = Convert.toWei(new BigDecimal(transferAmountEther), Convert.Unit.ETHER).toBigInteger();
-                    System.out.println("Which offer do you wish to accept? (for example 0 or 1)");
-                    int offerNumber = myInput.nextInt();
-                    this.entityAcceptingOffer.prepareForExchange(this.registrationContractOwner.getRegistrationContractAddress(), offerNumber);
-                    this.entityAcceptingOffer.swapEther(transferAmountWei);
+                    acceptOffer(myInput, 0, 0);
                     break;
                 case 3:
-                    LOG.info("Balances");
-                    LOG.info(" Faucet Account {} on SC1: {}",
-                        this.faucet.getFaucetAddress(), getBalanceAsString(this.web3jSc1, this.faucet.getFaucetAddress()));
-                    LOG.info(" Faucet Account {} on SC2: {}",
-                        this.faucet.getFaucetAddress(), getBalanceAsString(this.web3jSc2, this.faucet.getFaucetAddress()));
-                    LOG.info(" Offering Account {} on SC1: {}",
-                        this.entityOfferingEther.accountAddress(), getBalanceAsString(this.web3jSc1, this.entityOfferingEther.accountAddress()));
-                    LOG.info(" Offering Account {} on SC2: {}",
-                        this.entityOfferingEther.accountAddress(), getBalanceAsString(this.web3jSc2, this.entityOfferingEther.accountAddress()));
-                    LOG.info(" Accepting Account {} on SC1: {}",
-                        this.entityAcceptingOffer.accountAddress(), getBalanceAsString(this.web3jSc1, this.entityAcceptingOffer.accountAddress()));
-                    LOG.info(" Accepting Account {} on SC2: {}",
-                        this.entityAcceptingOffer.accountAddress(), getBalanceAsString(this.web3jSc2, this.entityAcceptingOffer.accountAddress()));
-                    if (this.entityOfferingEther.senderContractAddress != null) {
-                    LOG.info(" Sending Contract {} on SC1: {}",
-                        this.entityOfferingEther.senderContractAddress, getBalanceAsString(this.web3jSc1, this.entityOfferingEther.senderContractAddress));
-                    }
-                    if (this.entityOfferingEther.receiverContractAddress != null) {
-                        LOG.info(" Receiving Contract {} on SC2: {}",
-                            this.entityOfferingEther.receiverContractAddress, getBalanceAsString(this.web3jSc2, this.entityOfferingEther.receiverContractAddress));
-                    }
+                    showBalances();
                     break;
                 case 4:
                     this.entityAcceptingOffer.showOffers(this.registrationContractOwner.getRegistrationContractAddress());
                     break;
                 case 5:
-                    LOG.error("TODO");
+                    entityOfferingWithdrawlSc1();
                     break;
-
                 case 6:
-                    LOG.error("TODO");
+                    entityOfferingDepositSc2(myInput, 0);
                     break;
                 default:
                     LOG.error("Unknown option {}", option);
                     break;
             }
+        }
+    }
 
+    private void setupOffer(final Scanner in, double exchangeRate, double transferAmountEther) throws Exception {
+        if (in != null) {
+            System.out.println("What exchange rate do you want to use? (specify a double, for example 1.5)");
+            exchangeRate = in.nextDouble();
+            System.out.println("How much Sidechain 2 Ether do you want to offer? (specify a double, for example 0.1)");
+            transferAmountEther = in.nextDouble();
+        }
+        LOG.info(" Deploying Sender and Receiver contracts and registering with Registration Contract");
+        LOG.info(" Specifying exchange rate of {}. Funding the Receiver with {} Ether", exchangeRate, transferAmountEther);
+        BigInteger adjustedExchangeRate = getAdjustedExchangeRate(exchangeRate);
+        BigInteger transferAmountWei = Convert.toWei(new BigDecimal(transferAmountEther), Convert.Unit.ETHER).toBigInteger();
+        this.entityOfferingEther.setUpAndDeployContracts(this.registrationContractOwner.getRegistrationContractAddress(),
+            adjustedExchangeRate, transferAmountWei);
+    }
 
+    private void acceptOffer(final Scanner in, double transferAmountEther, int offerNumber) throws Exception {
+        if (in != null) {
+            System.out.println("How much Sidechain 1 Ether do you want to exchange? (specify a double, for example 1.5)");
+            transferAmountEther = in.nextDouble();
+            System.out.println("Which offer do you wish to accept? (for example 0 or 1)");
+            offerNumber = in.nextInt();
+        }
+        BigInteger transferAmountWei = Convert.toWei(new BigDecimal(transferAmountEther), Convert.Unit.ETHER).toBigInteger();
+        this.entityAcceptingOffer.prepareForExchange(this.registrationContractOwner.getRegistrationContractAddress(), offerNumber);
+        this.entityAcceptingOffer.swapEther(transferAmountWei);
+    }
+
+    private void showBalances() throws InterruptedException, ExecutionException {
+        LOG.info("Balances");
+        LOG.info(" Faucet Account {} on SC1: {}",
+            this.faucet.getFaucetAddress(), getBalanceAsString(this.web3jSc1, this.faucet.getFaucetAddress()));
+        LOG.info(" Faucet Account {} on SC2: {}",
+            this.faucet.getFaucetAddress(), getBalanceAsString(this.web3jSc2, this.faucet.getFaucetAddress()));
+        LOG.info(" Offering Account {} on SC1: {}",
+            this.entityOfferingEther.accountAddress(), getBalanceAsString(this.web3jSc1, this.entityOfferingEther.accountAddress()));
+        LOG.info(" Offering Account {} on SC2: {}",
+            this.entityOfferingEther.accountAddress(), getBalanceAsString(this.web3jSc2, this.entityOfferingEther.accountAddress()));
+        LOG.info(" Accepting Account {} on SC1: {}",
+            this.entityAcceptingOffer.accountAddress(), getBalanceAsString(this.web3jSc1, this.entityAcceptingOffer.accountAddress()));
+        LOG.info(" Accepting Account {} on SC2: {}",
+            this.entityAcceptingOffer.accountAddress(), getBalanceAsString(this.web3jSc2, this.entityAcceptingOffer.accountAddress()));
+        if (this.entityOfferingEther.senderContractAddress != null) {
+            LOG.info(" Sending Contract {} on SC1: {}",
+                this.entityOfferingEther.senderContractAddress, getBalanceAsString(this.web3jSc1, this.entityOfferingEther.senderContractAddress));
+        }
+        if (this.entityOfferingEther.receiverContractAddress != null) {
+            LOG.info(" Receiving Contract {} on SC2: {}",
+                this.entityOfferingEther.receiverContractAddress, getBalanceAsString(this.web3jSc2, this.entityOfferingEther.receiverContractAddress));
         }
     }
 
 
+    private void entityOfferingWithdrawlSc1() throws Exception {
+        LOG.info("Entity Offering: Withdraw all Ether from sender contract on Sidechain 1");
+        this.entityOfferingEther.withdrawSc1();
+    }
 
 
-    private String getBalanceAsString(Besu besu, String address) throws Exception {
+    private void entityOfferingDepositSc2(Scanner in, double transferAmountEther) throws Exception {
+        LOG.info("Entity Offering: Deposit Ether into receiver contract on Sidechain 2");
+        if (in != null) {
+            System.out.println("How much Sidechain 2 Ether do you want to deposit? (specify a double, for example 0.1)");
+            transferAmountEther = in.nextDouble();
+        }
+        BigInteger transferAmountWei = Convert.toWei(new BigDecimal(transferAmountEther), Convert.Unit.ETHER).toBigInteger();
+        this.entityOfferingEther.depositSc2(transferAmountWei);
+    }
+
+
+    private String getBalanceAsString(Besu besu, String address) throws InterruptedException, ExecutionException {
         BigInteger wei = getBalance(besu, address);
         java.math.BigDecimal tokenValue = Convert.fromWei(String.valueOf(wei), Convert.Unit.ETHER);
         return String.valueOf(tokenValue);
     }
-    private BigInteger getBalance(Besu besu, String address) throws Exception {
+    private BigInteger getBalance(Besu besu, String address) throws InterruptedException, ExecutionException {
         EthGetBalance ethGetBalance=
             besu.ethGetBalance(address, DefaultBlockParameterName.LATEST).sendAsync().get();
         return ethGetBalance.getBalance();
     }
 
 
-    public static BigInteger getAdjustedExchangeRate(double exchangeRate) {
+    private static BigInteger getAdjustedExchangeRate(double exchangeRate) {
         BigDecimal exRate = new BigDecimal(exchangeRate);
         BigInteger scalingFactor = CallSimulator.DECIMAL_POINT;
         BigDecimal result = exRate.multiply(new BigDecimal(scalingFactor));

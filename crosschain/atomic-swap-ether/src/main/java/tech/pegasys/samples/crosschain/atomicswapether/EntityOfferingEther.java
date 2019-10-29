@@ -30,7 +30,7 @@ import tech.pegasys.samples.crosschain.atomicswapether.utils.KeyPairGen;
 import java.math.BigInteger;
 
 /**
- * Act as the entity which offers Ether on sidechain 2.
+ * Act as the entity which offers Ether on sidechain 2 in exchange for Ether on sidechain 1.
  */
 public class EntityOfferingEther {
     private static final Logger LOG = LogManager.getLogger(EntityOfferingEther.class);
@@ -104,19 +104,19 @@ public class EntityOfferingEther {
     }
 
 
-    public void withdrawSc1() {
+    public void withdrawSc1() throws Exception {
         LOG.info("Withdrawing funds from sender contract on Sidechain 1");
-        this.senderContract.withdraw();
+        this.senderContract.withdraw().send();
     }
 
-    public void withdrawSc2(BigInteger amountInWei) {
+    public void withdrawSc2(BigInteger amountInWei) throws Exception {
         LOG.info("Withdrawing {} wei from receiver contract on Sidechain 2", amountInWei);
-        this.receiverContract.withdraw(amountInWei);
+        this.receiverContract.withdraw(amountInWei).send();
     }
 
-    public void depositSc2(BigInteger amountInWei) {
+    public void depositSc2(BigInteger amountInWei) throws Exception {
         LOG.info("Deposit {} wei into receiver account", amountInWei);
-        this.receiverContract.deposit(amountInWei);
+        this.receiverContract.deposit(amountInWei).send();
     }
 
     public String accountAddress() {

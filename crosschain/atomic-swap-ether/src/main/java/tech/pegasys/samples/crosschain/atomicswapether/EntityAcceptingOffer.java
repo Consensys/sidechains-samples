@@ -98,9 +98,19 @@ public class EntityAcceptingOffer {
         AtomicSwapRegistration registrationContract = AtomicSwapRegistration.load(registrationContractAddress, this.web3jSc1, this.tmSc1, this.freeGasProvider);
         BigInteger size = registrationContract.getOfferAddressesSize(this.sc2Id).send();
         int sizeInt = size.intValue();
-        if (sizeInt <= offerNumber) {
-            LOG.error("No offer numbber {} available");
-            return;
+        if (offerNumber == -1) {
+            if (sizeInt == 0) {
+                LOG.error("No offers available");
+                return;
+            }
+            LOG.error("Using latest offer");
+            offerNumber = sizeInt-1;
+        }
+        else {
+            if (sizeInt <= offerNumber) {
+                LOG.error("No offer at {} offset available");
+                return;
+            }
         }
 
         BigInteger exchangeRateOffered = registrationContract.getOfferExchangeRate(this.sc2Id, BigInteger.valueOf(offerNumber)).send();
