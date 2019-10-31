@@ -65,8 +65,8 @@ public class EntityAcceptingOffer {
         loadStoreProperties();
         this.web3jSc1 = web3jSc1;
         this.web3jSc2 = web3jSc2;
-        this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, sc1Id.longValue(), retry, pollingInterval);
-        this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, sc2Id.longValue(), retry, pollingInterval);
+        this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, sc1Id, retry, pollingInterval);
+        this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, sc2Id, retry, pollingInterval);
         this.sc1Id = sc1Id;
         this.sc2Id = sc2Id;
     }
