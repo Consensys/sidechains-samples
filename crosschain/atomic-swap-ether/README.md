@@ -46,7 +46,7 @@ The contracts are shown in the diagram below:
 The contracts are:
 * Receiver Contract: A lockable contract deployed on Sidechain 2 by the Entity Offering Ether. 
 The entity funds the contract when deploying it and can later add funds to the contract.
-* Sender Contract: A lockable contract deployed on Sidechain 1 by the Entity Accepting Ether.
+* Sender Contract: A lockable contract deployed on Sidechain 1 by the Entity Offering Ether.
 The entity can withdraw funds from the contract once an exchange has occurred.
 * Registration Contract: A non-lockable contract deployed on Sidechain 1 by the Registration Owner.
 
