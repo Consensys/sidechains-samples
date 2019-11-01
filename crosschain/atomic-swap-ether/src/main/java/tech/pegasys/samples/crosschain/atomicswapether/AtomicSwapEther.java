@@ -40,6 +40,8 @@ public class AtomicSwapEther {
     // For this sample to work, three Hyperledger Besu Ethereum Clients which represent
     // the sidechains / blockchains need to be deployed at the addresses shown below,
     // with the blockchain IDs indicated.
+    private static final BigInteger SC0_SIDECHAIN_ID = BigInteger.valueOf(33);
+    private static final String SC0_URI = "http://127.0.0.1:8330/";
     private static final BigInteger SC1_SIDECHAIN_ID = BigInteger.valueOf(11);
     private static final String SC1_URI = "http://127.0.0.1:8110/";
     private static final BigInteger SC2_SIDECHAIN_ID = BigInteger.valueOf(22);
@@ -50,8 +52,11 @@ public class AtomicSwapEther {
     // Retry reqests to Ethereum Clients up to five times.
     private static final int RETRY = 5;
 
+    // Time-out for Crosschain Transactions in terms of block numbers on SC0.
+    private static final int CROSSCHAIN_TRANSACTION_TIMEOUT = 10;
 
     // Web services for each blockchain / sidechain.
+    private Besu web3jSc0;
     private Besu web3jSc1;
     private Besu web3jSc2;
 
@@ -60,6 +65,7 @@ public class AtomicSwapEther {
     private RegistrationContractOwner registrationContractOwner;
     private EntityAcceptingOffer entityAcceptingOffer;
     private EntityOfferingEther entityOfferingEther;
+    private CrosschainCoordinationContractSetup coordinationContractSetup;
 
     public static void main(final String args[]) throws Exception {
         LOG.info("Atomic Swap Ether - started");
@@ -67,19 +73,29 @@ public class AtomicSwapEther {
     }
 
     private AtomicSwapEther() throws Exception {
+        this.web3jSc0 = Besu.build(new HttpService(SC0_URI), POLLING_INTERVAL);
         this.web3jSc1 = Besu.build(new HttpService(SC1_URI), POLLING_INTERVAL);
         this.web3jSc2 = Besu.build(new HttpService(SC2_URI), POLLING_INTERVAL);
 
+        this.coordinationContractSetup = new CrosschainCoordinationContractSetup(this.web3jSc0, SC0_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
+        deployAndSetupCoordinationContract();
         this.faucet = new Faucet(this.web3jSc1, SC1_SIDECHAIN_ID, this.web3jSc2, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
         this.registrationContractOwner = new RegistrationContractOwner(this.web3jSc1, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
-        this.entityOfferingEther = new EntityOfferingEther(this.web3jSc1, SC1_SIDECHAIN_ID, this.web3jSc2, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
-        this.entityAcceptingOffer = new EntityAcceptingOffer(this.web3jSc1, SC1_SIDECHAIN_ID, this.web3jSc2, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
+        this.entityOfferingEther = new EntityOfferingEther(this.web3jSc1, SC1_SIDECHAIN_ID, this.web3jSc2, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
+            this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
+        this.entityAcceptingOffer = new EntityAcceptingOffer(this.web3jSc1, SC1_SIDECHAIN_ID, this.web3jSc2, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
+            this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
 
         initialFunding();
         if (this.registrationContractOwner.getRegistrationContractAddress() == null) {
             deployRegistrationContract();
         }
     }
+
+    private void deployAndSetupCoordinationContract() throws Exception {
+        this.coordinationContractSetup.deployCrosschainCoordinationContract();
+    }
+
 
     private void initialFunding() throws Exception {
         LOG.info("Faucet funding of Entity Offering Ether on sidechain 2 and Entity Accepting Offer / Offering Ether on sidechain 1");

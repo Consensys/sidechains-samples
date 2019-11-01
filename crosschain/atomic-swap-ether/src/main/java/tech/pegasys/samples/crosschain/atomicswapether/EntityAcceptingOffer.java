@@ -21,6 +21,8 @@ import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.EthGetBalance;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tx.CrosschainContext;
+import org.web3j.tx.CrosschainContextGenerator;
 import org.web3j.tx.CrosschainTransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
@@ -59,14 +61,19 @@ public class EntityAcceptingOffer {
     private AtomicSwapSender senderContract;
     private AtomicSwapReceiver receiverContract;
 
-
     public EntityAcceptingOffer(final Besu web3jSc1, final BigInteger sc1Id, final Besu web3jSc2, final BigInteger sc2Id,
-                                final int retry, final int pollingInterval) {
+                                final int retry, final int pollingInterval,
+                                final Besu web3jCoordinationBlockchain,
+                                final BigInteger coordinationBlockchainId,
+                                final String coordinationContractAddress,
+                                final long crosschainTransactionTimeout) {
         loadStoreProperties();
         this.web3jSc1 = web3jSc1;
         this.web3jSc2 = web3jSc2;
-        this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, sc1Id, retry, pollingInterval);
-        this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, sc2Id, retry, pollingInterval);
+        this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, sc1Id, retry, pollingInterval,
+            web3jCoordinationBlockchain, coordinationBlockchainId, coordinationContractAddress, crosschainTransactionTimeout);
+        this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, sc2Id, retry, pollingInterval,
+            web3jCoordinationBlockchain, coordinationBlockchainId, coordinationContractAddress, crosschainTransactionTimeout);
         this.sc1Id = sc1Id;
         this.sc2Id = sc2Id;
     }
@@ -156,12 +163,16 @@ public class EntityAcceptingOffer {
         LOG.info("   Simulator says: Accept account balance will be: {} Wei", sim.accepterBalanceInWei);
 
         LOG.info("  Constructing Nested Crosschain Transaction");
-        byte[] subordinateTrans = this.receiverContract.exchange_AsSignedCrosschainSubordinateTransaction(sim.atomicSwapReceiver_Exchange_amount, null);
+        CrosschainContextGenerator contextGenerator = new CrosschainContextGenerator(this.sc1Id);
+        CrosschainContext subordinateTransactionContext = contextGenerator.createCrosschainContext(this.sc1Id, this.senderContractAddress);
+        byte[] subordinateTrans = this.receiverContract.exchange_AsSignedCrosschainSubordinateTransaction(sim.atomicSwapReceiver_Exchange_amount, subordinateTransactionContext);
 
         // Call to contract 1
         byte[][] subordinateTransactionsAndViews = new byte[][]{subordinateTrans};
+        CrosschainContext originatingTransactionContext = contextGenerator.createCrosschainContext(subordinateTransactionsAndViews);
+
         LOG.info("  Executing Crosschain Transaction");
-        TransactionReceipt transactionReceipt = this.senderContract.exchange_AsCrosschainTransaction(subordinateTransactionsAndViews, amountInWei).send();
+        TransactionReceipt transactionReceipt = this.senderContract.exchange_AsCrosschainTransaction(originatingTransactionContext, amountInWei).send();
         LOG.info("   Transaction Receipt: {}", transactionReceipt.toString());
         if (!transactionReceipt.isStatusOK()) {
             throw new Error(transactionReceipt.getStatus());
