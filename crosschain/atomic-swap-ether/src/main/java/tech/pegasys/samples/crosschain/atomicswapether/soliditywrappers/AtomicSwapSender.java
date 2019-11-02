@@ -14,6 +14,7 @@ import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tx.CrosschainContext;
 import org.web3j.tx.CrosschainContract;
 import org.web3j.tx.CrosschainTransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
@@ -58,11 +59,11 @@ public class AtomicSwapSender extends CrosschainContract {
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
-    public byte[] receiverContract_AsSignedCrosschainSubordinateView(final byte[][] nestedSubordinateViews) throws IOException {
+    public byte[] receiverContract_AsSignedCrosschainSubordinateView(final CrosschainContext crosschainContext) throws IOException {
         final Function function = new Function(FUNC_RECEIVERCONTRACT, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
-        return createSignedSubordinateView(function, nestedSubordinateViews);
+        return createSignedSubordinateView(function, crosschainContext);
     }
 
     public RemoteFunctionCall<BigInteger> exchangeRate() {
@@ -72,11 +73,11 @@ public class AtomicSwapSender extends CrosschainContract {
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
-    public byte[] exchangeRate_AsSignedCrosschainSubordinateView(final byte[][] nestedSubordinateViews) throws IOException {
+    public byte[] exchangeRate_AsSignedCrosschainSubordinateView(final CrosschainContext crosschainContext) throws IOException {
         final Function function = new Function(FUNC_EXCHANGERATE, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
-        return createSignedSubordinateView(function, nestedSubordinateViews);
+        return createSignedSubordinateView(function, crosschainContext);
     }
 
     public RemoteFunctionCall<TransactionReceipt> withdraw() {
@@ -87,20 +88,20 @@ public class AtomicSwapSender extends CrosschainContract {
         return executeRemoteCallTransaction(function);
     }
 
-    public byte[] withdraw_AsSignedCrosschainSubordinateTransaction(final byte[][] nestedSubordinateTransactionsAndViews) throws IOException {
+    public byte[] withdraw_AsSignedCrosschainSubordinateTransaction(final CrosschainContext crosschainContext) throws IOException {
         final Function function = new Function(
                 FUNC_WITHDRAW, 
                 Arrays.<Type>asList(), 
                 Collections.<TypeReference<?>>emptyList());
-        return createSignedSubordinateTransaction(function, nestedSubordinateTransactionsAndViews);
+        return createSignedSubordinateTransaction(function, crosschainContext);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> withdraw_AsCrosschainTransaction(final byte[][] nestedSubordinateTransactionsAndViews) {
+    public RemoteFunctionCall<TransactionReceipt> withdraw_AsCrosschainTransaction(final CrosschainContext crosschainContext) {
         final Function function = new Function(
                 FUNC_WITHDRAW, 
                 Arrays.<Type>asList(), 
                 Collections.<TypeReference<?>>emptyList());
-        return executeRemoteCallCrosschainTransaction(function, nestedSubordinateTransactionsAndViews);
+        return executeRemoteCallCrosschainTransaction(function, crosschainContext);
     }
 
     public RemoteFunctionCall<BigInteger> receiverSidechainId() {
@@ -110,11 +111,11 @@ public class AtomicSwapSender extends CrosschainContract {
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
-    public byte[] receiverSidechainId_AsSignedCrosschainSubordinateView(final byte[][] nestedSubordinateViews) throws IOException {
+    public byte[] receiverSidechainId_AsSignedCrosschainSubordinateView(final CrosschainContext crosschainContext) throws IOException {
         final Function function = new Function(FUNC_RECEIVERSIDECHAINID, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
-        return createSignedSubordinateView(function, nestedSubordinateViews);
+        return createSignedSubordinateView(function, crosschainContext);
     }
 
     public RemoteFunctionCall<String> owner() {
@@ -124,11 +125,11 @@ public class AtomicSwapSender extends CrosschainContract {
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
-    public byte[] owner_AsSignedCrosschainSubordinateView(final byte[][] nestedSubordinateViews) throws IOException {
+    public byte[] owner_AsSignedCrosschainSubordinateView(final CrosschainContext crosschainContext) throws IOException {
         final Function function = new Function(FUNC_OWNER, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
-        return createSignedSubordinateView(function, nestedSubordinateViews);
+        return createSignedSubordinateView(function, crosschainContext);
     }
 
     public RemoteFunctionCall<TransactionReceipt> exchange(BigInteger weiValue) {
@@ -139,20 +140,20 @@ public class AtomicSwapSender extends CrosschainContract {
         return executeRemoteCallTransaction(function, weiValue);
     }
 
-    public byte[] exchange_AsSignedCrosschainSubordinateTransaction(final byte[][] nestedSubordinateTransactionsAndViews, BigInteger weiValue) throws IOException {
+    public byte[] exchange_AsSignedCrosschainSubordinateTransaction(final CrosschainContext crosschainContext, BigInteger weiValue) throws IOException {
         final Function function = new Function(
                 FUNC_EXCHANGE, 
                 Arrays.<Type>asList(), 
                 Collections.<TypeReference<?>>emptyList());
-        return createSignedSubordinateTransaction(function, nestedSubordinateTransactionsAndViews, weiValue);
+        return createSignedSubordinateTransaction(function, crosschainContext, weiValue);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> exchange_AsCrosschainTransaction(final byte[][] nestedSubordinateTransactionsAndViews, BigInteger weiValue) {
+    public RemoteFunctionCall<TransactionReceipt> exchange_AsCrosschainTransaction(final CrosschainContext crosschainContext, BigInteger weiValue) {
         final Function function = new Function(
                 FUNC_EXCHANGE, 
                 Arrays.<Type>asList(), 
                 Collections.<TypeReference<?>>emptyList());
-        return executeRemoteCallCrosschainTransaction(function, nestedSubordinateTransactionsAndViews, weiValue);
+        return executeRemoteCallCrosschainTransaction(function, crosschainContext, weiValue);
     }
 
     @Deprecated
@@ -165,34 +166,34 @@ public class AtomicSwapSender extends CrosschainContract {
     }
 
     public static RemoteCall<AtomicSwapSender> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, ContractGasProvider contractGasProvider, BigInteger _receiverSidechainId, String _receiverContract, BigInteger _exchangeRate) {
-        byte[][] nestedSubordinateTransactionsAndViews = null;
+        CrosschainContext crosschainContext = null;
         String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_receiverSidechainId), 
                 new org.web3j.abi.datatypes.Address(160, _receiverContract), 
                 new org.web3j.abi.datatypes.generated.Uint256(_exchangeRate)));
-        return deployLockableContractRemoteCall(AtomicSwapSender.class, besu, transactionManager, contractGasProvider, BINARY, encodedConstructor, nestedSubordinateTransactionsAndViews);
+        return deployLockableContractRemoteCall(AtomicSwapSender.class, besu, transactionManager, contractGasProvider, BINARY, encodedConstructor, crosschainContext);
     }
 
     @Deprecated
     public static RemoteCall<AtomicSwapSender> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit, BigInteger _receiverSidechainId, String _receiverContract, BigInteger _exchangeRate) {
-        byte[][] nestedSubordinateTransactionsAndViews = null;
+        CrosschainContext crosschainContext = null;
         String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_receiverSidechainId), 
                 new org.web3j.abi.datatypes.Address(160, _receiverContract), 
                 new org.web3j.abi.datatypes.generated.Uint256(_exchangeRate)));
-        return deployLockableContractRemoteCall(AtomicSwapSender.class, besu, transactionManager, gasPrice, gasLimit, BINARY, encodedConstructor, nestedSubordinateTransactionsAndViews);
+        return deployLockableContractRemoteCall(AtomicSwapSender.class, besu, transactionManager, gasPrice, gasLimit, BINARY, encodedConstructor, crosschainContext);
     }
 
-    public static RemoteCall<AtomicSwapSender> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, ContractGasProvider contractGasProvider, BigInteger _receiverSidechainId, String _receiverContract, BigInteger _exchangeRate, final byte[][] nestedSubordinateTransactionsAndViews) {
+    public static RemoteCall<AtomicSwapSender> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, ContractGasProvider contractGasProvider, BigInteger _receiverSidechainId, String _receiverContract, BigInteger _exchangeRate, final CrosschainContext crosschainContext) {
         String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_receiverSidechainId), 
                 new org.web3j.abi.datatypes.Address(160, _receiverContract), 
                 new org.web3j.abi.datatypes.generated.Uint256(_exchangeRate)));
-        return deployLockableContractRemoteCall(AtomicSwapSender.class, besu, transactionManager, contractGasProvider, BINARY, encodedConstructor, nestedSubordinateTransactionsAndViews);
+        return deployLockableContractRemoteCall(AtomicSwapSender.class, besu, transactionManager, contractGasProvider, BINARY, encodedConstructor, crosschainContext);
     }
 
     @Deprecated
-    public static RemoteCall<AtomicSwapSender> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit, BigInteger _receiverSidechainId, String _receiverContract, BigInteger _exchangeRate, final byte[][] nestedSubordinateTransactionsAndViews) {
+    public static RemoteCall<AtomicSwapSender> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit, BigInteger _receiverSidechainId, String _receiverContract, BigInteger _exchangeRate, final CrosschainContext crosschainContext) {
         String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_receiverSidechainId), 
                 new org.web3j.abi.datatypes.Address(160, _receiverContract), 
                 new org.web3j.abi.datatypes.generated.Uint256(_exchangeRate)));
-        return deployLockableContractRemoteCall(AtomicSwapSender.class, besu, transactionManager, gasPrice, gasLimit, BINARY, encodedConstructor, nestedSubordinateTransactionsAndViews);
+        return deployLockableContractRemoteCall(AtomicSwapSender.class, besu, transactionManager, gasPrice, gasLimit, BINARY, encodedConstructor, crosschainContext);
     }
 }

@@ -55,12 +55,18 @@ public class EntityOfferingEther {
 
 
     public EntityOfferingEther(final Besu web3jSc1, final BigInteger sc1Id, final Besu web3jSc2, final BigInteger sc2Id,
-                               final int retry, final int pollingInterval) {
+                               final int retry, final int pollingInterval,
+                               final Besu web3jCoordinationBlockchain,
+                               final BigInteger coordinationBlockchainId,
+                               final String coordinationContractAddress,
+                               final long crosschainTransactionTimeout) {
         loadStoreProperties();
         this.web3jSc1 = web3jSc1;
         this.web3jSc2 = web3jSc2;
-        this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, sc1Id.longValue(), retry, pollingInterval);
-        this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, sc2Id.longValue(), retry, pollingInterval);
+        this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, sc1Id, retry, pollingInterval,
+            web3jCoordinationBlockchain, coordinationBlockchainId, coordinationContractAddress, crosschainTransactionTimeout);
+        this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, sc2Id, retry, pollingInterval,
+            web3jCoordinationBlockchain, coordinationBlockchainId, coordinationContractAddress, crosschainTransactionTimeout);
         this.sc1Id = sc1Id;
         this.sc2Id = sc2Id;
     }
