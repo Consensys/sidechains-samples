@@ -78,7 +78,9 @@ public class AtomicSwapEther {
         this.web3jSc2 = Besu.build(new HttpService(SC2_URI), POLLING_INTERVAL);
 
         this.coordinationContractSetup = new CrosschainCoordinationContractSetup(this.web3jSc0, SC0_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
-        deployAndSetupCoordinationContract();
+        if (this.coordinationContractSetup.getCrosschainCoordinationContractAddress() == null) {
+            deployAndSetupCoordinationContract();
+        }
         this.faucet = new Faucet(this.web3jSc1, SC1_SIDECHAIN_ID, this.web3jSc2, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
         this.registrationContractOwner = new RegistrationContractOwner(this.web3jSc1, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
         this.entityOfferingEther = new EntityOfferingEther(this.web3jSc1, SC1_SIDECHAIN_ID, this.web3jSc2, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,

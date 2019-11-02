@@ -55,7 +55,7 @@ public class CrosschainCoordinationContractSetup {
         loadStoreProperties();
         this.web3jSc0 = web3jSc0;
         this.tmSc0 = new RawTransactionManager(this.web3jSc0, this.credentials, sc0Id.longValue(), retry, pollingInterval);
-        this.sc0Id = this.sc0Id;
+        this.sc0Id = sc0Id;
     }
 
     public void deployCrosschainCoordinationContract() throws Exception {

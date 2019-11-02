@@ -97,7 +97,7 @@ public class EntityAcceptingOffer {
         for (int i = 0; i < sizeInt; i++) {
             exchangeRateOffered = registrationContract.getOfferExchangeRate(this.sc2Id, BigInteger.valueOf(i)).send();
             sendContractAddress = registrationContract.getOfferSenderContract(this.sc2Id, BigInteger.valueOf(i)).send();
-            LOG.info(" Exchange Rate {} offered at Send Contract {}", exchangeRateOffered.toString(16), sendContractAddress);
+            LOG.info(" Offer Number {} Exchange Rate {} offered at Send Contract {}", i, exchangeRateOffered.toString(16), sendContractAddress);
         }
     }
 
