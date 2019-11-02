@@ -88,7 +88,7 @@ To update the Solidity code:
 * Change the contracts in ./contracts
 * Have sidechains-web3j (https://github.com/drinkcoffee/sidechains-web3j) at the same directory 
 level as this repo. 
-* Build the sidechains-web3j using `./gradlew installDist`
+* Build the sidechains-web3j using `./gradlew build` with Java8
 * Extract the crosschain code generator executable using `cd sidechains-web3j/besucodegen/build/distributions`. 
 Then extract the tar file containing the executable `tar xvf NAME_OF_TAR.tar`
 * From this directory, regenerate the Solidity wrapper code using `sh generatewrappers.sh` 
