@@ -112,6 +112,7 @@ public class AtomicSwapEther {
     }
 
     private void run() throws Exception {
+        boolean runOnce = false;
         Scanner myInput = new Scanner( System.in );
         while (true) {
             System.out.println("What do you want to do next?");
@@ -124,7 +125,14 @@ public class AtomicSwapEther {
             System.out.println("6  Entity Offering, deposit funds on SC2");
             System.out.println("7  Deploy new registration contract");
 
-            int option = myInput.nextInt();
+            int option = 0;
+            if (myInput.hasNext()) {
+                option = myInput.nextInt();
+            }
+            else {
+                System.out.println("No input device available. Executing option 0.");
+                runOnce = true;
+            }
             switch (option) {
                 case 0:
                     final double sidechain1Ether = 5;
@@ -163,6 +171,10 @@ public class AtomicSwapEther {
                 default:
                     LOG.error("Unknown option {}", option);
                     break;
+            }
+
+            if (runOnce) {
+                return;
             }
         }
     }
