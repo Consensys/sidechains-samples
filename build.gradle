@@ -1,0 +1,16 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+
+description 'sample code base project'
+
+allprojects {
+    sourceCompatibility = 1.11
+    targetCompatibility = 1.11
+
+    apply plugin: 'java'
+
+    repositories { 
+        mavenCentral()
+       // maven { url 'http://repo1.maven.org/maven2' }
+    }
+}

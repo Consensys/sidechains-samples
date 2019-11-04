@@ -1,0 +1,6 @@
+rootProject.name = 'samples'
+
+include 'checkall'
+include 'crosschain-atomic-swap-ether'
+
+project(":crosschain-atomic-swap-ether").projectDir = file("crosschain/atomic-swap-ether")

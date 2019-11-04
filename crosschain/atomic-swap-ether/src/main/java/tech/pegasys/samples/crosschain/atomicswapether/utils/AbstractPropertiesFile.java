@@ -40,10 +40,17 @@ public class AbstractPropertiesFile {
         return Files.exists(getSamplePropertiesPath());
     }
 
+
+    public void deletePropertiesFile() throws IOException {
+        Path path = getSamplePropertiesPath();
+        Files.deleteIfExists(path);
+    }
+
+
     protected void loadProperties() {
         Path path = getSamplePropertiesPath();
         try {
-            FileInputStream fis = new FileInputStream(getSamplePropertiesPath().toFile());
+            FileInputStream fis = new FileInputStream(path.toFile());
             this.properties.load(fis);
         } catch (IOException ioEx) {
             // By the time we have reached the loadProperties method, we should be sure the file

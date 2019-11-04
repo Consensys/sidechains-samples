@@ -20,6 +20,7 @@ import org.web3j.protocol.core.methods.response.EthGetBalance;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.utils.Convert;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Scanner;
@@ -67,9 +68,32 @@ public class AtomicSwapEther {
     private EntityOfferingEther entityOfferingEther;
     private CrosschainCoordinationContractSetup coordinationContractSetup;
 
+    static boolean automatedRun = false;
+
     public static void main(final String args[]) throws Exception {
         LOG.info("Atomic Swap Ether - started");
         new AtomicSwapEther().run();
+    }
+
+    public static void automatedRun() throws Exception {
+      // Delete all properties files as a starting point. This will ensure all contracts are redeployed.
+      deleteAllPropertiesFile();
+
+      // Run the samples in a way that does not require input from the keyboard.
+      automatedRun = true;
+      new AtomicSwapEther().run();
+
+      // Clean-up.
+      deleteAllPropertiesFile();
+    }
+
+    private static void deleteAllPropertiesFile() throws IOException {
+        // Delete all properties files as a starting point. This will ensure all contracts are redeployed.
+        (new CrosschainCoordinationContractSetup.CrosschainCoordinationContractSetupProperties()).deletePropertiesFile();
+        (new EntityAcceptingOffer.EntityOfferingProperties()).deletePropertiesFile();
+        (new EntityOfferingEther.EntityOfferingProperties()).deletePropertiesFile();
+        (new Faucet.FaucetProperties()).deletePropertiesFile();
+        (new RegistrationContractOwner.RegistrationProperties()).deletePropertiesFile();
     }
 
     private AtomicSwapEther() throws Exception {
@@ -126,12 +150,18 @@ public class AtomicSwapEther {
             System.out.println("7  Deploy new registration contract");
 
             int option = 0;
-            if (myInput.hasNext()) {
-                option = myInput.nextInt();
+            if (automatedRun) {
+              System.out.println("Executing automated run. Executing option 0.");
+              runOnce = true;
             }
             else {
+              if (myInput.hasNext()) {
+                option = myInput.nextInt();
+              }
+              else {
                 System.out.println("No input device available. Executing option 0.");
                 runOnce = true;
+              }
             }
             switch (option) {
                 case 0:
