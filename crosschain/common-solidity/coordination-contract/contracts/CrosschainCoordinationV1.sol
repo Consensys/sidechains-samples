@@ -24,7 +24,7 @@ import "./VotingAlgInterface.sol";
  */
 contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     // Implementation version of the of the Crosschain Coordination Contract.
-    uint16 constant public VERSION_ONE = 1;
+    uint16 constant private VERSION_ONE = 1;
 
     // The management sidechain is the sidechain with ID 0x00. It is used solely to restrict which
     // users can create a new sidechain. Only members of this sidechain can call addSidechain().
