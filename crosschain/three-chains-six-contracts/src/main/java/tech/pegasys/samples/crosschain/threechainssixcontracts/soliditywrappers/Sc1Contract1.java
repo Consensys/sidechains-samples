@@ -13,9 +13,9 @@ import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tx.CrosschainContext;
 import org.web3j.tx.CrosschainContract;
 import org.web3j.tx.CrosschainTransactionManager;
-import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 
 /**
@@ -53,20 +53,20 @@ public class Sc1Contract1 extends CrosschainContract {
         return executeRemoteCallTransaction(function);
     }
 
-    public byte[] doStuff_AsSignedCrosschainSubordinateTransaction(BigInteger _val, final byte[][] nestedSubordinateTransactionsAndViews) throws IOException {
+    public byte[] doStuff_AsSignedCrosschainSubordinateTransaction(BigInteger _val, final CrosschainContext crosschainContext) throws IOException {
         final Function function = new Function(
                 FUNC_DOSTUFF, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_val)), 
                 Collections.<TypeReference<?>>emptyList());
-        return createSignedSubordinateTransaction(function, nestedSubordinateTransactionsAndViews);
+        return createSignedSubordinateTransaction(function, crosschainContext);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> doStuff_AsCrosschainTransaction(BigInteger _val, final byte[][] nestedSubordinateTransactionsAndViews) {
+    public RemoteFunctionCall<TransactionReceipt> doStuff_AsCrosschainTransaction(BigInteger _val, final CrosschainContext crosschainContext) {
         final Function function = new Function(
                 FUNC_DOSTUFF, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_val)), 
                 Collections.<TypeReference<?>>emptyList());
-        return executeRemoteCallCrosschainTransaction(function, nestedSubordinateTransactionsAndViews);
+        return executeRemoteCallCrosschainTransaction(function, crosschainContext);
     }
 
     public RemoteFunctionCall<BigInteger> val() {
@@ -76,11 +76,11 @@ public class Sc1Contract1 extends CrosschainContract {
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
-    public byte[] val_AsSignedCrosschainSubordinateView(final byte[][] nestedSubordinateViews) throws IOException {
+    public byte[] val_AsSignedCrosschainSubordinateView(final CrosschainContext crosschainContext) throws IOException {
         final Function function = new Function(FUNC_VAL, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
-        return createSignedSubordinateView(function, nestedSubordinateViews);
+        return createSignedSubordinateView(function, crosschainContext);
     }
 
     public RemoteFunctionCall<TransactionReceipt> setVal(BigInteger _val) {
@@ -91,20 +91,20 @@ public class Sc1Contract1 extends CrosschainContract {
         return executeRemoteCallTransaction(function);
     }
 
-    public byte[] setVal_AsSignedCrosschainSubordinateTransaction(BigInteger _val, final byte[][] nestedSubordinateTransactionsAndViews) throws IOException {
+    public byte[] setVal_AsSignedCrosschainSubordinateTransaction(BigInteger _val, final CrosschainContext crosschainContext) throws IOException {
         final Function function = new Function(
                 FUNC_SETVAL, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_val)), 
                 Collections.<TypeReference<?>>emptyList());
-        return createSignedSubordinateTransaction(function, nestedSubordinateTransactionsAndViews);
+        return createSignedSubordinateTransaction(function, crosschainContext);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> setVal_AsCrosschainTransaction(BigInteger _val, final byte[][] nestedSubordinateTransactionsAndViews) {
+    public RemoteFunctionCall<TransactionReceipt> setVal_AsCrosschainTransaction(BigInteger _val, final CrosschainContext crosschainContext) {
         final Function function = new Function(
                 FUNC_SETVAL, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_val)), 
                 Collections.<TypeReference<?>>emptyList());
-        return executeRemoteCallCrosschainTransaction(function, nestedSubordinateTransactionsAndViews);
+        return executeRemoteCallCrosschainTransaction(function, crosschainContext);
     }
 
     @Deprecated
@@ -116,62 +116,43 @@ public class Sc1Contract1 extends CrosschainContract {
         return new Sc1Contract1(contractAddress, besu, crosschainTransactionManager, contractGasProvider);
     }
 
-    public static RemoteCall<Sc1Contract1> deploy(Besu besu, TransactionManager transactionManager, ContractGasProvider contractGasProvider, BigInteger _Sc2SidechainId, BigInteger _Sc3SidechainId, String _contract2, String _contract3, String _contract5) {
-        String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_Sc2SidechainId), 
-                new org.web3j.abi.datatypes.generated.Uint256(_Sc3SidechainId), 
-                new org.web3j.abi.datatypes.Address(160, _contract2), 
-                new org.web3j.abi.datatypes.Address(160, _contract3), 
-                new org.web3j.abi.datatypes.Address(160, _contract5)));
-        return deployRemoteCall(Sc1Contract1.class, besu, transactionManager, contractGasProvider, BINARY, encodedConstructor);
-    }
-
-    @Deprecated
-    public static RemoteCall<Sc1Contract1> deploy(Besu besu, TransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit, BigInteger _Sc2SidechainId, BigInteger _Sc3SidechainId, String _contract2, String _contract3, String _contract5) {
-        String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_Sc2SidechainId), 
-                new org.web3j.abi.datatypes.generated.Uint256(_Sc3SidechainId), 
-                new org.web3j.abi.datatypes.Address(160, _contract2), 
-                new org.web3j.abi.datatypes.Address(160, _contract3), 
-                new org.web3j.abi.datatypes.Address(160, _contract5)));
-        return deployRemoteCall(Sc1Contract1.class, besu, transactionManager, gasPrice, gasLimit, BINARY, encodedConstructor);
-    }
-
     public static RemoteCall<Sc1Contract1> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, ContractGasProvider contractGasProvider, BigInteger _Sc2SidechainId, BigInteger _Sc3SidechainId, String _contract2, String _contract3, String _contract5) {
-        byte[][] nestedSubordinateTransactionsAndViews = null;
+        CrosschainContext crosschainContext = null;
         String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_Sc2SidechainId), 
                 new org.web3j.abi.datatypes.generated.Uint256(_Sc3SidechainId), 
                 new org.web3j.abi.datatypes.Address(160, _contract2), 
                 new org.web3j.abi.datatypes.Address(160, _contract3), 
                 new org.web3j.abi.datatypes.Address(160, _contract5)));
-        return deployLockableContractRemoteCall(Sc1Contract1.class, besu, transactionManager, contractGasProvider, BINARY, encodedConstructor, nestedSubordinateTransactionsAndViews);
+        return deployLockableContractRemoteCall(Sc1Contract1.class, besu, transactionManager, contractGasProvider, BINARY, encodedConstructor, crosschainContext);
     }
 
     @Deprecated
     public static RemoteCall<Sc1Contract1> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit, BigInteger _Sc2SidechainId, BigInteger _Sc3SidechainId, String _contract2, String _contract3, String _contract5) {
-        byte[][] nestedSubordinateTransactionsAndViews = null;
+        CrosschainContext crosschainContext = null;
         String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_Sc2SidechainId), 
                 new org.web3j.abi.datatypes.generated.Uint256(_Sc3SidechainId), 
                 new org.web3j.abi.datatypes.Address(160, _contract2), 
                 new org.web3j.abi.datatypes.Address(160, _contract3), 
                 new org.web3j.abi.datatypes.Address(160, _contract5)));
-        return deployLockableContractRemoteCall(Sc1Contract1.class, besu, transactionManager, gasPrice, gasLimit, BINARY, encodedConstructor, nestedSubordinateTransactionsAndViews);
+        return deployLockableContractRemoteCall(Sc1Contract1.class, besu, transactionManager, gasPrice, gasLimit, BINARY, encodedConstructor, crosschainContext);
     }
 
-    public static RemoteCall<Sc1Contract1> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, ContractGasProvider contractGasProvider, BigInteger _Sc2SidechainId, BigInteger _Sc3SidechainId, String _contract2, String _contract3, String _contract5, final byte[][] nestedSubordinateTransactionsAndViews) {
+    public static RemoteCall<Sc1Contract1> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, ContractGasProvider contractGasProvider, BigInteger _Sc2SidechainId, BigInteger _Sc3SidechainId, String _contract2, String _contract3, String _contract5, final CrosschainContext crosschainContext) {
         String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_Sc2SidechainId), 
                 new org.web3j.abi.datatypes.generated.Uint256(_Sc3SidechainId), 
                 new org.web3j.abi.datatypes.Address(160, _contract2), 
                 new org.web3j.abi.datatypes.Address(160, _contract3), 
                 new org.web3j.abi.datatypes.Address(160, _contract5)));
-        return deployLockableContractRemoteCall(Sc1Contract1.class, besu, transactionManager, contractGasProvider, BINARY, encodedConstructor, nestedSubordinateTransactionsAndViews);
+        return deployLockableContractRemoteCall(Sc1Contract1.class, besu, transactionManager, contractGasProvider, BINARY, encodedConstructor, crosschainContext);
     }
 
     @Deprecated
-    public static RemoteCall<Sc1Contract1> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit, BigInteger _Sc2SidechainId, BigInteger _Sc3SidechainId, String _contract2, String _contract3, String _contract5, final byte[][] nestedSubordinateTransactionsAndViews) {
+    public static RemoteCall<Sc1Contract1> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit, BigInteger _Sc2SidechainId, BigInteger _Sc3SidechainId, String _contract2, String _contract3, String _contract5, final CrosschainContext crosschainContext) {
         String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_Sc2SidechainId), 
                 new org.web3j.abi.datatypes.generated.Uint256(_Sc3SidechainId), 
                 new org.web3j.abi.datatypes.Address(160, _contract2), 
                 new org.web3j.abi.datatypes.Address(160, _contract3), 
                 new org.web3j.abi.datatypes.Address(160, _contract5)));
-        return deployLockableContractRemoteCall(Sc1Contract1.class, besu, transactionManager, gasPrice, gasLimit, BINARY, encodedConstructor, nestedSubordinateTransactionsAndViews);
+        return deployLockableContractRemoteCall(Sc1Contract1.class, besu, transactionManager, gasPrice, gasLimit, BINARY, encodedConstructor, crosschainContext);
     }
 }

@@ -16,9 +16,7 @@ import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 import org.web3j.crypto.ECKeyPair;
-import org.web3j.utils.Numeric;
 
 
 import java.math.BigInteger;
@@ -55,13 +53,11 @@ public class KeyPairGen {
 
   }
 
-  public ECKeyPair generateKeyPairForWeb3J() {
+  public String generateKeyPairGetPrivateKey() {
     KeyPair rawKeyPair = this.keyPairGenerator.generateKeyPair();
     final BCECPrivateKey privateKey = (BCECPrivateKey) rawKeyPair.getPrivate();
     final BigInteger privateKeyValue = privateKey.getD();
-
-    System.out.println(privateKeyValue.toString(16));
-    return ECKeyPair.create(privateKeyValue);
+    return privateKeyValue.toString(16);
   }
 
 
