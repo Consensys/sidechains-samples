@@ -1,0 +1,53 @@
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceCompatibility = 1.11
+
+mainClassName = 'tech.pegasys.samples.crosschain.simple.SimpleMain'
+
+    ext.bouncycastleVersion = '1.61'
+    ext.jacksonVersion = '2.8.5'
+    ext.javapoetVersion = '1.7.0'
+    ext.jnr_unixsocketVersion = '0.21'
+    ext.okhttpVersion = '3.8.1'
+    ext.rxjavaVersion = '2.2.2'
+    ext.slf4jVersion = '1.7.25'
+    ext.javaWebSocketVersion = '1.3.8'
+    ext.picocliVersion = '3.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    //compile 'org.web3j:core:4.1.0'
+    // Use the Crosschain version of web3j. 
+    implementation files('../libs/web3j-abi.jar')
+    implementation files('../libs/web3j-besu.jar')
+    implementation files('../libs/web3j-core.jar')
+    implementation files('../libs/web3j-crypto.jar')
+    implementation files('../libs/web3j-eea.jar')
+    implementation files('../libs/web3j-rlp.jar')
+    implementation files('../libs/web3j-tuples.jar')
+    implementation files('../libs/web3j-utils.jar')
+
+	// Web3J dependencies
+    compile "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion",
+            "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion",
+            "com.github.jnr:jnr-unixsocket:$jnr_unixsocketVersion",
+            "com.squareup.okhttp3:okhttp:$okhttpVersion",
+            "com.squareup.okhttp3:logging-interceptor:$okhttpVersion",
+            "io.reactivex.rxjava2:rxjava:$rxjavaVersion",
+            "org.java-websocket:Java-WebSocket:$javaWebSocketVersion",
+            "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion",
+            "org.slf4j:slf4j-api:$slf4jVersion"
+
+
+//    compile group: 'org.slf4j', name:'slf4j-api', version: '1.7.2'
+    //compile group: 'ch.qos.logback', name:'logback-classic', version: '1.0.9'
+    //compile group: 'ch.qos.logback', name:'logback-core', version: '1.0.9'
+    compile group: 'com.google.guava', name: 'guava', version: '14.0'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.12.0'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.12.0'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.0'
+}
