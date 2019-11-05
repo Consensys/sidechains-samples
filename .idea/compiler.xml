@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="atomic-swap-ether.samples.crosschain-three-chains-six-contracts.main" target="11" />
+      <module name="atomic-swap-ether.samples.crosschain-three-chains-six-contracts.test" target="11" />
+      <module name="samples.checkall.main" target="11" />
+      <module name="samples.checkall.test" target="11" />
+      <module name="samples.crosschain-three-chains-six-contracts.main" target="11" />
+      <module name="samples.crosschain-three-chains-six-contracts.test" target="11" />
+      <module name="samples.crosschain_atomic-swap-ether.main" target="11" />
+      <module name="samples.crosschain_atomic-swap-ether.test" target="11" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="HaskellBuildOptions">
+    <stackPath>/usr/local/bin/stack</stackPath>
+  </component>
+</project>

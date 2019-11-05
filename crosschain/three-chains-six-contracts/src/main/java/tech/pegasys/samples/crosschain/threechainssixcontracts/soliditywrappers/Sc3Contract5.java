@@ -12,9 +12,9 @@ import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tx.CrosschainContext;
 import org.web3j.tx.CrosschainContract;
 import org.web3j.tx.CrosschainTransactionManager;
-import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 
 /**
@@ -51,11 +51,11 @@ public class Sc3Contract5 extends CrosschainContract {
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
-    public byte[] val_AsSignedCrosschainSubordinateView(final byte[][] nestedSubordinateViews) throws IOException {
+    public byte[] val_AsSignedCrosschainSubordinateView(final CrosschainContext crosschainContext) throws IOException {
         final Function function = new Function(FUNC_VAL, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
-        return createSignedSubordinateView(function, nestedSubordinateViews);
+        return createSignedSubordinateView(function, crosschainContext);
     }
 
     public RemoteFunctionCall<TransactionReceipt> setVal(BigInteger _val) {
@@ -66,20 +66,20 @@ public class Sc3Contract5 extends CrosschainContract {
         return executeRemoteCallTransaction(function);
     }
 
-    public byte[] setVal_AsSignedCrosschainSubordinateTransaction(BigInteger _val, final byte[][] nestedSubordinateTransactionsAndViews) throws IOException {
+    public byte[] setVal_AsSignedCrosschainSubordinateTransaction(BigInteger _val, final CrosschainContext crosschainContext) throws IOException {
         final Function function = new Function(
                 FUNC_SETVAL, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_val)), 
                 Collections.<TypeReference<?>>emptyList());
-        return createSignedSubordinateTransaction(function, nestedSubordinateTransactionsAndViews);
+        return createSignedSubordinateTransaction(function, crosschainContext);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> setVal_AsCrosschainTransaction(BigInteger _val, final byte[][] nestedSubordinateTransactionsAndViews) {
+    public RemoteFunctionCall<TransactionReceipt> setVal_AsCrosschainTransaction(BigInteger _val, final CrosschainContext crosschainContext) {
         final Function function = new Function(
                 FUNC_SETVAL, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_val)), 
                 Collections.<TypeReference<?>>emptyList());
-        return executeRemoteCallCrosschainTransaction(function, nestedSubordinateTransactionsAndViews);
+        return executeRemoteCallCrosschainTransaction(function, crosschainContext);
     }
 
     public RemoteFunctionCall<BigInteger> calculate(BigInteger _val1, BigInteger _val2) {
@@ -90,12 +90,12 @@ public class Sc3Contract5 extends CrosschainContract {
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
-    public byte[] calculate_AsSignedCrosschainSubordinateView(BigInteger _val1, BigInteger _val2, final byte[][] nestedSubordinateViews) throws IOException {
+    public byte[] calculate_AsSignedCrosschainSubordinateView(BigInteger _val1, BigInteger _val2, final CrosschainContext crosschainContext) throws IOException {
         final Function function = new Function(FUNC_CALCULATE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_val1), 
                 new org.web3j.abi.datatypes.generated.Uint256(_val2)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
-        return createSignedSubordinateView(function, nestedSubordinateViews);
+        return createSignedSubordinateView(function, crosschainContext);
     }
 
     @Deprecated
@@ -107,32 +107,23 @@ public class Sc3Contract5 extends CrosschainContract {
         return new Sc3Contract5(contractAddress, besu, crosschainTransactionManager, contractGasProvider);
     }
 
-    public static RemoteCall<Sc3Contract5> deploy(Besu besu, TransactionManager transactionManager, ContractGasProvider contractGasProvider) {
-        return deployRemoteCall(Sc3Contract5.class, besu, transactionManager, contractGasProvider, BINARY, "");
-    }
-
-    @Deprecated
-    public static RemoteCall<Sc3Contract5> deploy(Besu besu, TransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit) {
-        return deployRemoteCall(Sc3Contract5.class, besu, transactionManager, gasPrice, gasLimit, BINARY, "");
-    }
-
     public static RemoteCall<Sc3Contract5> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, ContractGasProvider contractGasProvider) {
-        byte[][] nestedSubordinateTransactionsAndViews = null;
-        return deployLockableContractRemoteCall(Sc3Contract5.class, besu, transactionManager, contractGasProvider, BINARY, "", nestedSubordinateTransactionsAndViews);
+        CrosschainContext crosschainContext = null;
+        return deployLockableContractRemoteCall(Sc3Contract5.class, besu, transactionManager, contractGasProvider, BINARY, "", crosschainContext);
     }
 
     @Deprecated
     public static RemoteCall<Sc3Contract5> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit) {
-        byte[][] nestedSubordinateTransactionsAndViews = null;
-        return deployLockableContractRemoteCall(Sc3Contract5.class, besu, transactionManager, gasPrice, gasLimit, BINARY, "", nestedSubordinateTransactionsAndViews);
+        CrosschainContext crosschainContext = null;
+        return deployLockableContractRemoteCall(Sc3Contract5.class, besu, transactionManager, gasPrice, gasLimit, BINARY, "", crosschainContext);
     }
 
-    public static RemoteCall<Sc3Contract5> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, ContractGasProvider contractGasProvider, final byte[][] nestedSubordinateTransactionsAndViews) {
-        return deployLockableContractRemoteCall(Sc3Contract5.class, besu, transactionManager, contractGasProvider, BINARY, "", nestedSubordinateTransactionsAndViews);
+    public static RemoteCall<Sc3Contract5> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, ContractGasProvider contractGasProvider, final CrosschainContext crosschainContext) {
+        return deployLockableContractRemoteCall(Sc3Contract5.class, besu, transactionManager, contractGasProvider, BINARY, "", crosschainContext);
     }
 
     @Deprecated
-    public static RemoteCall<Sc3Contract5> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit, final byte[][] nestedSubordinateTransactionsAndViews) {
-        return deployLockableContractRemoteCall(Sc3Contract5.class, besu, transactionManager, gasPrice, gasLimit, BINARY, "", nestedSubordinateTransactionsAndViews);
+    public static RemoteCall<Sc3Contract5> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit, final CrosschainContext crosschainContext) {
+        return deployLockableContractRemoteCall(Sc3Contract5.class, besu, transactionManager, gasPrice, gasLimit, BINARY, "", crosschainContext);
     }
 }

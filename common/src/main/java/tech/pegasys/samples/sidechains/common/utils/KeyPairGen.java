@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.samples.crosschain.atomicswapether.utils;
+package tech.pegasys.samples.sidechains.common.utils;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Ints;

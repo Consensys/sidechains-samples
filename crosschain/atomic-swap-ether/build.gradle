@@ -20,6 +20,8 @@ repositories {
 }
 
 dependencies {
+    compile project (':common')
+
     //compile 'org.web3j:core:4.1.0'
     // Use the Crosschain version of web3j. 
     implementation files('../libs/web3j-abi.jar')

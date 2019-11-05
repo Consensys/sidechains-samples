@@ -1,8 +1,8 @@
 .DS_Store
-
-private-key.txt
-infura.txt
+build
 
 **/.idea/workspace.xml
 **/.idea/usage.statistics.xml
 **/.idea/tasks.xml
+
+.gradle

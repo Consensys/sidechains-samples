@@ -20,7 +20,7 @@ import org.web3j.tx.RawTransactionManager;
 import org.web3j.tx.TransactionManager;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
-import tech.pegasys.samples.crosschain.atomicswapether.utils.AbstractPropertiesFile;
+import tech.pegasys.samples.sidechains.common.utils.AbstractPropertiesFile;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

@@ -16,9 +16,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
+import org.web3j.protocol.besu.response.crosschain.CrosschainIsLocked;
+import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
+import org.web3j.tx.CrosschainContext;
+import org.web3j.tx.CrosschainContextGenerator;
 import org.web3j.tx.CrosschainTransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
@@ -29,7 +33,8 @@ import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.
 import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc2Contract4;
 import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc3Contract5;
 import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc3Contract6;
-import tech.pegasys.samples.crosschain.threechainssixcontracts.utils.KeyPairGen;
+import tech.pegasys.samples.sidechains.common.coordination.CrosschainCoordinationContractSetup;
+import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -50,6 +55,11 @@ public class ThreeChainsSixContracts {
     // For this sample to work, three Hyperledger Besu Ethereum Clients which represent
     // three sidechains / blockchains need to be deployed at the addresses shown below,
     // with the blockchain IDs indicated.
+    // The crosschain coordination contract needs to be on a blockchain. So as to not
+    // require another blockchain to be deployed for this sample, just use the same sidechain
+    // as Contract 1.
+    private static final BigInteger SC0_SIDECHAIN_ID = BigInteger.valueOf(11);
+    private static final String SC0_URI = "http://127.0.0.1:8110/";
     private static final BigInteger SC1_SIDECHAIN_ID = BigInteger.valueOf(11);
     private static final String SC1_URI = "http://127.0.0.1:8110/";
     private static final BigInteger SC2_SIDECHAIN_ID = BigInteger.valueOf(22);
@@ -61,6 +71,10 @@ public class ThreeChainsSixContracts {
     private static final int POLLING_INTERVAL = 2000;
     // Retry reqests to Ethereum Clients up to five times.
     private static final int RETRY = 5;
+
+    // Time-out for Crosschain Transactions in terms of block numbers on SC0.
+    private static final int CROSSCHAIN_TRANSACTION_TIMEOUT = 10;
+
 
     // Name of properties file which holds information for this sample code.
     private static final String SAMPLE_PROPERTIES_FILE_NAME = "sample.properties";
@@ -77,6 +91,7 @@ public class ThreeChainsSixContracts {
     private Credentials credentials;
 
     // Web services for each blockchain / sidechain.
+    private Besu web3jSc0;
     private Besu web3jSc1;
     private Besu web3jSc2;
     private Besu web3jSc3;
@@ -103,11 +118,34 @@ public class ThreeChainsSixContracts {
     private Sc3Contract5 contract5;
     private Sc3Contract6 contract6;
 
+    private CrosschainCoordinationContractSetup coordinationContractSetup;
+
+
+    private static boolean automatedRun = false;
 
     public static void main(final String args[]) throws Exception {
         LOG.info("Three Chains Six Contracts - started");
         new ThreeChainsSixContracts().run();
     }
+
+    public static void automatedRun() throws Exception {
+        // Delete all properties files as a starting point. This will ensure all contracts are redeployed.
+        deleteAllPropertiesFile();
+
+        // Run the samples in a way that does not require input from the keyboard.
+        automatedRun = true;
+        new ThreeChainsSixContracts().run();
+
+        // Clean-up.
+        deleteAllPropertiesFile();
+    }
+
+    private static void deleteAllPropertiesFile() throws IOException {
+        Files.deleteIfExists(getSamplePropertiesPath());
+        (new CrosschainCoordinationContractSetup.CrosschainCoordinationContractSetupProperties()).deletePropertiesFile();
+    }
+
+
 
     private void run() throws Exception {
         if (propertiesFileExists()) {
@@ -116,7 +154,7 @@ public class ThreeChainsSixContracts {
             loadContracts();
         }
         else {
-            this.credentials = Credentials.create(new KeyPairGen().generateKeyPairForWeb3J());
+            this.credentials = Credentials.create(new KeyPairGen().generateKeyPairGetPrivateKey());
             setupBesuServiceTransactionManager();
             deployContracts();
             storeProperties();
@@ -126,20 +164,34 @@ public class ThreeChainsSixContracts {
         core();
     }
 
-    private void setupBesuServiceTransactionManager() {
+    private void setupBesuServiceTransactionManager() throws Exception {
         LOG.info("Setting up Besu service and transaction managers");
 
-        this.web3jSc1 = Besu.build(new HttpService(SC1_URI));
-        this.web3jSc2 = Besu.build(new HttpService(SC2_URI));
-        this.web3jSc3 = Besu.build(new HttpService(SC3_URI));
-        this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, SC1_SIDECHAIN_ID.longValue(), RETRY, POLLING_INTERVAL);
-        this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, SC2_SIDECHAIN_ID.longValue(), RETRY, POLLING_INTERVAL);
-        this.tmSc3 = new CrosschainTransactionManager(this.web3jSc3, this.credentials, SC3_SIDECHAIN_ID.longValue(), RETRY, POLLING_INTERVAL);
+        this.web3jSc0 = Besu.build(new HttpService(SC0_URI), POLLING_INTERVAL);
+        this.web3jSc1 = Besu.build(new HttpService(SC1_URI), POLLING_INTERVAL);
+        this.web3jSc2 = Besu.build(new HttpService(SC2_URI), POLLING_INTERVAL);
+        this.web3jSc3 = Besu.build(new HttpService(SC3_URI), POLLING_INTERVAL);
+
+        this.coordinationContractSetup = new CrosschainCoordinationContractSetup(this.web3jSc0, SC0_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
+        if (this.coordinationContractSetup.getCrosschainCoordinationContractAddress() == null) {
+            deployAndSetupCoordinationContract();
+        }
+
+
+        this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
+            this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
+        this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
+            this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
+        this.tmSc3 = new CrosschainTransactionManager(this.web3jSc3, this.credentials, SC3_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
+            this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
 
         // Hyperledger Besu is configured as an IBFT2, free gas network. We need a free gas provider.
         this.freeGasProvider = new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
     }
 
+    private void deployAndSetupCoordinationContract() throws Exception {
+        this.coordinationContractSetup.deployCrosschainCoordinationContract();
+    }
 
     private void loadContracts() {
         LOG.info("Loading contracts");
@@ -225,12 +277,27 @@ public class ThreeChainsSixContracts {
 
         checkExpectedValues(1,2,3,4,5,6);
 
-
         Scanner myInput = new Scanner( System.in );
         while (true) {
             String prompt = " Enter long value to call Contract1.doStuff with: ";
             System.out.println(prompt);
-            long val = myInput.nextLong();
+
+            boolean runOnce = automatedRun;
+            final long VAL = 43;
+            long val = VAL;
+            if (automatedRun) {
+                System.out.println("Executing automated run. Executing with value " + VAL + ".");
+                runOnce = true;
+            }
+            else {
+                if (myInput.hasNext()) {
+                    val = myInput.nextLong();
+                }
+                else {
+                    System.out.println("No input device available. Executing with value " + VAL + ".");
+                    runOnce = true;
+                }
+            }
             if (val < 0) {
                 System.out.println("  No negative numbers please!");
                 continue;
@@ -249,24 +316,38 @@ public class ThreeChainsSixContracts {
             sim.c1DoStuff(val);
 
             LOG.info("  Constructing Nested Crosschain Transaction");
+            // Originating sidechain is sidechain 1.
+            CrosschainContextGenerator contextGenerator = new CrosschainContextGenerator(SC1_SIDECHAIN_ID);
+
             // Call to contract 2
-            byte[] subordinateViewC2 = this.contract2.get_AsSignedCrosschainSubordinateView(null);
+            // Contract 2 is called by conract 1 on sidechain 1.
+            CrosschainContext subordinateContext = contextGenerator.createCrosschainContext(SC1_SIDECHAIN_ID, this.contract1Address);
+            byte[] subordinateViewC2 = this.contract2.get_AsSignedCrosschainSubordinateView(subordinateContext);
 
             // Call to contract 4
-            byte[] subordinateViewC4 = this.contract4.get_AsSignedCrosschainSubordinateView(BigInteger.valueOf(sim.c4Get_val), null);
+            // Contract 4 is called by contract 6 on sidechain 3.
+            subordinateContext = contextGenerator.createCrosschainContext(SC3_SIDECHAIN_ID, this.contract6Address);
+            byte[] subordinateViewC4 = this.contract4.get_AsSignedCrosschainSubordinateView(BigInteger.valueOf(sim.c4Get_val), subordinateContext);
 
             // Call to contract 5
+            // Contract 5 is called by contract 1 on sidechain 1.
+            subordinateContext = contextGenerator.createCrosschainContext(SC1_SIDECHAIN_ID, this.contract1Address);
             byte[] subordinateViewC5 = this.contract5.calculate_AsSignedCrosschainSubordinateView(
-                BigInteger.valueOf(sim.c5Calculate_val1), BigInteger.valueOf(sim.c5Calculate_val2), null);
+                BigInteger.valueOf(sim.c5Calculate_val1), BigInteger.valueOf(sim.c5Calculate_val2), subordinateContext);
 
             // Call to contract 6
+            // Contract 6 is called by contract 3 on sidechain 2.
             byte[][] subordinateTransactionsAndViewsForC6 = new byte[][] {subordinateViewC4};
+            subordinateContext = contextGenerator.createCrosschainContext(SC2_SIDECHAIN_ID, this.contract3Address, subordinateTransactionsAndViewsForC6);
             byte[] subordinateViewC6 = this.contract6.get_AsSignedCrosschainSubordinateView(
-                BigInteger.valueOf(sim.c6Get_val), subordinateTransactionsAndViewsForC6);
+                BigInteger.valueOf(sim.c6Get_val), subordinateContext);
 
             // Call to contract 3
+            // Contract 3 is called by contract 1 on sidechain 1.
             byte[][] subordinateTransactionsAndViewsForC3 = new byte[][] {subordinateViewC6};
-            byte[] subordinateTransC3 = this.contract3.process_AsSignedCrosschainSubordinateTransaction(BigInteger.valueOf(sim.c3Process_val), subordinateTransactionsAndViewsForC3);
+            subordinateContext = contextGenerator.createCrosschainContext(SC1_SIDECHAIN_ID, this.contract1Address, subordinateTransactionsAndViewsForC3);
+            byte[] subordinateTransC3 = this.contract3.process_AsSignedCrosschainSubordinateTransaction(BigInteger.valueOf(sim.c3Process_val),
+                subordinateContext);
 
             // Call to contract 1
             byte[][] subordinateTransactionsAndViewsForC1;
@@ -277,14 +358,35 @@ public class ThreeChainsSixContracts {
                 subordinateTransactionsAndViewsForC1 = new byte[][] {subordinateViewC2};
             }
             LOG.info("  Executing Crosschain Transaction");
-            transactionReceipt = this.contract1.doStuff_AsCrosschainTransaction(BigInteger.valueOf(val), subordinateTransactionsAndViewsForC1).send();
+            // Contract 1 is the originating transaction.
+            subordinateContext = contextGenerator.createCrosschainContext(subordinateTransactionsAndViewsForC1);
+            transactionReceipt = this.contract1.doStuff_AsCrosschainTransaction(BigInteger.valueOf(val), subordinateContext).send();
             LOG.info("  Transaction Receipt: {}", transactionReceipt.toString());
             assertTrue(transactionReceipt.isStatusOK());
 
-            // TODO should check to see if contracts unlocked before fetching values.
-            Thread.sleep(5000);
+            boolean stillLocked;
+            final int tooLong = 10;
+            int longTimeCount = 0;
+            StringBuffer graphicalCount = new StringBuffer();
+            do {
+                longTimeCount++;
+                if (longTimeCount > tooLong) {
+                    LOG.error("Contract {} did not unlock", this.contract1Address);
+                }
+                Thread.sleep(500);
+                CrosschainIsLocked isLockedObj = this.web3jSc1.crosschainIsLocked(this.contract1Address, DefaultBlockParameter.valueOf("latest")).send();
+                stillLocked = isLockedObj.isLocked();
+                if (stillLocked) {
+                    graphicalCount.append(".");
+                    LOG.info("   Waiting for the contract to unlock{}", graphicalCount.toString());
+                }
+            } while (stillLocked);
 
             checkExpectedValues(sim.val1, sim.val2, sim.val3, sim.val4, sim.val5, sim.val6);
+
+            if (runOnce) {
+                return;
+            }
         }
     }
 
@@ -384,7 +486,7 @@ public class ThreeChainsSixContracts {
         }
     }
 
-    private Path getSamplePropertiesPath() {
+    private static Path getSamplePropertiesPath() {
         return Paths.get(System.getProperty("user.dir"), SAMPLE_PROPERTIES_FILE_NAME);
     }
 }

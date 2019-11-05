@@ -1,0 +1,9 @@
+rootProject.name = 'samples'
+
+include 'common'
+include 'testall'
+include 'crosschain-atomic-swap-ether'
+include 'crosschain-three-chains-six-contracts'
+
+project(":crosschain-atomic-swap-ether").projectDir = file("crosschain/atomic-swap-ether")
+project(":crosschain-three-chains-six-contracts").projectDir = file("crosschain/three-chains-six-contracts")
