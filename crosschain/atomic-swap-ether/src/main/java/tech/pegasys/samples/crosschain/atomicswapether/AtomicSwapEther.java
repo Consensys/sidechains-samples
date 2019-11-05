@@ -19,6 +19,7 @@ import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.EthGetBalance;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.utils.Convert;
+import tech.pegasys.samples.sidechains.common.coordination.CrosschainCoordinationContractSetup;
 
 import java.io.IOException;
 import java.math.BigDecimal;

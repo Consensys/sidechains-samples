@@ -23,8 +23,8 @@ import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.tx.gas.StaticGasProvider;
 import tech.pegasys.samples.crosschain.atomicswapether.soliditywrappers.AtomicSwapRegistration;
-import tech.pegasys.samples.crosschain.atomicswapether.utils.AbstractPropertiesFile;
-import tech.pegasys.samples.crosschain.atomicswapether.utils.KeyPairGen;
+import tech.pegasys.samples.sidechains.common.utils.AbstractPropertiesFile;
+import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.math.BigInteger;
 

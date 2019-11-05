@@ -12,10 +12,9 @@
  */
 package tech.pegasys.samples.sidechains;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.Test;
 import tech.pegasys.samples.crosschain.atomicswapether.AtomicSwapEther;
+import tech.pegasys.samples.crosschain.threechainssixcontracts.ThreeChainsSixContracts;
 
 /**
  * The tests in this class require three sidechain nodes to be set-up:
@@ -32,7 +31,11 @@ public class CrosschainTests {
 	@Test
 	public void atomicSwapEther() throws Exception {
 		AtomicSwapEther.automatedRun();
-//		assertThat(resultCow).isEqualTo(BytesValue.fromHexString(cowKeccak256));
+	}
+
+	@Test
+	public void threeChainsSixContracts() throws Exception {
+		ThreeChainsSixContracts.automatedRun();
 	}
 
 }

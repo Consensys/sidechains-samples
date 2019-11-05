@@ -33,7 +33,8 @@ import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.
 import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc2Contract4;
 import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc3Contract5;
 import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.Sc3Contract6;
-import tech.pegasys.samples.crosschain.threechainssixcontracts.utils.KeyPairGen;
+import tech.pegasys.samples.sidechains.common.coordination.CrosschainCoordinationContractSetup;
+import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -140,7 +141,8 @@ public class ThreeChainsSixContracts {
     }
 
     private static void deleteAllPropertiesFile() throws IOException {
-        Files.delete(getSamplePropertiesPath());
+        Files.deleteIfExists(getSamplePropertiesPath());
+        (new CrosschainCoordinationContractSetup.CrosschainCoordinationContractSetupProperties()).deletePropertiesFile();
     }
 
 

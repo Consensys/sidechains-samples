@@ -9,9 +9,10 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/checkall" />
+            <option value="$PROJECT_DIR$/common" />
             <option value="$PROJECT_DIR$/crosschain/atomic-swap-ether" />
             <option value="$PROJECT_DIR$/crosschain/three-chains-six-contracts" />
+            <option value="$PROJECT_DIR$/testall" />
           </set>
         </option>
         <option name="useAutoImport" value="true" />

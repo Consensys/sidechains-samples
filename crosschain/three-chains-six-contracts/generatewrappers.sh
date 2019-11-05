@@ -6,8 +6,6 @@ solc contracts/Sc2Contract3.sol --bin --abi --optimize -o build
 solc contracts/Sc2Contract4.sol --bin --abi --optimize -o build
 solc contracts/Sc3Contract5.sol --bin --abi --optimize -o build
 solc contracts/Sc3Contract6.sol --bin --abi --optimize -o build
-solc ../common-solidity/coordination-contract/contracts/CrosschainCoordinationV1.sol --bin --abi --optimize -o build
-solc ../common-solidity/coordination-contract/contracts/VotingAlgMajorityWhoVoted.sol --bin --abi --optimize -o build
 
 ls -al build
 
@@ -21,7 +19,5 @@ $WEB3J solidity generate -cc -a=build/Sc2Contract3.abi -b=build/Sc2Contract3.bin
 $WEB3J solidity generate -cc -a=build/Sc2Contract4.abi -b=build/Sc2Contract4.bin -o=build -p=tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers
 $WEB3J solidity generate -cc -a=build/Sc3Contract5.abi -b=build/Sc3Contract5.bin -o=build -p=tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers
 $WEB3J solidity generate -cc -a=build/Sc3Contract6.abi -b=build/Sc3Contract6.bin -o=build -p=tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers
-$WEB3J solidity generate -a=build/CrosschainCoordinationV1.abi -b=build/CrosschainCoordinationV1.bin -o=build -p=tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers
-$WEB3J solidity generate -a=build/VotingAlgMajorityWhoVoted.abi -b=build/VotingAlgMajorityWhoVoted.bin -o=build -p=tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers
 
 ls -al build/tech/pegasys/samples/crosschain/threechainssixcontracts/soliditywrappers

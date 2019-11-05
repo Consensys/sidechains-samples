@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.samples.crosschain.threechainssixcontracts;
+package tech.pegasys.samples.sidechains.common.coordination;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,15 +22,15 @@ import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.tx.gas.StaticGasProvider;
-import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.CrosschainCoordinationV1;
-import tech.pegasys.samples.crosschain.threechainssixcontracts.soliditywrappers.VotingAlgMajorityWhoVoted;
-import tech.pegasys.samples.crosschain.threechainssixcontracts.utils.AbstractPropertiesFile;
-import tech.pegasys.samples.crosschain.threechainssixcontracts.utils.KeyPairGen;
+import tech.pegasys.samples.sidechains.common.coordination.soliditywrappers.CrosschainCoordinationV1;
+import tech.pegasys.samples.sidechains.common.coordination.soliditywrappers.VotingAlgMajorityWhoVoted;
+import tech.pegasys.samples.sidechains.common.utils.AbstractPropertiesFile;
+import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.math.BigInteger;
 
 /**
- * Act as the entity which owns the registration contract.
+ * Act as the entity which is deploying and setting up the crosschain coordination contract.
  */
 public class CrosschainCoordinationContractSetup {
     private static final Logger LOG = LogManager.getLogger(CrosschainCoordinationContractSetup.class);
@@ -111,13 +111,13 @@ public class CrosschainCoordinationContractSetup {
 
 
 
-    static class CrosschainCoordinationContractSetupProperties extends AbstractPropertiesFile {
+    public static class CrosschainCoordinationContractSetupProperties extends AbstractPropertiesFile {
         private static final String PROP_PRIV_KEY = "privateKey";
         private static final String PROP_CROSSCHAIN_CONTRACT_ADDRESS = "CrosschainCoordinationContractAddress";
         String privateKey;
         String crosschainCoordinationContractAddress;
 
-        CrosschainCoordinationContractSetupProperties() {
+        public CrosschainCoordinationContractSetupProperties() {
             super("crosschaincoordination");
         }
 
