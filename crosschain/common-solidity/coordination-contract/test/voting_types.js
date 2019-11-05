@@ -42,8 +42,8 @@ contract('Voting: types of voting / things to vote on:', function(accounts) {
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
 
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, New Participant: isSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
 
         let numUnmaskedParticipant = await coordInterface.getUnmaskedSidechainParticipantsSize.call(A_SIDECHAIN_ID);
         assert.equal(numUnmaskedParticipant, 2, "unexpectedly, number of unmasked participants != 2");
@@ -67,8 +67,8 @@ contract('Voting: types of voting / things to vote on:', function(accounts) {
         assert.equal(true, result, "incorrect result reported in event");
 
         // This code no longer works as the Truffle framework now picks up that maskedParticipant is the wrong size for address.
-        // let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, maskedParticipant);
-        // assert.equal(isParticipant, false, "unexpectedly, New masked participant: isSidechainParticipant != false");
+        // let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, maskedParticipant);
+        // assert.equal(isParticipant, false, "unexpectedly, New masked participant: isUnmaskedSidechainParticipant != false");
 
         let numMaskedParticipant = await coordInterface.getMaskedSidechainParticipantsSize.call(A_SIDECHAIN_ID);
         assert.equal(numMaskedParticipant, 1, "unexpectedly, number of masked participants != 1");
@@ -90,8 +90,8 @@ contract('Voting: types of voting / things to vote on:', function(accounts) {
         const result1 = await common.checkVotingResult(actionResults.logs);
         assert.equal(true, result1, "incorrect result reported in event");
 
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, New Participant: isSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
 
         const EXPECTED_OFFSET = "1";
         let newParticipantStored = await coordInterface.getUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, EXPECTED_OFFSET);
@@ -109,8 +109,8 @@ contract('Voting: types of voting / things to vote on:', function(accounts) {
         const result2 = await common.checkVotingResult(actionResults2.logs);
         assert.equal(true, result2, "incorrect result reported in event");
 
-        isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, participantToRemove);
-        assert.equal(isParticipant, false, "unexpectedly, New Participant: isSidechainParticipant != false");
+        isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, participantToRemove);
+        assert.equal(isParticipant, false, "unexpectedly, New Participant: isUnmaskedSidechainParticipant != false");
 
         let numUnmaskedParticipant = await coordInterface.getUnmaskedSidechainParticipantsSize.call(A_SIDECHAIN_ID);
         assert.equal(numUnmaskedParticipant, 2, "unexpectedly, unmasked participants array size != 2");

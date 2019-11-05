@@ -28,8 +28,8 @@ contract('Voting: timing tests', function(accounts) {
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
 
-        let isParticipant = await coordInterface.isSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, Second Participant: isSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, Second Participant: isUnmaskedSidechainParticipant == false");
     });
 
     it("finalise vote after voting period", async function() {
@@ -42,8 +42,8 @@ contract('Voting: timing tests', function(accounts) {
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
 
-        let isParticipant = await coordInterface.isSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, Second Participant: isSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, Second Participant: isUnmaskedSidechainParticipant == false");
     });
 
     it("finalise vote immediately: expect to fail", async function() {
@@ -61,8 +61,8 @@ contract('Voting: timing tests', function(accounts) {
         }
         assert.equal(didNotTriggerError, false);
 
-        let isParticipant = await coordInterface.isSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
-        assert.equal(isParticipant, false, "unexpectedly, Second Participant: isSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
+        assert.equal(isParticipant, false, "unexpectedly, Second Participant: isUnmaskedSidechainParticipant != false");
     });
 
     it("dont finalise vote", async function() {
@@ -71,8 +71,8 @@ contract('Voting: timing tests', function(accounts) {
 
         await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
 
-        let isParticipant = await coordInterface.isSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
-        assert.equal(isParticipant, false, "unexpectedly, Second Participant: isSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
+        assert.equal(isParticipant, false, "unexpectedly, Second Participant: isUnmaskedSidechainParticipant != false");
     });
 
     it("finalise vote early: expect to fail", async function() {
@@ -91,8 +91,8 @@ contract('Voting: timing tests', function(accounts) {
         }
         assert.equal(didNotTriggerError, false);
 
-        let isParticipant = await coordInterface.isSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
-        assert.equal(isParticipant, false, "unexpectedly, Second Participant: isSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
+        assert.equal(isParticipant, false, "unexpectedly, Second Participant: isUnmaskedSidechainParticipant != false");
     });
 
 

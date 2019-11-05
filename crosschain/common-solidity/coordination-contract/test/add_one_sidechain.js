@@ -61,10 +61,10 @@ contract('Add One Sidechain', function(accounts) {
         let coordInterface = await await common.getNewCrosschainCoordination();
         await coordInterface.addSidechain(twoSidechainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.A_VALID_PUBLIC_KEY);
 
-        const isPartBad = await coordInterface.isSidechainParticipant.call(twoSidechainId, accounts[1]);
+        const isPartBad = await coordInterface.isUnmaskedSidechainParticipant.call(twoSidechainId, accounts[1]);
         assert.equal(isPartBad, false, "unexpectedly, account which should not be part of the sidechain is");
 
-        const isPartGood = await coordInterface.isSidechainParticipant.call(twoSidechainId, accounts[0]);
+        const isPartGood = await coordInterface.isUnmaskedSidechainParticipant.call(twoSidechainId, accounts[0]);
         assert.equal(isPartGood, true, "account which should be part of the sidechain is");
     });
 

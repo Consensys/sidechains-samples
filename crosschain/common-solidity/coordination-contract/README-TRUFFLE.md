@@ -13,7 +13,7 @@ npm install -g truffle
 
 # Running the tests:
 Truffle permits writing tests in Javascript or Solidity.  The tests that 
-are currently included are writted in Javascript, which uses the 
+are currently included are written in Javascript, which uses the 
 Mocha framework (https://mochajs.org/) and 
 Chai (http://www.chaijs.com/) for assertions.
 

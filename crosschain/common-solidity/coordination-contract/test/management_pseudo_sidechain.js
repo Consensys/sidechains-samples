@@ -72,7 +72,7 @@ contract('Management Pseduo Sidechain', function(accounts) {
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
         await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
 
-       let isParticipant = await coordInterface.isSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
+       let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
        assert.equal(isParticipant, true, "unexpectedly, Second Participant: isSidechainParticipant == false");
     });
 
