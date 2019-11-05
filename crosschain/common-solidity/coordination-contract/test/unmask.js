@@ -48,8 +48,8 @@ contract('Unmasking masked participants:', function(accounts) {
         let maskedParticipant  = await addMaskedParticipant(coordInterface, newParticipant, salt1);
 
         // Check that the masked participant exists and the unmasked participant does not exist.
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, false, "unexpectedly, New masked participant: isSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, false, "unexpectedly, New masked participant: isUnmaskedSidechainParticipant != false");
 
         const EXPECTED_OFFSET = "0";
         let maskedParticipantStored = await coordInterface.getMaskedSidechainParticipant.call(A_SIDECHAIN_ID, EXPECTED_OFFSET);
@@ -60,8 +60,8 @@ contract('Unmasking masked participants:', function(accounts) {
         await coordInterface.unmask(A_SIDECHAIN_ID, EXPECTED_OFFSET, salt, {from: newParticipant});
 
         // Check that the masked participant doesn't exist and the unmasked participant does exist.
-        isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, unmasked participant doesnt exist: isSidechainParticipant == false");
+        isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, unmasked participant doesnt exist: isUnmaskedSidechainParticipant == false");
 
         maskedParticipantStored = await coordInterface.getMaskedSidechainParticipant.call(A_SIDECHAIN_ID, EXPECTED_OFFSET);
         maskedParticipantStoredHex = web3.utils.toHex(maskedParticipantStored);

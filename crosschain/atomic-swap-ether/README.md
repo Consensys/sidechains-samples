@@ -82,7 +82,7 @@ the expected Sender contract. This authentication information is fetched out of 
 Transaction. The crosschain transaction will not be committed if the Subordinate Transaction
 information is invalid.
 
-# Modifying the Sampe Code
+# Modifying the Sample Code
 ## Solidity Code
 To update the Solidity code:
 * Change the contracts in ./contracts

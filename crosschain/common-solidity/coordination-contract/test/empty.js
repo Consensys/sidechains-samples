@@ -12,7 +12,7 @@
  */
 
 /**
- * Unitinialised tests. Check that the contract operates
+ * Uninitialised tests. Check that the contract operates
  * correctly when there are no sidechains in the contract - except for the management pseudo-sidechain.
  *
  */
@@ -38,13 +38,13 @@ contract('Empty Tests', function(accounts) {
 
     it("isSidechainParticipant for management pseudo-sidechain: valid participant", async function() {
         let coordInterface = await await common.getDeployedCrosschainCoordination();
-        const isParticipant = await coordInterface.isSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, accounts[0]);
+        const isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, accounts[0]);
         assert.equal(isParticipant, true);
     });
 
     it("isSidechainParticipant for management pseudo-sidechain: non-participant", async function() {
         let coordInterface = await await common.getDeployedCrosschainCoordination();
-        const isParticipant = await coordInterface.isSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, accounts[1]);
+        const isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, accounts[1]);
         assert.equal(isParticipant, false);
     });
 
@@ -71,7 +71,6 @@ contract('Empty Tests', function(accounts) {
     it("getSidechainExists for non-existent sidechain", async function() {
         let coordInterface = await await common.getDeployedCrosschainCoordination();
         const exists = await coordInterface.getSidechainExists.call(NON_EXISTANT_SIDECHAIN);
-
         assert.equal(exists, false);
     });
 
@@ -83,7 +82,7 @@ contract('Empty Tests', function(accounts) {
 
     it("isSidechainParticipant for non-existent sidechain", async function() {
         let coordInterface = await await common.getDeployedCrosschainCoordination();
-        const isParticipant = await coordInterface.isSidechainParticipant.call(NON_EXISTANT_SIDECHAIN, accounts[0]);
+        const isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(NON_EXISTANT_SIDECHAIN, accounts[0]);
         assert.equal(isParticipant, false);
     });
 

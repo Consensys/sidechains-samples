@@ -33,8 +33,8 @@ contract('Voting: majority voting tests:', function(accounts) {
         let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, New Participant: isSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
     }
     async function addThirdParticipant(coordInterface) {
         let newParticipant = accounts[2];
@@ -44,8 +44,8 @@ contract('Voting: majority voting tests:', function(accounts) {
         let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, New Participant: isSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
     }
     async function addFourthParticipant(coordInterface) {
         let newParticipant = accounts[3];
@@ -56,8 +56,8 @@ contract('Voting: majority voting tests:', function(accounts) {
         let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, New Participant: isSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
     }
     async function addFifthParticipant(coordInterface) {
         let newParticipant = accounts[4];
@@ -69,8 +69,8 @@ contract('Voting: majority voting tests:', function(accounts) {
         let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, New Participant: isSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
     }
 
     it("one participant", async function() {
@@ -98,8 +98,8 @@ contract('Voting: majority voting tests:', function(accounts) {
         let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(false, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant != false");
     });
 
     it("two participants: one votes yes, one votes no", async function() {
@@ -114,8 +114,8 @@ contract('Voting: majority voting tests:', function(accounts) {
         let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(false, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant != false");
     });
 
     it("three participants: unanimous vote yes", async function() {
@@ -139,8 +139,8 @@ contract('Voting: majority voting tests:', function(accounts) {
         let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(false, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant != false");
     });
 
     it("three participants: one votes yes, one votes no", async function() {
@@ -156,8 +156,8 @@ contract('Voting: majority voting tests:', function(accounts) {
         let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(false, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant != false");
     });
 
     it("three participants: one votes yes, two vote no", async function() {
@@ -174,8 +174,8 @@ contract('Voting: majority voting tests:', function(accounts) {
         let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(false, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant != false");
     });
 
     it("three participants: two vote yes", async function() {
@@ -191,8 +191,8 @@ contract('Voting: majority voting tests:', function(accounts) {
         let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "Majority voted yes. Unexpectedly, New Participant: isSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "Majority voted yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
     });
 
     it("three participants: two vote yes, one votes no", async function() {
@@ -209,8 +209,8 @@ contract('Voting: majority voting tests:', function(accounts) {
         let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "Majority voted yes. Unexpectedly, New Participant: isSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "Majority voted yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
     });
 
     it("five participants: three vote yes, one votes no", async function() {
@@ -230,8 +230,8 @@ contract('Voting: majority voting tests:', function(accounts) {
         let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "Majority voted yes. Unexpectedly, New Participant: isSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "Majority voted yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
     });
 
 });
