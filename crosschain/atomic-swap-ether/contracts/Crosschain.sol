@@ -14,7 +14,20 @@ pragma solidity ^0.5.0;
 
 contract Crosschain {
     uint256 constant private LENGTH_OF_LENGTH_FIELD = 4;
+    uint256 constant private LENGTH_OF_UINT32 = 4;
     uint256 constant private LENGTH_OF_UINT256 = 0x20;
+    uint256 constant private LENGTH_OF_BYTES32 = 0x20;
+    uint256 constant private LENGTH_OF_ADDRESS = 20;
+
+    // Value to be passed ot the getInfo precompile.
+    uint32 constant private GET_INFO_CROSSCHAIN_TRANSACTION_TYPE = 0;
+    uint32 constant private GET_INFO_BLOCKCHAIN_ID = 1;
+    uint32 constant private GET_INFO_COORDINAITON_BLOCKHCAIN_ID = 2;
+    uint32 constant private GET_INFO_COORDINAITON_CONTRACT_ADDRESS = 3;
+    uint32 constant private GET_INFO_ORIGINATING_BLOCKCHAIN_ID = 4;
+    uint32 constant private GET_INFO_FROM_BLOCKCHAIN_ID = 5;
+    uint32 constant private GET_INFO_FROM_CONTRACT_ADDRESS = 6;
+    uint32 constant private GET_INFO_CROSSCHAIN_TRANSACTION_ID = 7;
 
     /** Generic calling of functions across chains.
       * Combined with abi.encodeWithSelector, allows to use Solidity function types and arbitrary arguments.
@@ -76,6 +89,104 @@ contract Crosschain {
             }
         }
 
+        return result[0];
+    }
+
+
+    /**
+     * Determine the type of crosschain transaction being executed.
+     *
+     * The return value will be one of:
+     *  ORIGINATING_TRANSACTION = 0
+     *  SUBORDINATE_TRANSACTION = 1
+     *  SUBORDINATE_VIEW = 2
+     *  ORIGINATING_LOCKABLE_CONTRACT_DEPLOY = 3
+     *  SUBORDINATE_LOCKABLE_CONTRACT_DEPLOY = 4
+     *  SINGLECHAIN_LOCKABLE_CONTRACT_DEPLOY = 5
+     *  UNLOCK_COMMIT_SIGNALLING_TRANSACTION = 6
+     *  UNLOCK_IGNORE_SIGNALLING_TRANSACTION = 7
+     *
+     * @return the type of crosschain transaction.
+     */
+    function crosschainGetInfoTransactionType() internal view returns (uint32) {
+        uint256 inputLength = LENGTH_OF_UINT32;
+        uint32[1] memory input;
+        input[0] = GET_INFO_CROSSCHAIN_TRANSACTION_TYPE;
+
+        uint32[1] memory result;
+        uint256 resultLength = LENGTH_OF_UINT32;
+
+        assembly {
+        // Read: https://medium.com/@rbkhmrcr/precompiles-solidity-e5d29bd428c4
+        // and
+        // https://www.reddit.com/r/ethdev/comments/7p8b86/it_is_possible_to_call_a_precompiled_contracts/
+        //  staticcall(gasLimit, to, inputOffset, inputSize, outputOffset, outputSize)
+        // GET_INFO_PRECOMPILE = 250. Inline assembler doesn't support constants.
+            if iszero(staticcall(not(0), 250, input, inputLength, result, resultLength)) {
+                revert(0, 0)
+            }
+        }
+
+        return result[0];
+    }
+
+
+
+    function crosschainGetInfoBlockchainId() internal view returns (uint256) {
+        return getInfoBlockchainId(GET_INFO_BLOCKCHAIN_ID);
+    }
+    function crosschainGetInfoCoordinationBlockchainId() internal view returns (uint256) {
+        return getInfoBlockchainId(GET_INFO_COORDINAITON_BLOCKHCAIN_ID);
+    }
+    function crosschainGetInfoOriginatingBlockchainId() internal view returns (uint256) {
+        return getInfoBlockchainId(GET_INFO_ORIGINATING_BLOCKCHAIN_ID);
+    }
+    function crosschainGetInfoFromBlockchainId() internal view returns (uint256) {
+        return getInfoBlockchainId(GET_INFO_FROM_BLOCKCHAIN_ID);
+    }
+    function crosschainGetInfoCrosschainTransactionId() internal view returns (uint256) {
+        return getInfoBlockchainId(GET_INFO_CROSSCHAIN_TRANSACTION_ID);
+    }
+
+    function getInfoBlockchainId(uint256 _requestedId) private view returns (uint256) {
+        uint256 inputLength = LENGTH_OF_UINT256;
+        uint256[1] memory input;
+        input[0] = _requestedId;
+
+        uint256[1] memory result;
+        uint256 resultLength = LENGTH_OF_UINT256;
+
+        assembly {
+        // GET_INFO_PRECOMPILE = 120. Inline assembler doesn't support constants.
+            if iszero(staticcall(not(0), 120, input, inputLength, result, resultLength)) {
+                revert(0, 0)
+            }
+        }
+        return result[0];
+    }
+
+
+    function crosschainGetInfoCoordinationContractAddress() internal view returns (address) {
+        return getInfoAddress(GET_INFO_COORDINAITON_CONTRACT_ADDRESS);
+    }
+    function crosschainGetInfoFromAddress() internal view returns (address) {
+        return getInfoAddress(GET_INFO_FROM_CONTRACT_ADDRESS);
+    }
+
+    function getInfoAddress(uint256 _requestedAddress) private view returns (address) {
+        uint256 inputLength = LENGTH_OF_UINT256;
+        uint256[1] memory input;
+        input[0] = _requestedAddress;
+
+        address[1] memory result;
+        uint256 resultLength = LENGTH_OF_ADDRESS;
+
+        assembly {
+        // GET_INFO_PRECOMPILE = 120. Inline assembler doesn't support constants.
+            if iszero(staticcall(not(0), 120, input, inputLength, result, resultLength)) {
+                revert(0, 0)
+            }
+        }
         return result[0];
     }
 

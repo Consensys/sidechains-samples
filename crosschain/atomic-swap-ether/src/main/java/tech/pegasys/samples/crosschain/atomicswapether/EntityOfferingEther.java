@@ -28,6 +28,7 @@ import tech.pegasys.samples.sidechains.common.utils.AbstractPropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.math.BigInteger;
+import java.util.function.BiFunction;
 
 /**
  * Act as the entity which offers Ether on sidechain 2 in exchange for Ether on sidechain 1.
@@ -194,4 +195,16 @@ public class EntityOfferingEther {
             storeProperties();
         }
     }
+
+    public void checkContract() throws Exception {
+        if (this.receiverContract == null) {
+            loadContracts();
+        }
+        BigInteger result = this.receiverContract.val().send();
+//        byte[] result1 = this.receiverContract.val().send();
+//        BigInteger result = new BigInteger(1, result1);
+        LOG.info("Val is {}", result);
+        LOG.info("Val is {}", result.toString(16));
+    }
+
 }

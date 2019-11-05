@@ -13,6 +13,7 @@
 pragma solidity >=0.4.23;
 
 import "./AtomicSwapReceiverInterface.sol";
+import "./Crosschain.sol";
 
 
 /*
@@ -27,10 +28,12 @@ import "./AtomicSwapReceiverInterface.sol";
  * contract's exchange function. This function will call the exchange function on this
  * sidechain which completes the exchange.
  */
-contract AtomicSwapReceiver is AtomicSwapReceiverInterface {
+contract AtomicSwapReceiver is AtomicSwapReceiverInterface, Crosschain {
     address public owner;
     address public senderContract;
     uint256 public senderSidechainId;
+
+    uint256 public val;
 
     modifier onlyOwner() {
         require(msg.sender == owner);
@@ -84,8 +87,20 @@ contract AtomicSwapReceiver is AtomicSwapReceiverInterface {
     */
     function exchange(uint256 _amount) external {
         require(senderContract != address(0));
-        // TODO check that the sending Sidechain ID and Contract are the expected ones.
-        // TODO this will achieved by two precompiles
+
+        uint256 fromBlockchainId = crosschainGetInfoFromBlockchainId();
+        address fromAddress = crosschainGetInfoFromAddress();
+        uint256 originatingBlockchainId = crosschainGetInfoOriginatingBlockchainId();
+
+        // Check that the transaction came from where we expect it to.
+        require(senderSidechainId == fromBlockchainId);
+        require(senderContract == fromAddress);
+
+        // Check that the from blockchain is the originating blockchain. The implication is that
+        // the entity operating this contract will ensure the from blockchain id is not being spoofed.
+        require(senderSidechainId == originatingBlockchainId);
+
+        val = fromBlockchainId;
 
         // The amount transferred could be the same or less than the amount of Ether
         // in the contract.
