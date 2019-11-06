@@ -28,7 +28,6 @@ import tech.pegasys.samples.sidechains.common.utils.AbstractPropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.math.BigInteger;
-import java.util.function.BiFunction;
 
 /**
  * Act as the entity which offers Ether on sidechain 2 in exchange for Ether on sidechain 1.
