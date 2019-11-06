@@ -132,18 +132,55 @@ contract Crosschain {
 
 
 
+    /**
+     * Get information about the transaction currently executing.
+     *
+     * @return Blockchain ID of this blockchain.
+     */
     function crosschainGetInfoBlockchainId() internal view returns (uint256) {
         return getInfoBlockchainId(GET_INFO_BLOCKCHAIN_ID);
     }
+
+    /**
+     * Get information about the transaction currently executing.
+     *
+     * @return Blockchain ID of the Coordination Blockchain.
+     *   0x00 is returned it the current transaction is a Single Blockchain Lockable
+     *   Contract Deploy.
+     */
     function crosschainGetInfoCoordinationBlockchainId() internal view returns (uint256) {
         return getInfoBlockchainId(GET_INFO_COORDINAITON_BLOCKHCAIN_ID);
     }
+
+    /**
+     * Get information about the transaction currently executing.
+     *
+     * @return Blockchain ID of the Originating Blockchain.
+     *   0x00 is returned it the current transaction is an Originating Transaction or a
+     *   Single Blockchain Lockable Contract Deploy.
+     */
     function crosschainGetInfoOriginatingBlockchainId() internal view returns (uint256) {
         return getInfoBlockchainId(GET_INFO_ORIGINATING_BLOCKCHAIN_ID);
     }
+
+    /**
+     * Get information about the transaction currently executing.
+     *
+     * @return Blockchain ID of the blockchain from which this function was called.
+     *   0x00 is returned it the current transaction is an Originating Transaction or a
+     *   Single Blockchain Lockable Contract Deploy.
+     */
     function crosschainGetInfoFromBlockchainId() internal view returns (uint256) {
         return getInfoBlockchainId(GET_INFO_FROM_BLOCKCHAIN_ID);
     }
+
+    /**
+     * Get information about the transaction currently executing.
+     *
+     * @return Crosschain Transaction Identifier.
+     *   0x00 is returned it the current transaction is a Single Blockchain Lockable
+     *   Contract Deploy.
+     */
     function crosschainGetInfoCrosschainTransactionId() internal view returns (uint256) {
         return getInfoBlockchainId(GET_INFO_CROSSCHAIN_TRANSACTION_ID);
     }
@@ -166,20 +203,38 @@ contract Crosschain {
     }
 
 
+    /**
+     * Get information about the transaction currently executing.
+     *
+     * @return Crosschain Coordination Contract address.
+     *   0x00 is returned it the current transaction is a Single Blockchain Lockable
+     *   Contract Deploy.
+     */
     function crosschainGetInfoCoordinationContractAddress() internal view returns (address) {
         return getInfoAddress(GET_INFO_COORDINAITON_CONTRACT_ADDRESS);
     }
+
+    /**
+     * Get information about the transaction currently executing.
+     *
+     * @return Address of contract from which this function was called.
+     *   0x00 is returned it the current transaction is an Originating Transaction or a
+     *   Single Blockchain Lockable Contract Deploy.
+     */
     function crosschainGetInfoFromAddress() internal view returns (address) {
         return getInfoAddress(GET_INFO_FROM_CONTRACT_ADDRESS);
     }
+
 
     function getInfoAddress(uint256 _requestedAddress) private view returns (address) {
         uint256 inputLength = LENGTH_OF_UINT256;
         uint256[1] memory input;
         input[0] = _requestedAddress;
 
+        // The return type is an address. However, we need to specify that we want a whole
+        // Ethereum word copied or we will end up with 20 bytes of th eaddress being masked off.
         address[1] memory result;
-        uint256 resultLength = LENGTH_OF_ADDRESS;
+        uint256 resultLength = LENGTH_OF_UINT256;
 
         assembly {
         // GET_INFO_PRECOMPILE = 120. Inline assembler doesn't support constants.

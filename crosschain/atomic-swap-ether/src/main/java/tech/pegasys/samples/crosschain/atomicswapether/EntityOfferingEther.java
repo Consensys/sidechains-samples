@@ -195,16 +195,4 @@ public class EntityOfferingEther {
             storeProperties();
         }
     }
-
-    public void checkContract() throws Exception {
-        if (this.receiverContract == null) {
-            loadContracts();
-        }
-        BigInteger result = this.receiverContract.val().send();
-//        byte[] result1 = this.receiverContract.val().send();
-//        BigInteger result = new BigInteger(1, result1);
-        LOG.info("Val is {}", result);
-        LOG.info("Val is {}", result.toString(16));
-    }
-
 }

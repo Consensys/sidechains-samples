@@ -33,9 +33,13 @@ contract AtomicSwapReceiver is AtomicSwapReceiverInterface, Crosschain {
     address public senderContract;
     uint256 public senderSidechainId;
 
-    uint256 public val;
+//    uint256 public valFromBlockchainId;
+//    address public valFromAddress;
+//    uint256 public valOriginatingBlockchainId;
+//    address public valSenderContract;
+//    uint256 public valSenderSidechainId;
 
-    modifier onlyOwner() {
+modifier onlyOwner() {
         require(msg.sender == owner);
         _;
     }
@@ -99,8 +103,12 @@ contract AtomicSwapReceiver is AtomicSwapReceiverInterface, Crosschain {
         // Check that the from blockchain is the originating blockchain. The implication is that
         // the entity operating this contract will ensure the from blockchain id is not being spoofed.
         require(senderSidechainId == originatingBlockchainId);
-
-        val = fromBlockchainId;
+//
+//        valFromBlockchainId = fromBlockchainId;
+//        valFromAddress = fromAddress;
+//        valOriginatingBlockchainId = originatingBlockchainId;
+//        valSenderContract = senderContract;
+//        valSenderSidechainId = senderSidechainId;
 
         // The amount transferred could be the same or less than the amount of Ether
         // in the contract.

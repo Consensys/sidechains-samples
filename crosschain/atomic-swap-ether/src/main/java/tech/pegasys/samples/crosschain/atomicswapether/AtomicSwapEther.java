@@ -199,9 +199,6 @@ public class AtomicSwapEther {
                 case 7:
                     deployRegistrationContract();
                     break;
-                case 8:
-                    this.entityOfferingEther.checkContract();
-                    break;
                 default:
                     LOG.error("Unknown option {}", option);
                     break;
