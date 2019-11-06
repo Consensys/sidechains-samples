@@ -1,8 +1,39 @@
+# From Besu:
+*.bak
+*.swp
+*.tmp
+*~.nib
+*.iml
+*.launch
+*.swp
+*.log
+.classpath
 .DS_Store
-build
+.externalToolBuilders/
+.gradle/
+.idea/
+.loadpath
+.metadata
+.prefs
+.project
+.recommenders/
+.settings
+.springBeans
+.vertx
+bin/
+local.properties
+target/
+tmp/
+build/
+out/
+site/
+/kubernetes/reports/
+/kubernetes/besu-*.tar.gz
 
-**/.idea/workspace.xml
-**/.idea/usage.statistics.xml
-**/.idea/tasks.xml
 
-.gradle
+# Sidechains:
+sample.properties
+sample.accepting.properties
+sample.faucet.properties
+sample.offering.properties
+sample.registration.properties
