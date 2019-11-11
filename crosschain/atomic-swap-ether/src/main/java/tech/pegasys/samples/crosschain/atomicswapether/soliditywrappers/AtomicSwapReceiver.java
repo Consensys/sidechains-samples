@@ -29,9 +29,11 @@ import org.web3j.tx.gas.ContractGasProvider;
  */
 @SuppressWarnings("rawtypes")
 public class AtomicSwapReceiver extends CrosschainContract {
-    private static final String BINARY = "60806040526040516103c53803806103c58339818101604052602081101561002657600080fd5b5051600080546001600160a01b031916331790556002556103798061004c6000396000f3fe6080604052600436106100705760003560e01c8063700eac1f1161004e578063700eac1f146100fc5780638da5cb5b14610123578063d0e30db014610138578063fc564fc61461014057610070565b80632e1a7d4d1461007557806353556559146100a157806367f235ea146100cb575b600080fd5b34801561008157600080fd5b5061009f6004803603602081101561009857600080fd5b5035610173565b005b3480156100ad57600080fd5b5061009f600480360360208110156100c457600080fd5b50356101bb565b3480156100d757600080fd5b506100e061026c565b604080516001600160a01b039092168252519081900360200190f35b34801561010857600080fd5b5061011161027b565b60408051918252519081900360200190f35b34801561012f57600080fd5b506100e0610281565b61009f610290565b34801561014c57600080fd5b5061009f6004803603602081101561016357600080fd5b50356001600160a01b03166102a9565b6000546001600160a01b0316331461018a57600080fd5b604051339082156108fc029083906000818181858888f193505050501580156101b7573d6000803e3d6000fd5b5050565b6001546001600160a01b03166101d057600080fd5b60006101da6102cb565b905060006101e66102dc565b905060006101f26102e8565b9050826002541461020257600080fd5b6001546001600160a01b0383811691161461021c57600080fd5b806002541461022a57600080fd5b303184111561023857600080fd5b604051339085156108fc029086906000818181858888f19350505050158015610265573d6000803e3d6000fd5b5050505050565b6001546001600160a01b031681565b60025481565b6000546001600160a01b031681565b6000546001600160a01b031633146102a757600080fd5b565b600180546001600160a01b0319166001600160a01b0392909216919091179055565b60006102d760056102f0565b905090565b60006102d760066102f0565b60006102d760045b600060206102fc610326565b838152610307610326565b6020808285856078600019fa61031c57600080fd5b5051949350505050565b6040518060200160405280600190602082028038833950919291505056fea265627a7a723058201bacb2e62b85be3ccf11c886d5d8e06ef9635b050849c847378a2329729e952564736f6c634300050a0032";
+    private static final String BINARY = "608060405260405161044a38038061044a8339818101604052602081101561002657600080fd5b5051600080546001600160a01b03191633908117825581526001602052604090203490556003556103ee8061005c6000396000f3fe60806040526004361061007b5760003560e01c8063700eac1f1161004e578063700eac1f1461012e5780638da5cb5b14610143578063d0e30db014610158578063fc564fc6146101605761007b565b80632e1a7d4d146100805780634c738909146100ac57806353556559146100d357806367f235ea146100fd575b600080fd5b34801561008c57600080fd5b506100aa600480360360208110156100a357600080fd5b5035610193565b005b3480156100b857600080fd5b506100c16101f2565b60408051918252519081900360200190f35b3480156100df57600080fd5b506100aa600480360360208110156100f657600080fd5b5035610205565b34801561010957600080fd5b506101126102cc565b604080516001600160a01b039092168252519081900360200190f35b34801561013a57600080fd5b506100c16102db565b34801561014f57600080fd5b506101126102e1565b6100aa6102f0565b34801561016c57600080fd5b506100aa6004803603602081101561018357600080fd5b50356001600160a01b031661031e565b336000908152600160205260409020548111156101af57600080fd5b33600081815260016020526040808220805485900390555183156108fc0291849190818181858888f193505050501580156101ee573d6000803e3d6000fd5b5050565b3360009081526001602052604090205490565b6002546001600160a01b031661021a57600080fd5b6000610224610340565b90506000610230610351565b9050600061023c61035d565b9050826003541461024c57600080fd5b6002546001600160a01b0383811691161461026657600080fd5b806003541461027457600080fd5b600080546001600160a01b031681526001602052604090205484111561029957600080fd5b5050600080546001600160a01b031681526001602052604080822080548590039055338252902080549290920390915550565b6002546001600160a01b031681565b60035481565b6000546001600160a01b031681565b6000546001600160a01b0316331461030757600080fd5b336000908152600160205260409020805434019055565b600280546001600160a01b0319166001600160a01b0392909216919091179055565b600061034c6005610365565b905090565b600061034c6006610365565b600061034c60045b6000602061037161039b565b83815261037c61039b565b6020808285856078600019fa61039157600080fd5b5051949350505050565b6040518060200160405280600190602082028038833950919291505056fea265627a7a72305820ee2b4b95643d935668fb49468d1b6dae888dedd6958219661569b92994521dde64736f6c634300050a0032";
 
     public static final String FUNC_WITHDRAW = "withdraw";
+
+    public static final String FUNC_GETMYBALANCE = "getMyBalance";
 
     public static final String FUNC_EXCHANGE = "exchange";
 
@@ -76,6 +78,20 @@ public class AtomicSwapReceiver extends CrosschainContract {
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_amount)), 
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallCrosschainTransaction(function, crosschainContext);
+    }
+
+    public RemoteFunctionCall<BigInteger> getMyBalance() {
+        final Function function = new Function(FUNC_GETMYBALANCE, 
+                Arrays.<Type>asList(), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
+        return executeRemoteCallSingleValueReturn(function, BigInteger.class);
+    }
+
+    public byte[] getMyBalance_AsSignedCrosschainSubordinateView(final CrosschainContext crosschainContext) throws IOException {
+        final Function function = new Function(FUNC_GETMYBALANCE, 
+                Arrays.<Type>asList(), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
+        return createSignedSubordinateView(function, crosschainContext);
     }
 
     public RemoteFunctionCall<TransactionReceipt> exchange(BigInteger _amount) {
@@ -152,22 +168,6 @@ public class AtomicSwapReceiver extends CrosschainContract {
         return executeRemoteCallTransaction(function, weiValue);
     }
 
-    public byte[] deposit_AsSignedCrosschainSubordinateTransaction(final CrosschainContext crosschainContext, BigInteger weiValue) throws IOException {
-        final Function function = new Function(
-                FUNC_DEPOSIT, 
-                Arrays.<Type>asList(), 
-                Collections.<TypeReference<?>>emptyList());
-        return createSignedSubordinateTransaction(function, crosschainContext, weiValue);
-    }
-
-    public RemoteFunctionCall<TransactionReceipt> deposit_AsCrosschainTransaction(final CrosschainContext crosschainContext, BigInteger weiValue) {
-        final Function function = new Function(
-                FUNC_DEPOSIT, 
-                Arrays.<Type>asList(), 
-                Collections.<TypeReference<?>>emptyList());
-        return executeRemoteCallCrosschainTransaction(function, crosschainContext, weiValue);
-    }
-
     public RemoteFunctionCall<TransactionReceipt> setSenderContract(String _senderContract) {
         final Function function = new Function(
                 FUNC_SETSENDERCONTRACT, 
@@ -210,17 +210,6 @@ public class AtomicSwapReceiver extends CrosschainContract {
     @Deprecated
     public static RemoteCall<AtomicSwapReceiver> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit, BigInteger initialWeiValue, BigInteger _senderSidechainId) {
         CrosschainContext crosschainContext = null;
-        String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_senderSidechainId)));
-        return deployLockableContractRemoteCall(AtomicSwapReceiver.class, besu, transactionManager, gasPrice, gasLimit, BINARY, encodedConstructor, initialWeiValue, crosschainContext);
-    }
-
-    public static RemoteCall<AtomicSwapReceiver> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, ContractGasProvider contractGasProvider, BigInteger initialWeiValue, BigInteger _senderSidechainId, final CrosschainContext crosschainContext) {
-        String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_senderSidechainId)));
-        return deployLockableContractRemoteCall(AtomicSwapReceiver.class, besu, transactionManager, contractGasProvider, BINARY, encodedConstructor, initialWeiValue, crosschainContext);
-    }
-
-    @Deprecated
-    public static RemoteCall<AtomicSwapReceiver> deployLockable(Besu besu, CrosschainTransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit, BigInteger initialWeiValue, BigInteger _senderSidechainId, final CrosschainContext crosschainContext) {
         String encodedConstructor = FunctionEncoder.encodeConstructor(Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_senderSidechainId)));
         return deployLockableContractRemoteCall(AtomicSwapReceiver.class, besu, transactionManager, gasPrice, gasLimit, BINARY, encodedConstructor, initialWeiValue, crosschainContext);
     }
