@@ -10,3 +10,6 @@ Web3J code can be obtained from here:
 
 https://github.com/PegaSysEng/sidechains-web3j
 
+Build with `./gradlew installDist` on Java 8. 
+
+
