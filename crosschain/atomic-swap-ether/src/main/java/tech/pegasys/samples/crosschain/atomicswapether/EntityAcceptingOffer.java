@@ -135,17 +135,23 @@ public class EntityAcceptingOffer {
     }
 
 
-
     public void swapEther(BigInteger amountInWei) throws Exception {
         LOG.info("Running Core Part of Sample Code");
+
+        LOG.info("  Depositing {} Wei into sender contract", amountInWei);
+        this.senderContract.deposit(amountInWei).send();
 
         CallSimulator sim = new CallSimulator(this.exchangeRate);
         LOG.info("   Scaled exchange rate is: 0x{}", this.exchangeRate.toString(16));
 
         LOG.info("  Executing call simulator to determine parameter values and expected results");
-        BigInteger receiverBalanceInWei = getBalance(this.web3jSc2, this.receiverContractAddress);
-        BigInteger senderBalanceInWei = getBalance(this.web3jSc1, this.senderContractAddress);
-        BigInteger accepterBalanceInWei = getBalance(this.web3jSc2, this.credentials.getAddress());
+//        BigInteger receiverBalanceInWei = getBalance(this.web3jSc2, this.receiverContractAddress);
+//        BigInteger senderBalanceInWei = getBalance(this.web3jSc1, this.senderContractAddress);
+//        BigInteger accepterBalanceInWei = getBalance(this.web3jSc2, this.credentials.getAddress());
+        String owner = this.receiverContract.owner().send();
+        BigInteger receiverBalanceInWei = this.receiverContract.getBalance(owner).send();
+        BigInteger senderBalanceInWei = this.senderContract.getBalance(owner).send();
+        BigInteger accepterBalanceInWei = this.senderContract.getMyBalance().send();
         sim.setValues(receiverBalanceInWei, accepterBalanceInWei, senderBalanceInWei);
         sim.exchange(amountInWei);
         if (sim.atomicSwapSenderError) {
@@ -172,7 +178,7 @@ public class EntityAcceptingOffer {
         CrosschainContext originatingTransactionContext = contextGenerator.createCrosschainContext(subordinateTransactionsAndViews);
 
         LOG.info("  Executing Crosschain Transaction");
-        TransactionReceipt transactionReceipt = this.senderContract.exchange_AsCrosschainTransaction(originatingTransactionContext, amountInWei).send();
+        TransactionReceipt transactionReceipt = this.senderContract.exchange_AsCrosschainTransaction(amountInWei, originatingTransactionContext).send();
         LOG.info("   Transaction Receipt: {}", transactionReceipt.toString());
         if (!transactionReceipt.isStatusOK()) {
             throw new Error(transactionReceipt.getStatus());
@@ -203,11 +209,17 @@ public class EntityAcceptingOffer {
         return this.credentials.getAddress();
     }
 
-
-    private BigInteger getBalance(Besu besu, String address) throws Exception {
-        EthGetBalance ethGetBalance=
-            besu.ethGetBalance(address, DefaultBlockParameterName.LATEST).sendAsync().get();
-        return ethGetBalance.getBalance();
+    public String myAccountBalanceSenderContract() throws Exception {
+        if (this.senderContract == null) {
+            return "";
+        }
+        return this.senderContract.getMyBalance().send().toString();
+    }
+    public String myAccountBalanceReceiverContract() throws Exception {
+        if (this.receiverContract == null) {
+            return "";
+        }
+        return this.receiverContract.getMyBalance().send().toString();
     }
 
 

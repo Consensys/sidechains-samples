@@ -110,12 +110,13 @@ public class EntityOfferingEther {
     }
 
 
-    public void withdrawSc1() throws Exception {
+    public void withdrawEverythingSc1() throws Exception {
         LOG.info("Withdrawing funds from sender contract on Sidechain 1");
         if (this.senderContract == null) {
             loadContracts();
         }
-        this.senderContract.withdraw().send();
+        BigInteger amountInWei = this.senderContract.getMyBalance().send();
+        this.senderContract.withdraw(amountInWei).send();
         LOG.info(" Withdrawl completed");
     }
 
@@ -139,6 +140,19 @@ public class EntityOfferingEther {
 
     public String accountAddress() {
         return this.credentials.getAddress();
+    }
+
+    public String myAccountBalanceSenderContract() throws Exception {
+        if (this.senderContract == null) {
+            loadContracts();
+        }
+        return this.senderContract.getMyBalance().send().toString();
+    }
+    public String myAccountBalanceReceiverContract() throws Exception {
+        if (this.receiverContract == null) {
+            loadContracts();
+        }
+        return this.receiverContract.getMyBalance().send().toString();
     }
 
     private void loadStoreProperties() {
