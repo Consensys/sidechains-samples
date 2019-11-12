@@ -6,7 +6,8 @@ solc contracts/AtomicSwapRegistration.sol --bin --abi --optimize -o build
 ls -al build
 
 # WEB3J=web3j
-WEB3J=../../../sidechains-web3j/besucodegen/build/distributions/besucodegen-4.6.0-SNAPSHOT/bin/besucodegen
+# WEB3J=../../../sidechains-web3j/besucodegen/build/distributions/besucodegen-4.6.0-SNAPSHOT/bin/besucodegen
+WEB3J=../../../sidechains-web3j/besucodegen/build/install/besucodegen/bin/besucodegen
 
 
 $WEB3J solidity generate -cc -a=build/AtomicSwapReceiver.abi -b=build/AtomicSwapReceiver.bin -o=build -p=tech.pegasys.samples.crosschain.atomicswapether.soliditywrappers

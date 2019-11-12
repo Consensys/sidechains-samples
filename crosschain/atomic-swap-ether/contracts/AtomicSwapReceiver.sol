@@ -14,6 +14,7 @@ pragma solidity >=0.4.23;
 
 import "./AtomicSwapReceiverInterface.sol";
 import "./Crosschain.sol";
+import "./DepositWithdrawl.sol";
 
 
 /*
@@ -28,15 +29,9 @@ import "./Crosschain.sol";
  * contract's exchange function. This function will call the exchange function on this
  * sidechain which completes the exchange.
  */
-contract AtomicSwapReceiver is AtomicSwapReceiverInterface, Crosschain {
-    address public owner;
+contract AtomicSwapReceiver is AtomicSwapReceiverInterface, Crosschain, DepositWithdrawl {
     address public senderContract;
     uint256 public senderSidechainId;
-
-    modifier onlyOwner() {
-        require(msg.sender == owner);
-        _;
-    }
 
     /**
     * Set-up the owner of this contract and the blockchain / sidechain that this contract will be
@@ -46,7 +41,6 @@ contract AtomicSwapReceiver is AtomicSwapReceiverInterface, Crosschain {
     *          this contract.
     */
     constructor(uint256 _senderSidechainId) public payable {
-        owner = msg.sender;
         senderSidechainId = _senderSidechainId;
     }
 
@@ -60,24 +54,8 @@ contract AtomicSwapReceiver is AtomicSwapReceiverInterface, Crosschain {
         senderContract = _senderContract;
     }
 
-
     /**
-    * Add funds to this contract.
-    */
-    function deposit() external payable onlyOwner {
-    }
-
-    /**
-     * Allows the owner of this contract to withdraw _amount of Wei from this contract.
-     *
-     * @param _amount The amount to withdraw.
-     */
-    function withdraw(uint256 _amount) external onlyOwner {
-        msg.sender.transfer(_amount);
-    }
-
-    /**
-    * Send _amount of Wei to the message sender. The function call must be part of
+    * Transfer within the contract _amount of Wei to the message sender. The function call must be part of
     * an Atomic Crosschain Transaction. The caller must be the blockchain / sidechain
     * configured in the AtomicSwapReceiver contract.
     *
@@ -100,8 +78,8 @@ contract AtomicSwapReceiver is AtomicSwapReceiverInterface, Crosschain {
 
         // The amount transferred could be the same or less than the amount of Ether
         // in the contract.
-        require(address(this).balance >= _amount);
-
-        msg.sender.transfer(_amount);
+        require(whoOwnsWhat[owner] >= _amount);
+        whoOwnsWhat[owner] -= _amount;
+        whoOwnsWhat[msg.sender] += _amount;
     }
 }

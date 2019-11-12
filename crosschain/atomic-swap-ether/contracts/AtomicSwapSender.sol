@@ -30,19 +30,13 @@ import "./AtomicSwapReceiver.sol";
  * available to them in this contract. They can withdraw the Ether using the withdraw()
  * function.
  */
-contract AtomicSwapSender is Crosschain {
+contract AtomicSwapSender is Crosschain, DepositWithdrawl {
     uint256 private constant DECIMAL_POINT = 2**64;
     uint256 private constant MAX_VALUE = 2**127;
 
-    address public owner;
     uint256 public exchangeRate;
     uint256 public receiverSidechainId;
     AtomicSwapReceiverInterface public receiverContract;
-
-    modifier onlyOwner() {
-        require(msg.sender == owner);
-        _;
-    }
 
     /**
     * Create the sender contract, connecting it with a receiver contract and specifying
@@ -63,26 +57,20 @@ contract AtomicSwapSender is Crosschain {
     constructor(uint256 _receiverSidechainId, address _receiverContract, uint256 _exchangeRate) public {
         require(_exchangeRate < MAX_VALUE);
         require(_exchangeRate != 0);
-        owner = msg.sender;
         receiverSidechainId = _receiverSidechainId;
         receiverContract = AtomicSwapReceiverInterface(_receiverContract);
         exchangeRate = _exchangeRate;
     }
 
-
-    /**
-    * Allow owner to withdraw all funds from this contract.
-    */
-    function withdraw() external onlyOwner {
-        msg.sender.transfer(address(this).balance);
-    }
-
     /**
     * Entity wishing to accept offer calls this function to execute the Atomic Swap of Ether.
     */
-    function exchange() payable external {
-        require(msg.value < MAX_VALUE);
-        uint256 swapAmountOtherChain = msg.value * exchangeRate / DECIMAL_POINT;
+    function exchange(uint256 _amount) external {
+        require(_amount < MAX_VALUE);
+        require(whoOwnsWhat[msg.sender] >= _amount);
+        whoOwnsWhat[msg.sender] -= _amount;
+        whoOwnsWhat[owner] += _amount;
+        uint256 swapAmountOtherChain = _amount * exchangeRate / DECIMAL_POINT;
         crosschainTransaction(receiverSidechainId, address(receiverContract), abi.encodeWithSelector(receiverContract.exchange.selector, swapAmountOtherChain) );
     }
 }
