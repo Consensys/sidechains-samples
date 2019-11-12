@@ -240,7 +240,7 @@ public class AtomicSwapEther {
         this.entityAcceptingOffer.swapEther(transferAmountWei);
     }
 
-    private void showBalances() throws InterruptedException, ExecutionException {
+    private void showBalances() throws Exception {
         LOG.info("Balances");
         LOG.info(" Faucet Account {} on SC1: {}",
             this.faucet.getFaucetAddress(), getBalanceAsString(this.web3jSc1, this.faucet.getFaucetAddress()));
@@ -257,17 +257,21 @@ public class AtomicSwapEther {
         if (this.entityOfferingEther.senderContractAddress != null) {
             LOG.info(" Sending Contract {} on SC1: {}",
                 this.entityOfferingEther.senderContractAddress, getBalanceAsString(this.web3jSc1, this.entityOfferingEther.senderContractAddress));
+            LOG.info(" Sending Contract Balance (offering): {}", this.entityOfferingEther.myAccountBalanceSenderContract());
+            LOG.info(" Sending Contract Balance (accepting): {}", this.entityAcceptingOffer.myAccountBalanceSenderContract());
         }
         if (this.entityOfferingEther.receiverContractAddress != null) {
             LOG.info(" Receiving Contract {} on SC2: {}",
                 this.entityOfferingEther.receiverContractAddress, getBalanceAsString(this.web3jSc2, this.entityOfferingEther.receiverContractAddress));
+            LOG.info(" Receiving Contract Balance (offering): {}", this.entityOfferingEther.myAccountBalanceReceiverContract());
+            LOG.info(" Receiving Contract Balance (accepting): {}", this.entityAcceptingOffer.myAccountBalanceReceiverContract());
         }
     }
 
 
     private void entityOfferingWithdrawlSc1() throws Exception {
         LOG.info("Entity Offering: Withdraw all Ether from sender contract on Sidechain 1");
-        this.entityOfferingEther.withdrawSc1();
+        this.entityOfferingEther.withdrawEverythingSc1();
     }
 
 

@@ -80,6 +80,6 @@ contract AtomicSwapReceiver is AtomicSwapReceiverInterface, Crosschain, DepositW
         // in the contract.
         require(whoOwnsWhat[owner] >= _amount);
         whoOwnsWhat[owner] -= _amount;
-        whoOwnsWhat[msg.sender] -= _amount;
+        whoOwnsWhat[msg.sender] += _amount;
     }
 }

@@ -37,7 +37,7 @@ contract DepositWithdrawl {
     /**
     * Add funds to this contract.
     */
-    function deposit() external payable onlyOwner {
+    function deposit() external payable {
         whoOwnsWhat[msg.sender] += msg.value;
     }
 
@@ -59,5 +59,13 @@ contract DepositWithdrawl {
      */
     function getMyBalance() external view returns (uint256) {
         return(whoOwnsWhat[msg.sender]);
+    }
+    /**
+     * Get the amount of Ether an address owns in this contract.
+     *
+     * @return amount of Ether in Wei msg.sender has stored in this contract.
+     */
+    function getBalance(address account) external view returns (uint256) {
+        return(whoOwnsWhat[account]);
     }
 }
