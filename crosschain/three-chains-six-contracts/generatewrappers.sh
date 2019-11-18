@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 rm -rf build
-solc contracts/Sc1Contract1.sol --bin --abi --optimize -o build
-solc contracts/Sc2Contract2.sol --bin --abi --optimize -o build
-solc contracts/Sc2Contract3.sol --bin --abi --optimize -o build
-solc contracts/Sc2Contract4.sol --bin --abi --optimize -o build
-solc contracts/Sc3Contract5.sol --bin --abi --optimize -o build
-solc contracts/Sc3Contract6.sol --bin --abi --optimize -o build
+solc contracts/Sc1Contract1.sol --allow-paths . --bin --abi --optimize -o build
+solc contracts/Sc2Contract2.sol --allow-paths . --bin --abi --optimize -o build
+solc contracts/Sc2Contract3.sol --allow-paths . --bin --abi --optimize -o build
+solc contracts/Sc2Contract4.sol --allow-paths . --bin --abi --optimize -o build
+solc contracts/Sc3Contract5.sol --allow-paths . --bin --abi --optimize -o build
+solc contracts/Sc3Contract6.sol --allow-paths . --bin --abi --optimize -o build
 
 ls -al build
 
