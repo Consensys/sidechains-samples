@@ -34,10 +34,11 @@ import java.util.Scanner;
 
 /* This example runs a Crosschain Transaction from Contract1 in Chain 1 to Contract2 in chain 2.
  * Steps:
- * - App deploys the contracts. Contract2 initializes the variable `itWorked` to false.
- * - App calls Contract1.crosschain_setter() in Chain 1
- * - Contract1.crosschain_set() calls Contract2.setter() in Chain 2, which sets `itWorked` to true
- * - App calls Contract2.get() in Chain 2 to show that the initial value has changed.
+ * - App deploys Contract1 in chain 1 and Contract2 in chain 2.
+ * - App sets Contract2's variable `val` to false.
+ * - App calls Contract1.crosschain_setter()
+ * - Contract1.crosschain_setter() calls Contract2.set() in Chain 2, which sets `val` to true
+ * - App calls Contract2.get() to show that the initial value has been changed by the crosschain transaction.
  */
 
 public class CrosschainTransactionNoParams {
@@ -193,7 +194,7 @@ public class CrosschainTransactionNoParams {
 
         LOG.info(" Set state in each contract to known values that aren't zero.");
         TransactionReceipt transactionReceipt;
-        LOG.info("  Single-chain transaction: Contract2.set(2)");
+        LOG.info("  Single-chain transaction: Contract2.clear()");
         transactionReceipt = this.contract2.clear().send();
         assertTrue(transactionReceipt.isStatusOK());
 
@@ -203,7 +204,8 @@ public class CrosschainTransactionNoParams {
         Boolean c2Val = this.contract2.get().send();
 
         LOG.info("  Executing call simulator to determine parameter values and expected results");
-        CallSimulator sim = new CallSimulator(c2Val.booleanValue());
+        CallSimulator sim = new CallSimulator();
+        sim.c2clear();
         sim.c1Crosschain_setter();
 
         LOG.info("  Constructing Nested Crosschain Transaction");
@@ -213,14 +215,14 @@ public class CrosschainTransactionNoParams {
         // Call to contract 2
         // Contract 2 is called by contract 1 on sidechain 1.
         CrosschainContext subordinateContext = contextGenerator.createCrosschainContext(SC1_SIDECHAIN_ID, this.contract1Address);
-        byte[] subordinateViewC2 = this.contract2.get_AsSignedCrosschainSubordinateView(subordinateContext);
+        byte[] subordinateTransactionC2 = this.contract2.set_AsSignedCrosschainSubordinateTransaction(subordinateContext);
 
         // Call to contract 1
         byte[][] subordinateTransactionsAndViewsForC1;
-        subordinateTransactionsAndViewsForC1 = new byte[][] {subordinateViewC2};
+        subordinateTransactionsAndViewsForC1 = new byte[][] {subordinateTransactionC2};
 
         LOG.info("  Executing Crosschain Transaction");
-        // Contract 1 is the originating transaction.
+        // The originating transaction starts in Contract 1.
         subordinateContext = contextGenerator.createCrosschainContext(subordinateTransactionsAndViewsForC1);
         transactionReceipt = this.contract1.crosschain_setter_AsCrosschainTransaction(subordinateContext).send();
         LOG.info("  Transaction Receipt: {}", transactionReceipt.toString());
@@ -244,7 +246,7 @@ public class CrosschainTransactionNoParams {
             }
         } while (stillLocked);
 
-        checkExpectedValues(sim.val2);
+        checkExpectedValues(sim.c2Get());
 
     }
 

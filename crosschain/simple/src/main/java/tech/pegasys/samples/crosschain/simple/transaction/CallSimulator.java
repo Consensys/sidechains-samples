@@ -13,26 +13,30 @@
 package tech.pegasys.samples.crosschain.simple.transaction;
 
 /**
- * Simulate the call flow through the Solidity contracts. Based on the current values (given as arguments),
- * determine the expected values. These expected values can be used to create the nested
- * crosschain transaction.
+ * Simulate the call flow through the Solidity contracts and its results.
+ *
+ * For clarity, the interface to the simulator should be equivalent to the interface to the system of contracts:
+ *  - deployment of the contracts = construction of the simulator
+ *  - calls to contract functions = calls to methods in the simulator
+ *
+ * The simulator is intended to give insight into the state of the system of contracts for the purpose of
+ * preparing the needed Subordinate Transactions/Views. This might necessitate the simulator to give extra visibility
+ * into otherwise private state of the system of contracts.
  */
 class CallSimulator {
 
-  Boolean val2;
+  Boolean c2val;
 
-  CallSimulator(Boolean v2) {
-    this.val2 = v2;
-  }
-
-  // Simulate Sc1Contract1's doStuff function.
   void c1Crosschain_setter() {
-    Boolean sc2Val = true;
+      c2val = true;
   }
 
-  // Simulate Sc2Contract2's get function.
-  private Boolean c2Get() {
-    return this.val2;
+  Boolean c2Get() {
+      return c2val;
+  }
+
+  void c2clear() {
+      c2val = false;
   }
 
 }
