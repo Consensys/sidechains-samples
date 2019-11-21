@@ -8,7 +8,7 @@ contract Sc1Contract1 is Crosschain {
     uint256 private sc2;
     Sc2Contract2Interface private contract2;
 
-    constructor (uint256 _Sc2SidechainId, address payable _contract2 ) public {
+    constructor (uint256 _Sc2SidechainId, address _contract2 ) public {
         sc2 = _Sc2SidechainId;
         contract2 = Sc2Contract2Interface(_contract2);
     }

@@ -20,6 +20,7 @@ import org.web3j.tx.gas.StaticGasProvider;
 import tech.pegasys.samples.crosschain.simple.soliditywrappers.Sc1Contract1;
 import tech.pegasys.samples.crosschain.simple.soliditywrappers.Sc2Contract2;
 import tech.pegasys.samples.sidechains.common.coordination.CrosschainCoordinationContractSetup;
+import tech.pegasys.samples.sidechains.common.utils.BasePropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.io.FileInputStream;
@@ -28,9 +29,10 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.Scanner;
+
+import static tech.pegasys.samples.sidechains.common.coordination.CrosschainCoordinationContractSetup.*;
 
 /* This example runs a Crosschain Transaction from Contract1 in Chain 1 to Contract2 in chain 2.
  * Steps:
@@ -42,7 +44,7 @@ import java.util.Scanner;
  */
 
 public class CrosschainTransactionNoParams {
-    private static final Logger LOG = LogManager.getLogger(tech.pegasys.samples.crosschain.simple.transaction.CrosschainTransactionNoParams.class);
+    private static final Logger LOG = LogManager.getLogger(CrosschainTransactionNoParams.class);
 
     private static final BigInteger SC0_SIDECHAIN_ID = BigInteger.valueOf(11);
     private static final String SC0_URI = "http://127.0.0.1:8110/";
@@ -59,9 +61,6 @@ public class CrosschainTransactionNoParams {
     // Time-out for Crosschain Transactions in terms of block numbers on SC0.
     private static final int CROSSCHAIN_TRANSACTION_TIMEOUT = 10;
 
-
-    // Name of properties file which holds information for this sample code.
-    private static final String SAMPLE_PROPERTIES_FILE_NAME = "sample.properties";
     // Properties in the file.
     private static final String PRIVATE_KEY = "PrivateKey";
     private static final String CONTRACT1_ADDRESS = "Contract1Address";
@@ -97,7 +96,7 @@ public class CrosschainTransactionNoParams {
 
     public static void main(final String args[]) throws Exception {
         LOG.info("Three Chains Six Contracts - started");
-        new tech.pegasys.samples.crosschain.simple.transaction.CrosschainTransactionNoParams().run();
+        new CrosschainTransactionNoParams().run();
     }
 
     public static void automatedRun() throws Exception {
@@ -106,31 +105,21 @@ public class CrosschainTransactionNoParams {
 
         // Run the samples in a way that does not require input from the keyboard.
         automatedRun = true;
-        new tech.pegasys.samples.crosschain.simple.transaction.CrosschainTransactionNoParams().run();
+        new CrosschainTransactionNoParams().run();
 
         // Clean-up.
         deleteAllPropertiesFile();
     }
 
     private static void deleteAllPropertiesFile() throws IOException {
-        Files.deleteIfExists(getSamplePropertiesPath());
-        (new CrosschainCoordinationContractSetup.CrosschainCoordinationContractSetupProperties()).deletePropertiesFile();
+        new SampleProperties().deletePropertiesFile();
+        new CrosschainCoordinationContractSetupProperties().deletePropertiesFile();
     }
 
 
 
     private void run() throws Exception {
-        if (propertiesFileExists()) {
-            loadProperties();
-            setupBesuServiceTransactionManager();
-            loadContracts();
-        }
-        else {
-            this.credentials = Credentials.create(new KeyPairGen().generateKeyPairGetPrivateKey());
-            setupBesuServiceTransactionManager();
-            deployContracts();
-            storeProperties();
-        }
+        loadStoreProperties();
         LOG.info("Using credentials which correspond to account: {}", this.credentials.getAddress());
 
         core();
@@ -270,62 +259,35 @@ public class CrosschainTransactionNoParams {
 
 
 
-    private boolean propertiesFileExists() {
-        return Files.exists(getSamplePropertiesPath());
-    }
-
-    // Load the private key and contract addresses from disk.
-    //
-    // ******                                                                         ******
-    // ****** NOTE that in a production environment, extreme care should be exercised ******
-    // ****** with the storage of the private key.                                    ******
-    // ******                                                                         ******
-    private void loadProperties() {
-        Path path = getSamplePropertiesPath();
-        LOG.info("Loading Properties from {}", path.toString());
-        try {
-            FileInputStream fis = new FileInputStream(getSamplePropertiesPath().toFile());
-            Properties properties = new Properties();
-            properties.load(fis);
-
-            String privateKey = properties.getProperty(PRIVATE_KEY);
-            this.credentials = Credentials.create(privateKey);
-            this.contract1Address = properties.getProperty(CONTRACT1_ADDRESS);
-            this.contract2Address = properties.getProperty(CONTRACT2_ADDRESS);
-
-        } catch (IOException ioEx) {
-            // By the time we have reached the loadProperties method, we should be sure the file
-            // exists. As such, just throw an exception to stop.
-            throw new RuntimeException(ioEx);
+    private void loadStoreProperties() throws Exception {
+        SampleProperties props = new SampleProperties();
+        if (props.propertiesFileExists()) {
+            props.loadProperties();
+            setupBesuServiceTransactionManager();
+            loadContracts();
         }
-    }
-
-    // Store the private key and contract addresses to disk.
-    //
-    // ******                                                                         ******
-    // ****** NOTE that in a production environment, extreme care should be exercised ******
-    // ****** with the storage of the private key.                                    ******
-    // ******                                                                         ******
-    private void storeProperties() {
-        Path path = getSamplePropertiesPath();
-        LOG.info("Storing Properties to {}", path.toString());
-        try {
-            final FileOutputStream fos = new FileOutputStream(path.toFile());
-            final Properties properties = new Properties();
-            String privateKey = this.credentials.getEcKeyPair().getPrivateKey().toString(16);
-            properties.setProperty(PRIVATE_KEY, privateKey);
-            properties.setProperty(CONTRACT1_ADDRESS, this.contract1Address);
-            properties.setProperty(CONTRACT2_ADDRESS, this.contract2Address);
-            properties.store(fos, "Sample code properties file");
-
-        } catch (IOException ioEx) {
-            // By the time we have reached the loadProperties method, we should be sure the file
-            // exists. As such, just throw an exception to stop.
-            throw new RuntimeException(ioEx);
+        else {
+            this.credentials = Credentials.create(new KeyPairGen().generateKeyPairGetPrivateKey());
+            setupBesuServiceTransactionManager();
+            deployContracts();
+            // Generate a key and store it in the format required for Credentials.
+            props.properties.setProperty(PRIVATE_KEY, new KeyPairGen().generateKeyPairGetPrivateKey());
+            props.properties.setProperty(CONTRACT1_ADDRESS, this.contract1Address);
+            props.properties.setProperty(CONTRACT2_ADDRESS, this.contract2Address);
+            props.storeProperties();
         }
+        this.credentials = Credentials.create(props.properties.getProperty(PRIVATE_KEY));
+        this.contract1Address = props.properties.getProperty(CONTRACT1_ADDRESS);
+        this.contract2Address = props.properties.getProperty(CONTRACT2_ADDRESS);
+
     }
 
-    private static Path getSamplePropertiesPath() {
-        return Paths.get(System.getProperty("user.dir"), SAMPLE_PROPERTIES_FILE_NAME);
+
+    static class SampleProperties extends BasePropertiesFile {
+
+        SampleProperties() {
+            super("");
+        }
+
     }
 }

@@ -91,7 +91,7 @@ public class AtomicSwapEther {
     private static void deleteAllPropertiesFile() throws IOException {
         // Delete all properties files as a starting point. This will ensure all contracts are redeployed.
         (new CrosschainCoordinationContractSetup.CrosschainCoordinationContractSetupProperties()).deletePropertiesFile();
-        (new EntityAcceptingOffer.EntityOfferingProperties()).deletePropertiesFile();
+        (new EntityAcceptingOffer.EntityOfferingProperties()).deletePropertiesFile(); //TODO: repeated EntityOfferingProperties??
         (new EntityOfferingEther.EntityOfferingProperties()).deletePropertiesFile();
         (new Faucet.FaucetProperties()).deletePropertiesFile();
         (new RegistrationContractOwner.RegistrationProperties()).deletePropertiesFile();
