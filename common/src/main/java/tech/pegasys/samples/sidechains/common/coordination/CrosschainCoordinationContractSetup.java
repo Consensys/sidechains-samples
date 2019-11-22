@@ -24,7 +24,7 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.tx.gas.StaticGasProvider;
 import tech.pegasys.samples.sidechains.common.coordination.soliditywrappers.CrosschainCoordinationV1;
 import tech.pegasys.samples.sidechains.common.coordination.soliditywrappers.VotingAlgMajorityWhoVoted;
-import tech.pegasys.samples.sidechains.common.utils.AbstractPropertiesFile;
+import tech.pegasys.samples.sidechains.common.utils.BasePropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.math.BigInteger;
@@ -111,7 +111,7 @@ public class CrosschainCoordinationContractSetup {
 
 
 
-    public static class CrosschainCoordinationContractSetupProperties extends AbstractPropertiesFile {
+    public static class CrosschainCoordinationContractSetupProperties extends BasePropertiesFile {
         private static final String PROP_PRIV_KEY = "privateKey";
         private static final String PROP_CROSSCHAIN_CONTRACT_ADDRESS = "CrosschainCoordinationContractAddress";
         String privateKey;

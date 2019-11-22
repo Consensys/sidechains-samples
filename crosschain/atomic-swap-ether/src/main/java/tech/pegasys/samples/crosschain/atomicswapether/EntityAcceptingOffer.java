@@ -18,8 +18,6 @@ import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.besu.response.crosschain.CrosschainIsLocked;
 import org.web3j.protocol.core.DefaultBlockParameter;
-import org.web3j.protocol.core.DefaultBlockParameterName;
-import org.web3j.protocol.core.methods.response.EthGetBalance;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.CrosschainContext;
 import org.web3j.tx.CrosschainContextGenerator;
@@ -30,7 +28,7 @@ import org.web3j.tx.gas.StaticGasProvider;
 import tech.pegasys.samples.crosschain.atomicswapether.soliditywrappers.AtomicSwapReceiver;
 import tech.pegasys.samples.crosschain.atomicswapether.soliditywrappers.AtomicSwapRegistration;
 import tech.pegasys.samples.crosschain.atomicswapether.soliditywrappers.AtomicSwapSender;
-import tech.pegasys.samples.sidechains.common.utils.AbstractPropertiesFile;
+import tech.pegasys.samples.sidechains.common.utils.BasePropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.math.BigInteger;
@@ -239,7 +237,7 @@ public class EntityAcceptingOffer {
 
 
 
-    static class EntityOfferingProperties extends AbstractPropertiesFile {
+    static class EntityOfferingProperties extends BasePropertiesFile {
         private static final String PROP_PRIV_KEY = "privateKey";
         String privateKey;
 

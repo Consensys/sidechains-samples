@@ -14,6 +14,7 @@ package tech.pegasys.samples.sidechains;
 
 import org.junit.Test;
 import tech.pegasys.samples.crosschain.atomicswapether.AtomicSwapEther;
+import tech.pegasys.samples.crosschain.simple.transaction.CrosschainTransactionNoParams;
 import tech.pegasys.samples.crosschain.threechainssixcontracts.ThreeChainsSixContracts;
 
 /**
@@ -36,6 +37,11 @@ public class CrosschainTests {
 	@Test
 	public void threeChainsSixContracts() throws Exception {
 		ThreeChainsSixContracts.automatedRun();
+	}
+
+	@Test
+	public void crosschainTransactionNoParams() throws Exception {
+		CrosschainTransactionNoParams.automatedRun();
 	}
 
 }

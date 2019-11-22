@@ -246,7 +246,7 @@ public class ThreeChainsSixContracts {
             Sc1Contract1.deployLockable(this.web3jSc1, this.tmSc1, this.freeGasProvider, SC2_SIDECHAIN_ID, SC3_SIDECHAIN_ID, contract2Address, contract3Address, contract5Address);
         this.contract1 = remoteCallContract1.send();
         this.contract1Address = this.contract1.getContractAddress();
-        LOG.info(" Contract 1 deployed on sidechain 1 (id={}), at address: ", " + SC1_SIDECHAIN_ID + " + contract1Address);
+        LOG.info(" Contract 1 deployed on sidechain 1 (id={}), at address: {}", SC1_SIDECHAIN_ID, contract1Address);
     }
 
 
