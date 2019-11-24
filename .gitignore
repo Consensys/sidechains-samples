@@ -38,3 +38,5 @@ sample.faucet.properties
 sample.offering.properties
 sample.registration.properties
 sample.crosschaincoordination.properties
+**/node_modules
+package-lock.json
