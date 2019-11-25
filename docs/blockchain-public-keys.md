@@ -23,21 +23,21 @@ A node that needs some information signed is called a Coordinating Node. The Coo
 # Initial Public Key Upload Process
 The process for creating a Blockchain Public Key so Atomic Crosschain Transactions can take place involves first generating the key and then deploying it in the Crosschain Coordination Contract. The steps are:
 
-1. Check to see if there is an existing key. This key may have been generated at the request of another entity. If there is an existing key, check to see if it has the required threshold. The JSON RPC API for fetching the Blockchain Public Key is `crosschainBlockchainPublicKey`. The API returns an RLP list containing the public key, the key version number and the threshold.
+1. Check to see if there is an existing key. This key may have been generated at the request of another entity. If there is an existing key, check to see if it has the required threshold. The JSON RPC API for fetching the Blockchain Public Key is `crossBlockchainPublicKey`. The API returns an RLP list containing the public key, the key version number and the threshold.
 
 
 2. If no key is available, or if the key does not have the correct threshold, then the status of any in-progress key generation should be checked. 
-The status can be determined using the JSON RPC API: `crosschainGetBlockchainPublicKeyGenerationStatus`. The status indicates that a key generation is in progress or not, the key version number of the key being generated and the threshold being generated for.
+The status can be determined using the JSON RPC API: `crossGetBlockchainPublicKeyGenerationStatus`. The status indicates that a key generation is in progress or not, the key version number of the key being generated and the threshold being generated for.
 
-3. To request a key be generated call the JSON RPC API: `crosschainGenerateBlockchainKey(threshold)`. The key generation process will take in the order of hundreds of milliseconds or seconds, depending on the network latency between nodes. This request will fail if a key generation is already in progress.
+3. To request a key be generated call the JSON RPC API: `crossGenerateBlockchainKey(threshold)`. The key generation process will take in the order of hundreds of milliseconds or seconds, depending on the network latency between nodes. This request will fail if a key generation is already in progress.
 
 4. Check key generation status using the process described above.
 
-5. Fetch the public key using the `crosschainBlockchainPublicKey` API.
+5. Fetch the public key using the `crossBlockchainPublicKey` API.
 
 6. Create the blockchain in the Crosschain Coordination Contract using the `addSidechain` function. The participant must be a member of the Crosschain Coordination Contract to be able to call this function. See the Crosschain Coordination Contract documentation for information about how to become a member of a Crosschain Coordination Contract. The `addSidechain` function takes the blockchain ID number of the blockchain, the public key, the public key version number, the address of a voting contract, the voting period in terms of blocks of the Coordination Blockchain, and the Cut-Over time in blocks in which both a new and old public key are valid.
 
-7. Call the JSON RPC API `crosschainCheckBlockchainPublicKey`. This will result in a signalling transaction being submitted to the blockchain. When each validator node processes the signalling transaction, they will set a flag to check the Crosschain Coordination Contract to work out which key to use.
+7. Call the JSON RPC API `crossCheckBlockchainPublicKey`. This will result in a signalling transaction being submitted to the blockchain. When each validator node processes the signalling transaction, they will set a flag to check the Crosschain Coordination Contract to work out which key to use.
 
 # Changing the Blockchain Public Key
 It may be desirable to change the threshold used with the Blockchain Public Key, for example if validator nodes are added to or removed from the blockchain. New public keys must be voted on by blockchain participants. To change the Blockchain Public Key do the following:
