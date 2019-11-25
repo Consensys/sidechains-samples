@@ -119,6 +119,11 @@ interface CrosschainCoordinationInterface {
     function getPublicKey(uint256 _sidechainId) external view returns (bytes memory);
 
     /**
+    *
+    */
+
+
+    /**
      * Get the status of the crosschain transaction
      */
     function getCrosschainTransactionStatus(uint256 _originatingSidechainId, uint256 _crosschainTransactionId) external view returns (uint32);

@@ -42,6 +42,14 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         VOTE_CHANGE_PUBLIC_KEY              // 5
     }
 
+    // The public key may be in a state of flux.
+    // So it is important to understand the 'status' of the public key.
+    enum PublicKeyStatus {
+        KEY_CURRENT,                        // 0: This is the active public key for the sidechain which is currently in use
+        KEY_PROPOSED,                       // 1: The public key that has been returned is flagged as a proposed changed key, so it is dependent on the voting before it can become active
+        KEY_PREVIOUS                        // 2: This is a public that has been used previously, but is currently not in use. Note that this key could be the prior key, or an historic key
+    }
+
     struct Votes {
         // The type of vote being voted on.
         VoteType voteType;
@@ -117,7 +125,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
      * @param _sidechainId The 256 bit identifier of the Sidechain.
      * @dev Throws if the message sender isn't a participant in the sidechain, or if the sidechain doesn't exist.
      */
-    modifier onlySidechainParticipant(uint256 _sidechainId) {
+    modifier onlyUnmaskedSidechainParticipant(uint256 _sidechainId) {
         require(sidechains[_sidechainId].inUnmasked[msg.sender]);
         _;
     }
@@ -137,7 +145,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     // TODO an Add Sidechain method where an array of masked and unmasked participants are added.
     //      Instead of using the addSidechain Internal function, code up a function that takes an array of participants (masked & unmasked) - add to interface
 
-    function addSidechain(uint256 _sidechainId, address _votingAlgorithmContract, uint64 _votingPeriod, bytes calldata _publicKey) external onlySidechainParticipant(MANAGEMENT_PSEUDO_SIDECHAIN_ID) {
+    function addSidechain(uint256 _sidechainId, address _votingAlgorithmContract, uint64 _votingPeriod, bytes calldata _publicKey) external onlyUnmaskedSidechainParticipant (MANAGEMENT_PSEUDO_SIDECHAIN_ID) {
         bytes memory pubKey = _publicKey;
         addSidechainInternal(_sidechainId, _votingAlgorithmContract, _votingPeriod, pubKey);
     }
@@ -182,7 +190,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     }
 
 
-    function proposeVote(uint256 _sidechainId, uint16 _action, uint256 _voteTarget, uint256 _additionalInfo1, bytes calldata _additionalInfo2) external onlySidechainParticipant(_sidechainId) {
+    function proposeVote(uint256 _sidechainId, uint16 _action, uint256 _voteTarget, uint256 _additionalInfo1, bytes calldata _additionalInfo2) external onlyUnmaskedSidechainParticipant (_sidechainId) {
         // This will throw an error if the action is not a valid VoteType.
         VoteType action = VoteType(_action);
 
@@ -232,7 +240,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     }
 
 
-    function vote(uint256 _sidechainId, uint16 _action, uint256 _voteTarget, bool _voteFor) external onlySidechainParticipant(_sidechainId) {
+    function vote(uint256 _sidechainId, uint16 _action, uint256 _voteTarget, bool _voteFor) external onlyUnmaskedSidechainParticipant (_sidechainId) {
         // This will throw an error if the action is not a valid VoteType.
         VoteType action = VoteType(_action);
 
@@ -249,7 +257,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     }
 
 
-    function actionVotes(uint256 _sidechainId, uint256 _voteTarget) external onlySidechainParticipant(_sidechainId) {
+    function actionVotes(uint256 _sidechainId, uint256 _voteTarget) external onlyUnmaskedSidechainParticipant(_sidechainId) {
         // If no vote is underway, then there is nothing to action.
         VoteType action = sidechains[_sidechainId].votes[_voteTarget].voteType;
         require(action != VoteType.VOTE_NONE);
@@ -288,6 +296,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
             else if (action == VoteType.VOTE_CHANGE_PUBLIC_KEY) {
                 //TODO we should allow the old public key to be used for a limited amount of time,
                 // so there is some change over period from the old to the new
+                // TODO check that a vote for change of public key is not currently under way
                 sidechains[_sidechainId].publicKey = sidechains[_sidechainId].votes[_voteTarget].additionalInfo2;
             }
         }
