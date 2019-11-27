@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 pragma solidity ^0.5;
 
-import "./Crosschain.sol";
+import "../../../common-solidity/crosschain-precompile-calls/contracts/Crosschain.sol";
 import "./Sc2Contract2Interface.sol";
 
 contract Sc1Contract1 is Crosschain {

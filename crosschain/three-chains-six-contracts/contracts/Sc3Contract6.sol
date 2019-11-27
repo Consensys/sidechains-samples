@@ -12,7 +12,7 @@
  */
 pragma solidity >=0.4.23;
 
-import "./Crosschain.sol";
+import "../../../common-solidity/crosschain-precompile-calls/contracts/Crosschain.sol";
 import "./Sc3Contract6Interface.sol";
 import "./Sc2Contract4Interface.sol";
 
