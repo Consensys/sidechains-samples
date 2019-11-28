@@ -16,7 +16,6 @@ import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
-import org.web3j.crypto.ECKeyPair;
 
 
 import java.math.BigInteger;
