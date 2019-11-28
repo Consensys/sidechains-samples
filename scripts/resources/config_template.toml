@@ -13,4 +13,4 @@ rpc-http-api=["ETH","NET","WEB3","CROSSCHAIN"]
 rpc-http-port="This is just a template! Read README-Crosschains.md"
 
 crosschain-enabled=true
-crosschain-config="scripts/resources/crosschain.config"
+crosschain-config="This is just a template! Read README-Crosschains.md"

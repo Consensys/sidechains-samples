@@ -37,8 +37,6 @@ const tomlEncoder = require('tomlify-j0.4')
 var staticNode = "[\n";
 var node_acct_list = [];
 
-//console.log('Besu might show "illegal access" warnings because of JDK 12. Please ignore them.\n')
-
 // For each node, create its data directory and configuration files, and capture data that will be needed at the chain level
 for (var i = 0; i < nodeCount; i++) {
     const nodeNum = i.toString();
@@ -60,8 +58,8 @@ for (var i = 0; i < nodeCount; i++) {
     config['miner-extra-data'] = "0x000000000000000000000000000000000000000000000000000000000000"+
                                     chainId.padStart(2, '0') + nodeNum.padStart(2,'0');
 
-    //fs.copySync(resourcesPath + "/crosschain.config", chainPath+"/crosschain.config")
-    //config['crosschain-config'] = chainPath + "/crosschain.config"
+    fs.copySync(resourcesPath + "/crosschain_addresses.config", chainPath+"/crosschain_addresses.config")
+    config['crosschain-config'] = chainPath + "/crosschain_addresses.config"
 
     fs.writeFileSync(`${nodePath}/config.toml`,tomlEncoder.toToml(config,{ replace:
         // JavaScript has no integers, only floats. Here we format all integer-like values to have 0 decimals.
