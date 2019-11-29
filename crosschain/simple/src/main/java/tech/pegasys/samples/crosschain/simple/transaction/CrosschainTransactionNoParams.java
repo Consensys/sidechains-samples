@@ -6,7 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
-import org.web3j.protocol.besu.response.crosschain.CrosschainIsLocked;
+import org.web3j.protocol.besu.response.crosschain.CrossIsLockedResponse;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -23,8 +23,6 @@ import tech.pegasys.samples.sidechains.common.coordination.CrosschainCoordinatio
 import tech.pegasys.samples.sidechains.common.utils.BasePropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -232,7 +230,7 @@ public class CrosschainTransactionNoParams {
                 LOG.error("Contract {} did not unlock", this.contract1Address);
             }
             Thread.sleep(500);
-            CrosschainIsLocked isLockedObj = this.web3jSc1.crosschainIsLocked(this.contract1Address, DefaultBlockParameter.valueOf("latest")).send();
+            CrossIsLockedResponse isLockedObj = this.web3jSc1.crossIsLocked(this.contract1Address, DefaultBlockParameter.valueOf("latest")).send();
             stillLocked = isLockedObj.isLocked();
             if (stillLocked) {
                 graphicalCount.append(".");
