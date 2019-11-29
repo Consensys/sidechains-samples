@@ -16,7 +16,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
-import org.web3j.protocol.besu.response.crosschain.CrosschainIsLocked;
+import org.web3j.protocol.besu.response.crosschain.CrossIsLockedResponse;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.CrosschainContext;
@@ -193,7 +193,7 @@ public class EntityAcceptingOffer {
                 LOG.error("Sender contract {} did not unlock", this.senderContractAddress);
             }
             Thread.sleep(500);
-            CrosschainIsLocked isLockedObj = this.web3jSc1.crosschainIsLocked(this.senderContractAddress, DefaultBlockParameter.valueOf("latest")).send();
+            CrossIsLockedResponse isLockedObj = this.web3jSc1.crossIsLocked(this.senderContractAddress, DefaultBlockParameter.valueOf("latest")).send();
             stillLocked = isLockedObj.isLocked();
             if (stillLocked) {
                 graphicalCount.append(".");
