@@ -47,11 +47,14 @@ public class CrosschainTransactionNoParams {
     private static final Logger LOG = LogManager.getLogger(CrosschainTransactionNoParams.class);
 
     private static final BigInteger SC0_SIDECHAIN_ID = BigInteger.valueOf(11);
-    private static final String SC0_URI = "http://127.0.0.1:8110/";
+    private static final String SC0_IP_PORT = "127.0.0.1:8110";
+    private static final String SC0_URI = "http://" + SC0_IP_PORT + "/";
     private static final BigInteger SC1_SIDECHAIN_ID = BigInteger.valueOf(22);
-    private static final String SC1_URI = "http://127.0.0.1:8220/";
+    private static final String SC1_IP_PORT = "127.0.0.1:8220";
+    private static final String SC1_URI = "http://" + SC1_IP_PORT + "/";
     private static final BigInteger SC2_SIDECHAIN_ID = BigInteger.valueOf(33);
-    private static final String SC2_URI = "http://127.0.0.1:8330/";
+    private static final String SC2_IP_PORT = "127.0.0.1:8330";
+    private static final String SC2_URI = "http://" + SC2_IP_PORT + "/";
 
     // Have the polling interval equal to the block time.
     private static final int POLLING_INTERVAL = 2000;
@@ -95,7 +98,7 @@ public class CrosschainTransactionNoParams {
     private static boolean automatedRun = false;
 
     public static void main(final String args[]) throws Exception {
-        LOG.info("Three Chains Six Contracts - started");
+        LOG.info("Crosschain Transaction - No Parameters - started");
         new CrosschainTransactionNoParams().run();
     }
 
@@ -137,6 +140,8 @@ public class CrosschainTransactionNoParams {
             deployAndSetupCoordinationContract();
         }
 
+        // Set-up as a multichain node where the node on blockchain 1 can call a node on blockchain 2.
+        this.web3jSc1.crossAddMultichainNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
 
         this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
                 this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
