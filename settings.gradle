@@ -5,7 +5,9 @@ include 'testall'
 include 'crosschain-atomic-swap-ether'
 include 'crosschain-three-chains-six-contracts'
 include 'crosschain-simple'
+include 'crosschain-multichain'
 
 project(":crosschain-atomic-swap-ether").projectDir = file("crosschain/atomic-swap-ether")
 project(":crosschain-three-chains-six-contracts").projectDir = file("crosschain/three-chains-six-contracts")
 project(":crosschain-simple").projectDir = file("crosschain/simple")
+project(":crosschain-multichain").projectDir = file("crosschain/multichain-manager")
