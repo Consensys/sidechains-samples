@@ -180,10 +180,12 @@ public class ThreeChainsSixContracts {
             deployAndSetupCoordinationContract();
         }
 
-        // Set-up as a multichain node where the node on blockchain 1 can call a node on blockchain 2 and 3
-        // and the node on blockchain 3 can call a node on blockchain 2.
+        // Set-up as a multichain node so all blockchain nodes are aware of each other.
         this.web3jSc1.crossAddMultichainNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
         this.web3jSc1.crossAddMultichainNode(SC3_SIDECHAIN_ID, SC3_IP_PORT).send();
+        this.web3jSc2.crossAddMultichainNode(SC1_SIDECHAIN_ID, SC1_IP_PORT).send();
+        this.web3jSc2.crossAddMultichainNode(SC3_SIDECHAIN_ID, SC3_IP_PORT).send();
+        this.web3jSc3.crossAddMultichainNode(SC1_SIDECHAIN_ID, SC1_IP_PORT).send();
         this.web3jSc3.crossAddMultichainNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
 
 
