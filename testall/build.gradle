@@ -3,6 +3,7 @@ dependencies {
     compile project(':crosschain-atomic-swap-ether')
     compile project(':crosschain-three-chains-six-contracts')
     compile project(':crosschain-simple')
+    compile project(':crosschain-multichain')
    // ,
    //         project(':besu')
     compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.12.0'
