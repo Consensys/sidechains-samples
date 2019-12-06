@@ -50,6 +50,16 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         KEY_PREVIOUS                        // 2: This is a public that has been used previously, but is currently not in use. Note that this key could be the prior key, or an historic key
     }
 
+    struct PublicKey {
+    //  uint sidechainID;   // Now that I added the struct to sidechains record, we probably don't need this
+        uint versionNumber;
+        uint status;
+        uint blockNumber;
+        bytes key;
+    }
+    //mapping (uint => PublicKey) publicKeys;
+
+
     struct Votes {
         // The type of vote being voted on.
         VoteType voteType;
@@ -95,7 +105,9 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         // Votes for adding and removing participants, for changing voting algorithm and voting period.
         mapping(uint256=>Votes) votes;
 
-        bytes publicKey;
+        // Public keys for this sidechain, containing additional information regarding version, status & block number
+        mapping(uint256 => PublicKey) publicKeys;
+        //bytes publicKey;
     }
 
     mapping(uint256=>SidechainRecord) private sidechains;
@@ -167,8 +179,8 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         sidechains[_sidechainId].unmasked.push(msg.sender);
         sidechains[_sidechainId].inUnmasked[msg.sender] = true;
         sidechains[_sidechainId].numUnmaskedParticipants++;
-
-        sidechains[_sidechainId].publicKey = _pubKey;
+        // Version number 0 is the version number assigned when sidechain is created
+        setPublicKey(_sidechainId,_pubKey,0,0,PublicKeyStatus.KEY_CURRENT);
     }
 
 
@@ -222,11 +234,13 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
             require(sidechains[_sidechainId].unmasked[_additionalInfo1] == voteTargetAddr);
         }
 
-//  TODO - Add change of public key to interface, work out what other actions need to be taken when changing the public key
-//        if (action == VoteType.VOTE_CHANGE_PUBLIC_KEY) {
+        if (action == VoteType.VOTE_CHANGE_PUBLIC_KEY) {
             // The public key has been assumed to be valid.
             // TODO are there any checks which need to be done?
-  //      }
+            // Can the public key be changed if the status of the current one is 'in progress'?
+           getPublicKey(_sidechainId);
+            sidechains[_sidechainId].publicKeys[0];  // todo fix!
+      }
 
 
         // Set-up the vote.
@@ -482,10 +496,38 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         return sidechains[_sidechainId].masked[_index];
     }
 
-    function getPublicKey(uint256 _sidechainId) external view returns (bytes memory) {
-        bytes memory pubKey = sidechains[_sidechainId].publicKey;
-        return pubKey;
+ //   function getPublicKey(uint256 _sidechainId) external view returns (bytes memory) {
+ //       bytes memory pubKey = sidechains[_sidechainId].publicKey;
+ //       return pubKey;
+ //   }
+
+    /**
+     * Get array of Sidechain's public key, version number, status and block number
+     *
+     */
+    function getPublicKey(uint256 _sidechainId) external view returns (uint[] _versionNumber, uint[] _status, uint[] _blockNumber, bytes[] _key){
+   //     return sidechains[_sidechainId].publicKeys // TODO - INCOMPLETE
     }
+
+    /**
+     * Set the Sidechain's public key, version, status & block number
+     */
+    function setPublicKey(uint256 _sidechainId, bytes _publicKey, uint _versionNumber, uint _status) external {
+        sidechains[_sidechainId].publicKeys.versionNumber = _versionNumber;
+        sidechains[_sidechainId].publicKeys.status = _status;
+        sidechains[_sidechainId].publicKeys.blockNumber = block.number;
+        sidechains[_sidechainId].publicKeys.key = _publicKey;
+    }
+
+    /**
+     * Change the public key as voted on
+     */
+    function changePublicKey(uint256 _sidechainId, bytes _activePublicKey, uint _status, bytes _newPublicKey) external {
+    // TODO - Ensure that the current key matches what we expect it to be before we get a change underway
+    }
+
+
+
 
     function getVersion() external pure returns (uint16) {
         return VERSION_ONE;

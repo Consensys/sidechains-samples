@@ -37,7 +37,9 @@ interface CrosschainCoordinationInterface {
      *
      * @param _sidechainId The 256 bit identifier of the Sidechain.
      * @param _index The index into the list of sidechain masked participants.
+     * @parm  _salt Salt: 256 bit random data
      * @return Salted hash or the participant's address, or 0x00.
+     *         Note: function doesn't return anything, instead it emits an event, AddingSidechainUnmaskedParticipant(uint256 _sidechainId, address _participant);
      */
     function unmask(uint256 _sidechainId, uint256 _index, uint256 _salt) external;
 
@@ -55,7 +57,7 @@ interface CrosschainCoordinationInterface {
      * 5      Vote to change public key.             0x00                                    Not used                         Public Key
      *
      * @param _sidechainId The 256 bit identifier of the Sidechain.
-     * @param _action The type of vote: add or remove a masked or unmasked participant
+     * @param _action The type of vote: add or remove a masked or unmasked participant, or change a public key
      * @param _voteTarget What is being voted on: a masked address or the unmasked address of a participant to be added or removed.
      * @param _additionalInfo1 See above.
      * @param _additionalInfo2 See above.
@@ -69,7 +71,7 @@ interface CrosschainCoordinationInterface {
      * Only members of the sidechain can vote.
      *
      * @param _sidechainId The 256 bit identifier of the Sidechain.
-     * @param _action The type of vote: add or remove a masked or unmasked participant
+     * @param _action The type of vote: add or remove a masked or unmasked participant, or change a public key
      * @param _voteTarget What is being voted on: a masked address or the unmasked address of a participant to be added or removed.
      * @param _voteFor True if the transaction sender wishes to vote for the action.
      */
@@ -114,14 +116,38 @@ interface CrosschainCoordinationInterface {
 
 
     /**
-     * Get the Sidechain's public key
+     * Get array of Sidechain's public key, version number, status and block number
+     *
+     * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
+     * @return an array of public keys for the sidechain corresponding to the 3 different states it can be in:
+     *         Value      Status
+     *           0        This is the active public key for the sidechain which is currently in use
+     *           1        The public key that has been returned is flagged as a proposed changed key, so it is dependent on the voting before it can become active
+     *           2        This is a public key that has been used previously, but is currently not in use. Note that this key could be the prior key, or an historic key
      */
-    function getPublicKey(uint256 _sidechainId) external view returns (bytes memory);
+    function getPublicKey(uint256 _sidechainId) external view returns (uint[] _versionNumber, uint[] _status, uint[] _blockNumber, bytes[] _key);
 
     /**
-    *
-    */
+     * Set the Sidechain's public key, version, status & block number
+     *
+     * @param  _sidechainId    The 256 bit sidechain identifier to which this public key belongs
+     * @param  _publicKey      The new public key for the sidechain
+     * @returns _versionNumber Array of version numbers. (Todo: need to confirm if this is necessary)
+     * @returns _status        Array of status of public keys, so we know if it is the active key, a previously used key or a proposed key
+     * @returns _blockNumber   Array of the block numbers recorded when the public key was assigned to the sidechain
+     * @returns _key           Array of the public keys for this sidechain
+     */
+    function setPublicKey(uint256 _sidechainId, bytes _publicKey, uint _versionNumber, uint _status) external;
 
+    /**
+     * There was a majority vote to change the public key of the Sidechain
+     *
+     * @param  _sidechainId     The 256 bit sidechain identifier to which this public key belongs
+     * @param  _activePublicKey The current and active public key for the sidechain
+     * @param  _newPublicKey    The new public key that has been proposed for the sidechain
+     * @param  _status          Used to indicate if this change of public key is a proposed or commited change (trial execution = proposed)
+     */
+    function changePublicKey(uint256 _sidechainId, bytes _activePublicKey, uint _status, bytes _newPublicKey) external;
 
     /**
      * Get the status of the crosschain transaction
