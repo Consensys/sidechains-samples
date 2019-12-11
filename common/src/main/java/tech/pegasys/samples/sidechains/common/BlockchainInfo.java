@@ -27,6 +27,14 @@ public class BlockchainInfo {
     return "http://" + this.ipAddressAndPort + "/";
   }
 
+  public String getIp() {
+    return this.ipAddressAndPort.substring(0, this.ipAddressAndPort.indexOf(':'));
+  }
+  public int getPort() {
+    String port = this.ipAddressAndPort.substring(this.ipAddressAndPort.indexOf(':')+1);
+    return Integer.valueOf(port);
+  }
+
   public Besu getWebService() {
     return getWebService(DEFAULT_POLLING_INTERVAL);
   }
