@@ -15,6 +15,8 @@ package tech.pegasys.samples.crosschain.multichain;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.protocol.besu.Besu;
+import org.web3j.protocol.besu.response.crosschain.CoordinationContractInformation;
+import org.web3j.protocol.besu.response.crosschain.ListCoordinationContractsResponse;
 import org.web3j.protocol.besu.response.crosschain.ListNodesResponse;
 import org.web3j.protocol.besu.response.crosschain.LongResponse;
 import tech.pegasys.samples.sidechains.common.BlockchainInfo;
@@ -89,7 +91,7 @@ public class OptionShow extends AbstractOption {
     }
 
     LOG.info("Blockchains");
-    for (BlockchainInfo chain: this.blockchains.values()) {
+    for (BlockchainInfo chain: this.multichainBlockchains.values()) {
       if (checkNetworkConnection(chain)) {
         LOG.info(" Blockchain Id: 0x{}, {}",
             chain.blockchainId.toString(16),
@@ -111,11 +113,21 @@ public class OptionShow extends AbstractOption {
             LOG.info("   Blockchain id: 0x{}", bcId.toString(16));
           }
         }
+
+        ListCoordinationContractsResponse coordResp = webService.crossListCoordinationContracts().send();
+        List<CoordinationContractInformation> coordInfo = coordResp.getInfo();
+        LOG.info("  Coordination Blockchains & Contracts this node trusts:");
+        if (coordInfo.size() == 0) {
+          LOG.info("   NONE\n");
+        } else {
+          for (CoordinationContractInformation info: coordInfo) {
+            LOG.info("   Blockchain id: 0x{}", info.coordinationBlockchainId);
+            LOG.info("   IP Address and Port: {}", info.ipAddressAndPort);
+            LOG.info("   Contract Address: 0x{}", info.coodinationContract);
+          }
+        }
       }
     }
-
-//      ListCoordinationContractsResponse trustedCrossContracts = webService.crossListCoordinationContracts().send();
-//      List<BigInteger> nodes = trustedCrossContracts.getNodes();
   }
 
 }

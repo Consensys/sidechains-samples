@@ -15,6 +15,7 @@ package tech.pegasys.samples.crosschain.multichain;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.web3j.crypto.Credentials;
 import tech.pegasys.samples.sidechains.common.BlockchainInfo;
 
 import java.math.BigInteger;
@@ -38,10 +39,12 @@ public abstract class AbstractOption implements MultichainManagerOptions {
   Map<BigInteger, BlockchainInfo> coordinationBlockchains;
 
   // Information about a node on each of the blockchains that make up this Multichain Node.
-  Map<BigInteger, BlockchainInfo> blockchains;
+  Map<BigInteger, BlockchainInfo> multichainBlockchains;
+
+  protected Credentials credentials = new MultichainManagerProperties().credentials;
 
   public void setMultichainInfo(Map<BigInteger, BlockchainInfo> blockchains, Map<BigInteger, BlockchainInfo> coordinationBlockchains) {
-    this.blockchains = blockchains;
+    this.multichainBlockchains = blockchains;
     this.coordinationBlockchains = coordinationBlockchains;
   }
 

@@ -14,10 +14,10 @@ package tech.pegasys.samples.crosschain.multichain;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.web3j.crypto.Credentials;
 import tech.pegasys.samples.sidechains.common.BlockchainInfo;
 import tech.pegasys.samples.sidechains.common.DefaultBlockchainInfo;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Map;
 import java.util.Scanner;
@@ -38,6 +38,7 @@ public class MultichainManager {
 
 
 
+
   public static void main(String[] args) throws Exception {
     LOG.info("Multichain Node Manager - started");
     new MultichainManager().run(args);
@@ -49,22 +50,21 @@ public class MultichainManager {
     this.commands.put(show.getName(), show);
     OptionKey key = new OptionKey();
     this.commands.put(key.getName(), key);
+    OptionCoordination coordination = new OptionCoordination();
+    this.commands.put(coordination.getName(), coordination);
   }
 
 
   public static void automatedRun() throws Exception {
     // Delete all properties files as a starting point. This will ensure all contracts are redeployed.
-    deleteAllPropertiesFile();
-
+    MultichainManagerProperties.deleteAllPropertiesFile();
     // Run the samples in a way that does not require input from the keyboard.
     new MultichainManager().run(new String[]{OptionShow.COMMAND, OptionShow.ALL});
-
     // Clean-up.
-    deleteAllPropertiesFile();
+    MultichainManagerProperties.deleteAllPropertiesFile();
   }
 
-  private static void deleteAllPropertiesFile() throws IOException {
-  }
+
 
 
 
@@ -118,4 +118,5 @@ public class MultichainManager {
       commandToExecute.interactive(myInput);
     }
   }
+
 }

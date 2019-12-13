@@ -16,14 +16,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.besu.crypto.crosschain.BlsThresholdCryptoSystem;
-import org.web3j.protocol.besu.response.crosschain.ListNodesResponse;
 import org.web3j.protocol.besu.response.crosschain.LongResponse;
 import org.web3j.protocol.core.methods.response.NetPeerCount;
 import tech.pegasys.samples.sidechains.common.BlockchainInfo;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Map;
 import java.util.Scanner;
 
 /**
@@ -54,7 +52,7 @@ public class OptionKey extends AbstractOption {
         System.out.println(" Blockchain id (in hex) of blockchain to generate new Blockchain Threshold Key for:");
         String blockchainId = myInput.next();
         BigInteger bcIdBigInt = new BigInteger(blockchainId, 16);
-        BlockchainInfo bcInfo = this.blockchains.get(bcIdBigInt);
+        BlockchainInfo bcInfo = this.multichainBlockchains.get(bcIdBigInt);
         if (bcInfo == null) {
           LOG.info(" Blockchain {} not part of multichain node", bcIdBigInt);
           LOG.info(" Please try again");
@@ -131,7 +129,7 @@ public class OptionKey extends AbstractOption {
     String algorithmStr = args[argOffset+2];
 
     BigInteger bcIdBigInt = new BigInteger(blockchainIdStr, 16);
-    BlockchainInfo bcInfo = this.blockchains.get(bcIdBigInt);
+    BlockchainInfo bcInfo = this.multichainBlockchains.get(bcIdBigInt);
     if (bcInfo == null) {
       LOG.error(" Blockchain {} not part of multichain node", bcIdBigInt);
       return;
