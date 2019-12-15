@@ -36,6 +36,8 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
 
     // Public key & status
     uint256 private publicKeyStatus = uint256(PublicKeyStatus.KEY_CURRENT);  // 0 -> Current key
+    bytes private activePublicKey;
+    bytes private newPublicKey;
     bytes private sidechainPublicKey;
 
     // Indications that a vote is underway.
@@ -114,7 +116,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
 
         // Public keys for this sidechain, containing additional information regarding version, status & block number
         uint256 numberOfKeys;
-        PublicKeyStatus publicKeyStatus;
+    //  PublicKeyStatus publicKeyStatus;
         mapping(uint256 => PublicKey) publicKeys;
         //bytes publicKey;
     }
@@ -190,9 +192,9 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         sidechains[_sidechainId].numUnmaskedParticipants++;
         // Version number 0 is the version number assigned when sidechain is created
         publicKeyVersion[_sidechainId] = FIRST_PUBLIC_KEY;
-        publicKeyStatus = uint256(PublicKeyStatus.KEY_CURRENT);
+        uint256 keystatus = uint256(PublicKeyStatus.KEY_CURRENT);
         sidechainPublicKey = _pubKey;
-        setPublicKey(_sidechainId, publicKeyVersion[_sidechainId], publicKeyStatus, sidechainPublicKey);
+        setPublicKey(_sidechainId, publicKeyVersion[_sidechainId], keystatus, sidechainPublicKey);
         sidechains[_sidechainId].numberOfKeys = 1;
     }
 
@@ -248,13 +250,16 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         }
 
         if (action == VoteType.VOTE_CHANGE_PUBLIC_KEY) {
-            // The public key has been assumed to be valid.
-            // TODO are there any checks which need to be done?
-            // Can the public key be changed if the status of the current one is 'in progress'?
-           getPublicKey(_sidechainId);
-            sidechains[_sidechainId].publicKeys[0];  // todo fix!
+            // The proposed public key is assumed to be valid.
+            // Set up the detail for the proposed key to be associated with this sidechain
+            uint256 sidechainsNoOfKeys = sidechains[_sidechainId].numberOfKeys;
+            uint keyVersion = sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys-1].versionNumber;      // Mapping starts at 0 not 1
+            sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys].versionNumber = keyVersion + 1;
+            sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys].status = uint256(PublicKeyStatus.KEY_PROPOSED);
+            sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys].blockNumber = block.number;
+            sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys].key = _additionalInfo2;
+            sidechains[_sidechainId].numberOfKeys += 1;
       }
-
 
         // Set-up the vote.
         sidechains[_sidechainId].votes[_voteTarget].voteType = action;
@@ -321,10 +326,13 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
                 delete sidechains[_sidechainId].inMasked[_voteTarget];
             }
             else if (action == VoteType.VOTE_CHANGE_PUBLIC_KEY) {
-                //TODO we should allow the old public key to be used for a limited amount of time,
-                // so there is some change over period from the old to the new
-                // TODO check that a vote for change of public key is not currently under way
-                sidechainPublicKey = sidechains[_sidechainId].votes[_voteTarget].additionalInfo2;
+            //    activePublicKey = getLastActivePublicKey(_sidechainId);
+                newPublicKey = sidechains[_sidechainId].votes[_voteTarget].additionalInfo2;  // new public key
+                publicKeyStatus = uint256(PublicKeyStatus.KEY_CURRENT);
+                // Change the current active public key to the one voted on
+            //    changePublicKey(_sidechainId, publicKeyStatus, activePublicKey, newPublicKey);
+                changePublicKey(_sidechainId, publicKeyStatus, newPublicKey);
+
             }
         }
 
@@ -362,8 +370,6 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
             sidechains[_sidechainId].votes[_voteTarget].numVotedAgainst++;
         }
     }
-
-
 
 
     /**
@@ -439,7 +445,6 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
 
         txMap[index].state = XTX_STATE.IGNORED;
     }
-
 
 
     function getCrosschainTransactionStatus(uint256 _originatingSidechainId, uint256 _crosschainTransactionId) external view returns (uint32) {
@@ -519,30 +524,77 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
      *           1        The public key that has been returned is flagged as a proposed changed key, so it is dependent on the voting before it can become active
      *           2        This is a public key that has been used previously, but is currently not in use. Note that this key could be the prior key, or an historic key
      */
-    function getPublicKey(uint256 _sidechainId) private view returns ( uint[] memory _versionNumber, uint256[] memory _status, uint[] memory _blockNumber, bytes[] memory _key){
-        //     return sidechains[_sidechainId].publicKeys // TODO - INCOMPLETE
+    function getPublicKey(uint256 _sidechainId) external view returns ( uint _versionNumber, uint256 _status, uint _blockNumber, bytes memory _key){
+
+        (uint256 vsn, uint256 stat, uint256 blk, bytes memory key) = getLastActivePublicKey(_sidechainId);
+
+        return (vsn, stat, blk, key);
     }
 
 
+    /**
+     * Get array of Sidechain's public key, version number, status and block number
+     *
+     * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
+     * @return an array of public keys for the sidechain corresponding to the 3 different states it can be in:
+     *         Value      Status
+     *           0        This is the active public key for the sidechain which is currently in use
+     *           1        The public key that has been returned is flagged as a proposed changed key, so it is dependent on the voting before it can become active
+     *           2        This is a public key that has been used previously, but is currently not in use. Note that this key could be the prior key, or an historic key
+     */
+    function getPublicKeyArray (uint256 _sidechainId) private view returns ( PublicKey [] memory _publicKeyArray){
+        uint256 sidechainsNoOfKeys = sidechains[_sidechainId].numberOfKeys;
+        PublicKey [] memory publicKeyArray;
+        for (uint i = 0; i < sidechainsNoOfKeys; i++) {
+            publicKeyArray[i] = sidechains[_sidechainId].publicKeys[i];
+        }
+        return(publicKeyArray);
+    }
 
+    /**
+     * Get the last active key for the sidechain
+     *
+     * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
+     * @return _activeKey latest active public key
+     */
+    function getLastActivePublicKey(uint256 _sidechainId) private view returns ( uint _versionNumber, uint256 _status, uint _blockNumber, bytes memory _key){
+        // If there is exactly one public key then this is the one assigned when the sidechain was created & we would expect it to have
+        // a status of active, but this probably doesn't matter...
+        PublicKey [] memory publicKeyArray = getPublicKeyArray(_sidechainId);
+        uint256 sidechainsNoOfKeys = sidechains[_sidechainId].numberOfKeys;
+        bool active;     // default initialisation is FALSE
+        uint i;
+        for (i = sidechainsNoOfKeys; (i == 0 || active); i--) {
+            publicKeyArray[i-1] = sidechains[_sidechainId].publicKeys[i];
+            if (publicKeyArray[i-1].status == uint256(PublicKeyStatus.KEY_CURRENT)) {
+                active = true;
+            }
+        }
+        return(publicKeyArray[i].versionNumber, publicKeyArray[i].status, publicKeyArray[i].blockNumber, publicKeyArray[i].key);
+    }
 
     /**
      * Set the Sidechain's public key, version, status & block number
      *
      * @param  _sidechainId    The 256 bit sidechain identifier to which this public key belongs
      * @param  _publicKey      The new public key for the sidechain
-     * @return _versionNumber Array of version numbers. (Todo: need to confirm if this is necessary)
-     * @return _status        Array of status of public keys, so we know if it is the active key, a previously used key or a proposed key
-     * @return _blockNumber   Array of the block numbers recorded when the public key was assigned to the sidechain
-     * @return _key           Array of the public keys for this sidechain
      */
-    function setPublicKey(uint256 _sidechainId, uint _versionNumber, uint256 _status, bytes storage _publicKey) private {
+ //   function setPublicKey(uint256 _sidechainId, uint _versionNumber, uint256 _status, bytes storage _publicKey) private {
+    function setPublicKey(uint256 _sidechainId, uint _versionNumber, uint256 _status, bytes memory _publicKey) private {
+       // Check if we are adding or replacing a public key entry
         uint256 index = sidechains[_sidechainId].numberOfKeys;
-        sidechains[_sidechainId].publicKeys[index].versionNumber = _versionNumber;
-        sidechains[_sidechainId].publicKeys[index].status = _status;
-        sidechains[_sidechainId].publicKeys[index].blockNumber = block.number;
-        sidechains[_sidechainId].publicKeys[index].key = _publicKey;
-        sidechains[_sidechainId].numberOfKeys = index + 1;
+        // Need to replace entry and not add an entry - assume that we are updating the block number too
+        // TODO - Do we need to update the block number?
+        if (index == _versionNumber){
+            sidechains[_sidechainId].publicKeys[index-1].status = _status;
+            sidechains[_sidechainId].publicKeys[index-1].blockNumber = block.number;
+        } else {
+            sidechains[_sidechainId].publicKeys[index].versionNumber = _versionNumber;
+            sidechains[_sidechainId].publicKeys[index].status = _status;
+            sidechains[_sidechainId].publicKeys[index].blockNumber = block.number;
+            sidechains[_sidechainId].publicKeys[index].key = _publicKey;
+            sidechains[_sidechainId].numberOfKeys = index + 1;
+        }
     }
 
     /**
@@ -550,11 +602,51 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         *
         * @param  _sidechainId     The 256 bit sidechain identifier to which this public key belongs
         * @param  _status          Used to indicate if this change of public key is a proposed or commited change (trial execution = proposed)
-        * @param  _activePublicKey The current and active public key for the sidechain
         * @param  _newPublicKey    The new public key that has been proposed for the sidechain
         */
-    function changePublicKey(uint256 _sidechainId, uint _status, bytes storage _activePublicKey, bytes storage _newPublicKey) private {
+    function changePublicKey(uint256 _sidechainId, uint _status, bytes memory _newPublicKey) private {
         // TODO - Ensure that the current key matches what we expect it to be before we get a change underway
+        // Note: If the most current key for the sidechain is one that is not yet assigned a status of active, we need to replace it, rather than adding to the array of keys
+        //
+        // TODO - Question: If the status of the public key of this sidechain is 'in progress' would the block number remain unchanged?
+        // TODO   --------  or are we assigning the block number when we assign the new public key as the active key for the sidechain?
+
+        (uint256 vsn, uint256 stat, uint256 blk, bytes memory activePublickey) = getLastActivePublicKey(_sidechainId);
+
+        uint256 totKeys = sidechains[_sidechainId].numberOfKeys;
+        bytes memory currentKey = sidechains[_sidechainId].publicKeys[totKeys-1].key;
+        uint currentKeyBlkNo = sidechains[_sidechainId].publicKeys[totKeys-1].blockNumber;
+        uint256 currentKeyStatus = sidechains[_sidechainId].publicKeys[totKeys-1].status;
+        uint currentVersionNumber = sidechains[_sidechainId].publicKeys[totKeys-1].versionNumber;
+
+        // Check if the most current key in the array has a status of active. If it has then its status is set to previous & a new key is added
+        if (currentKeyStatus == uint256 (PublicKeyStatus.KEY_CURRENT)){
+            require(currentKeyBlkNo == blk);           // If the current key is active, then we expect the last active key to be the current key
+            sidechains[_sidechainId].publicKeys[totKeys-1].status = uint256 (PublicKeyStatus.KEY_PREVIOUS); // current key becomes a historic key
+            setPublicKey(_sidechainId, currentVersionNumber + 1, uint256 (PublicKeyStatus.KEY_CURRENT), _newPublicKey);
+        // If the most current key is not active, then we expect it to be in the process of being changed, as you would expect the latest one to either be active or in the process of being changed
+        } else {
+            require(currentKeyStatus == uint256(PublicKeyStatus.KEY_PROPOSED));
+            setPublicKey(_sidechainId, currentVersionNumber, uint256 (PublicKeyStatus.KEY_CURRENT), _newPublicKey);
+        }
+
+        // There are two possible scenarios: the active key is the current key, or the current key is 'in progress'.
+        // Anything else is an error, e.g. Would not expect it to be set to previous
+
+        // TODO - How do you compare public keys in the dynamic bytes arrays????
+        // TODO - if (sidechains[_sidechainId].publicKeys[0].key == _activePublicKey){
+        // --------------------------------------------------------------------------
+        //if (currentKey.length == activePublicKey.length){
+        //    uint key_length = currentKey.length;
+        //    byte[] memory current = new byte[](key_length);
+        //    byte[] memory active = new byte[](key_length);
+        //    for (uint i = 0; i < key_length; i++) {
+        //        if (current[i] != active[i]){
+
+        //        }
+        //    }
+        //}
+        // --------------------------------------------------------------------------
     }
 
 

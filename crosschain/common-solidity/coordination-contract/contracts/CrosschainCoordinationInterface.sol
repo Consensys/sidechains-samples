@@ -193,6 +193,19 @@ interface CrosschainCoordinationInterface {
     function getMaskedSidechainParticipant(uint256 _sidechainId, uint256 _index) external view returns(uint256);
 
 
+    /**
+    * Get array of Sidechain's public key, version number, status and block number
+    *
+    * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
+    * @return an array of public keys for the sidechain corresponding to the 3 different states it can be in:
+    *         Value      Status
+    *           0        This is the active public key for the sidechain which is currently in use
+    *           1        The public key that has been returned is flagged as a proposed changed key, so it is dependent on the voting before it can become active
+    *           2        This is a public key that has been used previously, but is currently not in use. Note that this key could be the prior key, or an historic key
+    */
+    function getPublicKey(uint256 _sidechainId) external view returns ( uint _versionNumber, uint256 _status, uint _blockNumber, bytes memory _key);
+
+
     /*
      * Return the implementation version.
      */
