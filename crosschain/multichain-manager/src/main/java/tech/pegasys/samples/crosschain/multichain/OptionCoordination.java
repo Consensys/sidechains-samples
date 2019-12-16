@@ -39,7 +39,7 @@ import java.util.Scanner;
 public class OptionCoordination extends AbstractOption {
   private static final Logger LOG = LogManager.getLogger(OptionCoordination.class);
 
-  private static final String COMMAND = "coordination";
+  private static final String COMMAND = "coord";
   private static final String ADD = "add";
   private static final String REMOVE = "remove";
   private static final String DEPLOY = "deploy";
@@ -81,7 +81,7 @@ public class OptionCoordination extends AbstractOption {
       }
       else if (subCommand.equalsIgnoreCase(ADD)) {
         LOG.info("Add a Crososchain Coordination Contract");
-        System.out.println(" Blockchain id (in hex) of coordination blockchain:");
+        System.out.println(" Blockchain id (in hex, no leading 0x) of coordination blockchain:");
         String blockchainId = myInput.next();
         BigInteger bcIdBigInt = new BigInteger(blockchainId, 16);
 
@@ -93,7 +93,7 @@ public class OptionCoordination extends AbstractOption {
           // TODO validate
         }
 
-        System.out.println(" Coordination Contract Address:");
+        System.out.println(" Coordination Contract Address (in hex, no leading 0x):");
         String address = myInput.next();
         // TODO validate
 
@@ -105,8 +105,20 @@ public class OptionCoordination extends AbstractOption {
         }, 0);
       }
       else if (subCommand.equalsIgnoreCase(REMOVE)) {
-        LOG.info(" Not implemented yet");
-        continue;
+        LOG.info("Remove a Crososchain Coordination Contract");
+        System.out.println(" Blockchain id (in hex) of coordination blockchain:");
+        String blockchainId = myInput.next();
+        BigInteger bcIdBigInt = new BigInteger(blockchainId, 16);
+
+        System.out.println(" Coordination Contract Address:");
+        String address = myInput.next();
+        // TODO validate
+
+        command(new String[]{
+            REMOVE,
+            blockchainId,
+            address
+        }, 0);
       }
       else if (subCommand.equalsIgnoreCase(QUIT)) {
         stayHere = false;
@@ -121,6 +133,7 @@ public class OptionCoordination extends AbstractOption {
 
 
   public void command(final String[] args, final int argOffset) throws Exception {
+    printCommandLine(args, argOffset);
     if (args.length < argOffset+1) {
       help();
       return;
@@ -132,14 +145,16 @@ public class OptionCoordination extends AbstractOption {
     else if (subCommand.equalsIgnoreCase(ADD)) {
       add(args, argOffset+1);
     }
+    else if (subCommand.equalsIgnoreCase(REMOVE)) {
+      remove(args, argOffset+1);
+    }
     else {
       printUnknownSubCommandMessage(subCommand);
     }
   }
 
   void deploy(String args[], final int argOffset) throws Exception {
-    LOG.info("Executing: {} {}", getName(), DEPLOY);
-    if (args.length < argOffset+2) {
+    if (args.length != argOffset+2) {
       help();
       return;
     }
@@ -160,10 +175,10 @@ public class OptionCoordination extends AbstractOption {
     TransactionManager tm = bcInfo.getTransactionManager(this.credentials);
 
 
-    // TODO: Need to ask what voting algorithm should be used.
     // TODO: Need to define gas provider to use
     ContractGasProvider freeGasProvider =  new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
 
+    // TODO: Need to ask what voting algorithm should be used.
     RemoteCall<VotingAlgMajorityWhoVoted> remoteCallVotingContract =
         VotingAlgMajorityWhoVoted.deploy(webService, tm, freeGasProvider);
     VotingAlgMajorityWhoVoted votingContract = remoteCallVotingContract.send();
@@ -184,13 +199,12 @@ public class OptionCoordination extends AbstractOption {
     //TODO Add to the nodes.
     for (BlockchainInfo bc: this.multichainBlockchains.values()) {
       Besu besu = bc.getWebService();
-      besu.crossAddCoordinationContract(bcIdBigInt, ipAndPort, crosschainCoordinationContractAddress).send();
+      besu.crossAddCoordinationContract(bcIdBigInt, crosschainCoordinationContractAddress, ipAndPort).send();
     }
   }
 
 
   void add(String args[], final int argOffset) throws Exception {
-    LOG.info("Executing: {} {}", getName(), ADD);
     if (args.length != argOffset+3) {
       help();
       return;
@@ -212,7 +226,34 @@ public class OptionCoordination extends AbstractOption {
 
     for (BlockchainInfo bc: this.multichainBlockchains.values()) {
       Besu besu = bc.getWebService();
-      besu.crossAddCoordinationContract(bcIdBigInt, ipAndPort, address).send();
+      besu.crossAddCoordinationContract(bcIdBigInt, address, ipAndPort).send();
+    }
+  }
+
+
+  void remove(String args[], final int argOffset) throws Exception {
+    if (args.length != argOffset+2) {
+      help();
+      return;
+    }
+    String blockchainIdStr = args[argOffset];
+    String address = args[argOffset+1];
+
+    BigInteger bcIdBigInt = new BigInteger(blockchainIdStr, 16);
+    BlockchainInfo bcInfo = this.coordinationBlockchains.get(bcIdBigInt);
+
+    if (bcInfo == null) {
+      LOG.error("Coordination Blockchain unknown in multichain manager: {}", bcIdBigInt.toString(16));
+      // TODO validate
+    }
+    else {
+      this.coordinationBlockchains.remove(bcIdBigInt);
+    }
+
+    LOG.info(" Instructing all blockchain nodes to no longer trust: {}, {}", bcIdBigInt.toString(16), address);
+    for (BlockchainInfo bc: this.multichainBlockchains.values()) {
+      Besu besu = bc.getWebService();
+      besu.crossRemoveCoordinationContract(bcIdBigInt, address).send();
     }
   }
 }

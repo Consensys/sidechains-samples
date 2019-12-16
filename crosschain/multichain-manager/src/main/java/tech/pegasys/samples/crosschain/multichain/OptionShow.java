@@ -23,6 +23,7 @@ import tech.pegasys.samples.sidechains.common.BlockchainInfo;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Collection;
 import java.util.List;
 import java.util.Scanner;
 
@@ -65,6 +66,7 @@ public class OptionShow extends AbstractOption {
   }
 
   public void command(final String[] args, final int argOffset) throws IOException {
+    printCommandLine(args, argOffset);
     if (args.length < argOffset+1) {
       help();
       return;
@@ -79,8 +81,6 @@ public class OptionShow extends AbstractOption {
   }
 
   void showAll() throws IOException {
-    LOG.info("Executing: {} {}", getName(), ALL);
-
     LOG.info("Coordination Blockchains");
     for (BlockchainInfo chain1: this.coordinationBlockchains.values()) {
       if (checkNetworkConnection(chain1)) {
@@ -107,7 +107,7 @@ public class OptionShow extends AbstractOption {
         List<BigInteger> nodeBlockchainIds = nodes.getNodes();
         LOG.info("  Blockchains this node is connected to:");
         if (nodeBlockchainIds.size() == 0) {
-          LOG.info("   NONE\n");
+          LOG.info("   NONE");
         } else {
           for (BigInteger bcId : nodeBlockchainIds) {
             LOG.info("   Blockchain id: 0x{}", bcId.toString(16));
@@ -116,12 +116,12 @@ public class OptionShow extends AbstractOption {
 
         ListCoordinationContractsResponse coordResp = webService.crossListCoordinationContracts().send();
         List<CoordinationContractInformation> coordInfo = coordResp.getInfo();
-        LOG.info("  Coordination Blockchains & Contracts this node trusts:");
+        LOG.info("  Coordination Contracts this node trusts:");
         if (coordInfo.size() == 0) {
           LOG.info("   NONE\n");
         } else {
           for (CoordinationContractInformation info: coordInfo) {
-            LOG.info("   Blockchain id: 0x{}", info.coordinationBlockchainId);
+            LOG.info("   Blockchain id: 0x{}", info.coordinationBlockchainId.toString(16));
             LOG.info("   IP Address and Port: {}", info.ipAddressAndPort);
             LOG.info("   Contract Address: 0x{}", info.coodinationContract);
           }

@@ -36,6 +36,8 @@ public abstract class AbstractOption implements MultichainManagerOptions {
   protected static String QUIT = "q";
 
   // Information about a node on each of the coordination blockchains.
+  // TODO this is not a good model for coordination contracts: there can be more than one per blockchain.
+  // TODO: If there are multiple coordination contracts on a blockchain, how do you know when you can remove a coordination blockchain from the map?
   Map<BigInteger, BlockchainInfo> coordinationBlockchains;
 
   // Information about a node on each of the blockchains that make up this Multichain Node.
@@ -61,6 +63,20 @@ public abstract class AbstractOption implements MultichainManagerOptions {
   }
   protected void printUnknownSubCommandMessage(String enteredCommand) {
     LOG.info("Unknown option: " + enteredCommand);
+  }
+
+  protected void printCommandLine(String[] args, int offset) {
+    StringBuilder builder = new StringBuilder();
+    builder.append("Executing: ");
+    if (offset == 0) {
+      builder.append(getName());
+      builder.append(" ");
+    }
+    for (int i=0; i<args.length; i++) {
+      builder.append(args[i]);
+      builder.append(" ");
+    }
+    LOG.info(builder.toString());
   }
 
   protected boolean checkNetworkConnection(BlockchainInfo chain) {

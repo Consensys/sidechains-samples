@@ -105,6 +105,7 @@ public class OptionKey extends AbstractOption {
   }
 
   public void command(final String[] args, final int argOffset) throws IOException {
+    printCommandLine(args, argOffset);
     if (args.length < argOffset+1) {
       help();
       return;
