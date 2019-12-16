@@ -38,8 +38,7 @@ interface CrosschainCoordinationInterface {
      * @param _sidechainId The 256 bit identifier of the Sidechain.
      * @param _index The index into the list of sidechain masked participants.
      * @param  _salt Salt: 256 bit random data
-     * @return Salted hash or the participant's address, or 0x00.
-     *         Note: function doesn't return anything, instead it emits an event, AddingSidechainUnmaskedParticipant(uint256 _sidechainId, address _participant);
+     * Note: function doesn't return anything, instead it emits an event, AddingSidechainUnmaskedParticipant(uint256 _sidechainId, address _participant);
      */
     function unmask(uint256 _sidechainId, uint256 _index, uint256 _salt) external;
 
@@ -194,7 +193,7 @@ interface CrosschainCoordinationInterface {
 
 
     /**
-    * Get array of Sidechain's public key, version number, status and block number
+    * Get a blockchains's public key, version number, status and block number
     *
     * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
     * @return an array of public keys for the sidechain corresponding to the 3 different states it can be in:
