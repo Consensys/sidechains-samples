@@ -37,7 +37,8 @@ interface CrosschainCoordinationInterface {
      *
      * @param _sidechainId The 256 bit identifier of the Sidechain.
      * @param _index The index into the list of sidechain masked participants.
-     * @return Salted hash or the participant's address, or 0x00.
+     * @param  _salt Salt: 256 bit random data
+     * Note: function doesn't return anything, instead it emits an event, AddingSidechainUnmaskedParticipant(uint256 _sidechainId, address _participant);
      */
     function unmask(uint256 _sidechainId, uint256 _index, uint256 _salt) external;
 
@@ -52,10 +53,10 @@ interface CrosschainCoordinationInterface {
      * 2      Vote to remove a masked participant    Salted Hash of participant's address    Index into array of participant  Not used
      * 3      Vote to add an unmasked participant    Address of proposed participant         Not used                         Not used
      * 4      Vote to remove an unmasked participant Address of participant                  Index into array of participant  Not used.
-     * 5      Vote to change public key.             0x00                                    Not used                         Public Key
+     * 5      Vote to change public key.             0x00                                    Version number of public key     Public Key
      *
      * @param _sidechainId The 256 bit identifier of the Sidechain.
-     * @param _action The type of vote: add or remove a masked or unmasked participant
+     * @param _action The type of vote: add or remove a masked or unmasked participant, or change a public key
      * @param _voteTarget What is being voted on: a masked address or the unmasked address of a participant to be added or removed.
      * @param _additionalInfo1 See above.
      * @param _additionalInfo2 See above.
@@ -69,7 +70,7 @@ interface CrosschainCoordinationInterface {
      * Only members of the sidechain can vote.
      *
      * @param _sidechainId The 256 bit identifier of the Sidechain.
-     * @param _action The type of vote: add or remove a masked or unmasked participant
+     * @param _action The type of vote: add or remove a masked or unmasked participant, or change a public key
      * @param _voteTarget What is being voted on: a masked address or the unmasked address of a participant to be added or removed.
      * @param _voteFor True if the transaction sender wishes to vote for the action.
      */
@@ -112,11 +113,6 @@ interface CrosschainCoordinationInterface {
      */
     function ignore(uint256 _originatingSidechainId, uint256 _crosschainTransactionId, bytes calldata _signedIgnoreMessage) external;
 
-
-    /**
-     * Get the Sidechain's public key
-     */
-    function getPublicKey(uint256 _sidechainId) external view returns (bytes memory);
 
     /**
      * Get the status of the crosschain transaction
@@ -195,6 +191,27 @@ interface CrosschainCoordinationInterface {
      */
     function getMaskedSidechainParticipant(uint256 _sidechainId, uint256 _index) external view returns(uint256);
 
+
+    /**
+    * Get a blockchains's public key, version number, status and block number
+    *
+    * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
+    * @return public key information for the current active public key
+    *         Value      Status
+    *           0        This is the active public key for the sidechain which is currently in use
+    *           1        The public key that has been returned is flagged as a proposed changed key, so it is dependent on the voting before it can become active
+    *           2        This is a public key that has been used previously, but is currently not in use. Note that this key could be the prior key, or an historic key
+    */
+    function getPublicKey(uint256 _sidechainId) external view returns ( uint64 _versionNumber, uint64 _status, uint _blockNumber, bytes memory _key);
+
+    /**
+        * Get the blockchains's public key information for a specifically requested version number
+        *
+        * @param _sidechainId    The 256 bit sidechain identifier to which this public key belongs
+        * @param _versionNumber  A specific version of the public key has been requested
+        * @return                Detail about the public key with that version and whether it was actually found
+        */
+    function getVersionOfPublicKey(uint256 _sidechainId, uint64 _versionNumber) external view returns (uint64 _status, uint _blockNumber, bool _keyFound, bytes memory _key);
 
     /*
      * Return the implementation version.
