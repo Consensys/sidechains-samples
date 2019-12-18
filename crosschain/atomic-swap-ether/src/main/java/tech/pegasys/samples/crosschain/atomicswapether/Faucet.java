@@ -20,7 +20,7 @@ import org.web3j.tx.RawTransactionManager;
 import org.web3j.tx.TransactionManager;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
-import tech.pegasys.samples.sidechains.common.utils.AbstractPropertiesFile;
+import tech.pegasys.samples.sidechains.common.utils.BasePropertiesFile;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -82,7 +82,7 @@ public class Faucet {
     }
 
 
-    static class FaucetProperties extends AbstractPropertiesFile {
+    static class FaucetProperties extends BasePropertiesFile {
         private static final String FAUCET_PRIVATE_KEY = "6960b51fb7c56858d752c2faf781de045c6418d0b4b60d55ab853bcc194d3770";
 
         private static final String PROP_FAUCET_PRIV_KEY = "FaucetPrivateKey";

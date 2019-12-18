@@ -12,7 +12,7 @@
  */
 pragma solidity >=0.4.23;
 import "./AtomicSwapReceiverInterface.sol";
-import "./Crosschain.sol";
+import "../../../common-solidity/crosschain-precompile-calls/contracts/Crosschain.sol";
 import "./AtomicSwapReceiver.sol";
 
 /*

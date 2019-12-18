@@ -23,7 +23,7 @@ import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.tx.gas.StaticGasProvider;
 import tech.pegasys.samples.crosschain.atomicswapether.soliditywrappers.AtomicSwapRegistration;
-import tech.pegasys.samples.sidechains.common.utils.AbstractPropertiesFile;
+import tech.pegasys.samples.sidechains.common.utils.BasePropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.math.BigInteger;
@@ -91,7 +91,7 @@ public class RegistrationContractOwner {
 
 
 
-    static class RegistrationProperties extends AbstractPropertiesFile {
+    static class RegistrationProperties extends BasePropertiesFile {
         private static final String PROP_PRIV_KEY = "privateKey";
         private static final String PROP_REGISTRATION_CONTRACT_ADDRESS = "RegistrationContractAddress";
         String privateKey;

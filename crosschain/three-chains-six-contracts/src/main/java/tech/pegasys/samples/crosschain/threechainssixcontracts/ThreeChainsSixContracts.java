@@ -16,7 +16,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
-import org.web3j.protocol.besu.response.crosschain.CrosschainIsLocked;
+import org.web3j.protocol.besu.response.crosschain.CrossIsLockedResponse;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -61,11 +61,14 @@ public class ThreeChainsSixContracts {
     private static final BigInteger SC0_SIDECHAIN_ID = BigInteger.valueOf(11);
     private static final String SC0_URI = "http://127.0.0.1:8110/";
     private static final BigInteger SC1_SIDECHAIN_ID = BigInteger.valueOf(11);
-    private static final String SC1_URI = "http://127.0.0.1:8110/";
+    private static final String SC1_IP_PORT = "127.0.0.1:8110";
+    private static final String SC1_URI = "http://" + SC1_IP_PORT + "/";
     private static final BigInteger SC2_SIDECHAIN_ID = BigInteger.valueOf(22);
-    private static final String SC2_URI = "http://127.0.0.1:8220/";
+    private static final String SC2_IP_PORT = "127.0.0.1:8220";
+    private static final String SC2_URI = "http://" + SC2_IP_PORT + "/";
     private static final BigInteger SC3_SIDECHAIN_ID = BigInteger.valueOf(33);
-    private static final String SC3_URI = "http://127.0.0.1:8330/";
+    private static final String SC3_IP_PORT = "127.0.0.1:8330";
+    private static final String SC3_URI = "http://" + SC3_IP_PORT + "/";
 
     // Have the polling interval equal to the block time.
     private static final int POLLING_INTERVAL = 2000;
@@ -177,6 +180,14 @@ public class ThreeChainsSixContracts {
             deployAndSetupCoordinationContract();
         }
 
+        // Set-up as a multichain node so all blockchain nodes are aware of each other.
+        this.web3jSc1.crossAddMultichainNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
+        this.web3jSc1.crossAddMultichainNode(SC3_SIDECHAIN_ID, SC3_IP_PORT).send();
+        this.web3jSc2.crossAddMultichainNode(SC1_SIDECHAIN_ID, SC1_IP_PORT).send();
+        this.web3jSc2.crossAddMultichainNode(SC3_SIDECHAIN_ID, SC3_IP_PORT).send();
+        this.web3jSc3.crossAddMultichainNode(SC1_SIDECHAIN_ID, SC1_IP_PORT).send();
+        this.web3jSc3.crossAddMultichainNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
+
 
         this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
             this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
@@ -246,7 +257,7 @@ public class ThreeChainsSixContracts {
             Sc1Contract1.deployLockable(this.web3jSc1, this.tmSc1, this.freeGasProvider, SC2_SIDECHAIN_ID, SC3_SIDECHAIN_ID, contract2Address, contract3Address, contract5Address);
         this.contract1 = remoteCallContract1.send();
         this.contract1Address = this.contract1.getContractAddress();
-        LOG.info(" Contract 1 deployed on sidechain 1 (id={}), at address: ", " + SC1_SIDECHAIN_ID + " + contract1Address);
+        LOG.info(" Contract 1 deployed on sidechain 1 (id={}), at address: {}", SC1_SIDECHAIN_ID, contract1Address);
     }
 
 
@@ -374,7 +385,7 @@ public class ThreeChainsSixContracts {
                     LOG.error("Contract {} did not unlock", this.contract1Address);
                 }
                 Thread.sleep(500);
-                CrosschainIsLocked isLockedObj = this.web3jSc1.crosschainIsLocked(this.contract1Address, DefaultBlockParameter.valueOf("latest")).send();
+                CrossIsLockedResponse isLockedObj = this.web3jSc1.crossIsLocked(this.contract1Address, DefaultBlockParameter.valueOf("latest")).send();
                 stillLocked = isLockedObj.isLocked();
                 if (stillLocked) {
                     graphicalCount.append(".");

@@ -325,7 +325,6 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
                 publicKeyStatus = uint64(PublicKeyStatus.KEY_CURRENT);
                 // Change the current active public key to the one voted on
                 changePublicKey(_sidechainId, newPublicKey);
-
             }
         }
 
@@ -714,5 +713,4 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
             return(equal);
         }
     }
-
 }

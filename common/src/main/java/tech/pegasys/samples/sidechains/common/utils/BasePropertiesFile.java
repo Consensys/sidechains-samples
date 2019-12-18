@@ -23,16 +23,22 @@ import java.util.Properties;
 
 /**
  * Base class for all properties file classes.
+ *
+ * Converts between a Properties dictionary and its representation on disk.
+ * Subclasses publish the keys as fields.
  */
-public class AbstractPropertiesFile {
+public class BasePropertiesFile {
     // Name of properties file which holds information for this sample code.
     private final String samplePropertiesFileName;
 
-    protected Properties properties = new Properties();
+    public Properties properties = new Properties();
 
 
-    protected AbstractPropertiesFile(String name) {
-        this.samplePropertiesFileName = "sample." + name + ".properties";
+    protected BasePropertiesFile(String name) {
+        if ( !name.isEmpty()){
+            name = "." + name;
+        }
+        this.samplePropertiesFileName = "sample" + name + ".properties";
     }
 
 
@@ -47,11 +53,11 @@ public class AbstractPropertiesFile {
     }
 
 
-    protected void loadProperties() {
+    public void loadProperties() {
         Path path = getSamplePropertiesPath();
         try {
             FileInputStream fis = new FileInputStream(path.toFile());
-            this.properties.load(fis);
+            properties.load(fis);
         } catch (IOException ioEx) {
             // By the time we have reached the loadProperties method, we should be sure the file
             // exists. As such, just throw an exception to stop.
@@ -59,7 +65,7 @@ public class AbstractPropertiesFile {
         }
     }
 
-    protected void storeProperties() {
+    public void storeProperties() {
         Path path = getSamplePropertiesPath();
         try {
             final FileOutputStream fos = new FileOutputStream(path.toFile());

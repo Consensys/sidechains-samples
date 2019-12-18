@@ -17,6 +17,6 @@ Other directories:
 - crosschain/common-solidity: Crosschain Coordination Contract Truffle project and other
   pieces of Solidity code used across many samples related to crosschain.
 - testall: Allows some key code paths of each of the samples to be run as a JUnit test.
-
+- scripts: Ancillary scripts to help create a set of nodes in a blockchain and run them
 
 

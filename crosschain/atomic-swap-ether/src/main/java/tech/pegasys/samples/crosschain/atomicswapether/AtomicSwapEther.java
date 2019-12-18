@@ -24,6 +24,7 @@ import tech.pegasys.samples.sidechains.common.coordination.CrosschainCoordinatio
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 
@@ -43,11 +44,14 @@ public class AtomicSwapEther {
     // the sidechains / blockchains need to be deployed at the addresses shown below,
     // with the blockchain IDs indicated.
     private static final BigInteger SC0_SIDECHAIN_ID = BigInteger.valueOf(33);
-    private static final String SC0_URI = "http://127.0.0.1:8330/";
+    private static final String SC0_IP_PORT = "127.0.0.1:8330";
+    private static final String SC0_URI = "http://" + SC0_IP_PORT + "/";
     private static final BigInteger SC1_SIDECHAIN_ID = BigInteger.valueOf(11);
-    private static final String SC1_URI = "http://127.0.0.1:8110/";
+    private static final String SC1_IP_PORT = "127.0.0.1:8110";
+    private static final String SC1_URI = "http://" + SC1_IP_PORT + "/";
     private static final BigInteger SC2_SIDECHAIN_ID = BigInteger.valueOf(22);
-    private static final String SC2_URI = "http://127.0.0.1:8220/";
+    private static final String SC2_IP_PORT = "127.0.0.1:8220";
+    private static final String SC2_URI = "http://" + SC2_IP_PORT + "/";
 
     // Have the polling interval equal to the block time.
     private static final int POLLING_INTERVAL = 2000;
@@ -91,7 +95,7 @@ public class AtomicSwapEther {
     private static void deleteAllPropertiesFile() throws IOException {
         // Delete all properties files as a starting point. This will ensure all contracts are redeployed.
         (new CrosschainCoordinationContractSetup.CrosschainCoordinationContractSetupProperties()).deletePropertiesFile();
-        (new EntityAcceptingOffer.EntityOfferingProperties()).deletePropertiesFile();
+        (new EntityAcceptingOffer.EntityOfferingProperties()).deletePropertiesFile(); //TODO: repeated EntityOfferingProperties??
         (new EntityOfferingEther.EntityOfferingProperties()).deletePropertiesFile();
         (new Faucet.FaucetProperties()).deletePropertiesFile();
         (new RegistrationContractOwner.RegistrationProperties()).deletePropertiesFile();
@@ -106,6 +110,10 @@ public class AtomicSwapEther {
         if (this.coordinationContractSetup.getCrosschainCoordinationContractAddress() == null) {
             deployAndSetupCoordinationContract();
         }
+
+        // Set-up as a multichain node where the node on blockchain 1 can call a node on blockchain 2.
+        this.web3jSc1.crossAddMultichainNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
+
         this.faucet = new Faucet(this.web3jSc1, SC1_SIDECHAIN_ID, this.web3jSc2, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
         this.registrationContractOwner = new RegistrationContractOwner(this.web3jSc1, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
         this.entityOfferingEther = new EntityOfferingEther(this.web3jSc1, SC1_SIDECHAIN_ID, this.web3jSc2, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
