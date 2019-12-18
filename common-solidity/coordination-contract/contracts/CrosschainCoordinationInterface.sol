@@ -53,7 +53,7 @@ interface CrosschainCoordinationInterface {
      * 2      Vote to remove a masked participant    Salted Hash of participant's address    Index into array of participant  Not used
      * 3      Vote to add an unmasked participant    Address of proposed participant         Not used                         Not used
      * 4      Vote to remove an unmasked participant Address of participant                  Index into array of participant  Not used.
-     * 5      Vote to change public key.             0x00                                    Not used                         Public Key
+     * 5      Vote to change public key.             0x00                                    Version number of public key     Public Key
      *
      * @param _sidechainId The 256 bit identifier of the Sidechain.
      * @param _action The type of vote: add or remove a masked or unmasked participant, or change a public key
@@ -196,14 +196,22 @@ interface CrosschainCoordinationInterface {
     * Get a blockchains's public key, version number, status and block number
     *
     * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
-    * @return an array of public keys for the sidechain corresponding to the 3 different states it can be in:
+    * @return public key information for the current active public key
     *         Value      Status
     *           0        This is the active public key for the sidechain which is currently in use
     *           1        The public key that has been returned is flagged as a proposed changed key, so it is dependent on the voting before it can become active
     *           2        This is a public key that has been used previously, but is currently not in use. Note that this key could be the prior key, or an historic key
     */
-    function getPublicKey(uint256 _sidechainId) external view returns ( uint _versionNumber, uint256 _status, uint _blockNumber, bytes memory _key);
+    function getPublicKey(uint256 _sidechainId) external view returns ( uint64 _versionNumber, uint64 _status, uint _blockNumber, bytes memory _key);
 
+    /**
+        * Get the blockchains's public key information for a specifically requested version number
+        *
+        * @param _sidechainId    The 256 bit sidechain identifier to which this public key belongs
+        * @param _versionNumber  A specific version of the public key has been requested
+        * @return                Detail about the public key with that version and whether it was actually found
+        */
+    function getVersionOfPublicKey(uint256 _sidechainId, uint64 _versionNumber) external view returns (uint64 _status, uint _blockNumber, bool _keyFound, bytes memory _key);
 
     /*
      * Return the implementation version.

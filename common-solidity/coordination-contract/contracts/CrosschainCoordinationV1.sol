@@ -31,14 +31,13 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     uint256 public constant MANAGEMENT_PSEUDO_SIDECHAIN_ID = 0;
 
     // Public key version number
-    uint private FIRST_PUBLIC_KEY = 0;
-    uint [] private publicKeyVersion;
+    uint64 constant private FIRST_PUBLIC_KEY = 0;
 
     // Public key & status
-    uint256 private publicKeyStatus = uint256(PublicKeyStatus.KEY_CURRENT);  // 0 -> Current key
-    bytes private activePublicKey;
+    uint64 private publicKeyStatus = uint64(PublicKeyStatus.KEY_CURRENT);  // 0 -> Current key
     bytes private newPublicKey;
     bytes private sidechainPublicKey;
+    bytes constant private NULL_KEY = "";
 
     // Indications that a vote is underway.
     // VOTE_NONE indicates no vote is underway. Also matches the deleted value for integers.
@@ -60,13 +59,11 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     }
 
     struct PublicKey {
-    //  uint sidechainID;   // Now that I added the struct to sidechains record, we probably don't need this
-        uint versionNumber;
-        uint256 status;
+        uint64 versionNumber;
+        uint64 status;
         uint blockNumber;
         bytes key;
     }
-    //mapping (uint => PublicKey) publicKeys;
 
 
     struct Votes {
@@ -115,10 +112,8 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         mapping(uint256=>Votes) votes;
 
         // Public keys for this sidechain, containing additional information regarding version, status & block number
-        uint256 numberOfKeys;
-    //  PublicKeyStatus publicKeyStatus;
+        uint64 numberOfKeys;
         mapping(uint256 => PublicKey) publicKeys;
-        //bytes publicKey;
     }
 
     mapping(uint256=>SidechainRecord) private sidechains;
@@ -190,11 +185,10 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         sidechains[_sidechainId].unmasked.push(msg.sender);
         sidechains[_sidechainId].inUnmasked[msg.sender] = true;
         sidechains[_sidechainId].numUnmaskedParticipants++;
-        // Version number 0 is the version number assigned when sidechain is created
-        publicKeyVersion[_sidechainId] = FIRST_PUBLIC_KEY;
-        uint256 keystatus = uint256(PublicKeyStatus.KEY_CURRENT);
+        uint64 keystatus = uint64(PublicKeyStatus.KEY_CURRENT);
         sidechainPublicKey = _pubKey;
-        setPublicKey(_sidechainId, publicKeyVersion[_sidechainId], keystatus, sidechainPublicKey);
+        // Version number 0 is the version number assigned when the sidechain is created
+        setPublicKey(_sidechainId, FIRST_PUBLIC_KEY, keystatus, sidechainPublicKey);
         sidechains[_sidechainId].numberOfKeys = 1;
     }
 
@@ -252,13 +246,14 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         if (action == VoteType.VOTE_CHANGE_PUBLIC_KEY) {
             // The proposed public key is assumed to be valid.
             // Set up the detail for the proposed key to be associated with this sidechain
-            uint256 sidechainsNoOfKeys = sidechains[_sidechainId].numberOfKeys;
-            uint keyVersion = sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys-1].versionNumber;      // Mapping starts at 0 not 1
-            sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys].versionNumber = keyVersion + 1;
-            sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys].status = uint256(PublicKeyStatus.KEY_PROPOSED);
-            sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys].blockNumber = block.number;
-            sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys].key = _additionalInfo2;
-            sidechains[_sidechainId].numberOfKeys += 1;
+            uint64 sidechainsNoOfKeys = sidechains[_sidechainId].numberOfKeys;
+            uint64 keyVersion = sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys-1].versionNumber;      // Mapping starts at 0 not 1
+          //  sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys].versionNumber = keyVersion + 1;
+          //  sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys].status = uint64(PublicKeyStatus.KEY_PROPOSED);
+          //  sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys].blockNumber = block.number;
+          //  sidechains[_sidechainId].publicKeys[sidechainsNoOfKeys].key = _additionalInfo2;
+          //  sidechains[_sidechainId].numberOfKeys += 1;
+            setPublicKey(_sidechainId, (keyVersion + 1), uint64(PublicKeyStatus.KEY_PROPOSED), _additionalInfo2);
       }
 
         // Set-up the vote.
@@ -326,12 +321,10 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
                 delete sidechains[_sidechainId].inMasked[_voteTarget];
             }
             else if (action == VoteType.VOTE_CHANGE_PUBLIC_KEY) {
-            //    activePublicKey = getLastActivePublicKey(_sidechainId);
                 newPublicKey = sidechains[_sidechainId].votes[_voteTarget].additionalInfo2;  // new public key
-                publicKeyStatus = uint256(PublicKeyStatus.KEY_CURRENT);
+                publicKeyStatus = uint64(PublicKeyStatus.KEY_CURRENT);
                 // Change the current active public key to the one voted on
-            //    changePublicKey(_sidechainId, publicKeyStatus, activePublicKey, newPublicKey);
-                changePublicKey(_sidechainId, publicKeyStatus, newPublicKey);
+                changePublicKey(_sidechainId, newPublicKey);
 
             }
         }
@@ -508,29 +501,56 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         return sidechains[_sidechainId].masked[_index];
     }
 
- //   function getPublicKey(uint256 _sidechainId) external view returns (bytes memory) {
- //       bytes memory pubKey = sidechains[_sidechainId].publicKey;
- //       return pubKey;
- //   }
 
-
-    /**
+     /**
      * Get blockchain's public key, version number, status and block number
      *
      * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
-     * @return an array of public keys for the sidechain corresponding to the 3 different states it can be in:
+     * @return public key information for the currently active public key for the blockchain
      *         Value      Status
      *           0        This is the active public key for the sidechain which is currently in use
      *           1        The public key that has been returned is flagged as a proposed changed key, so it is dependent on the voting before it can become active
      *           2        This is a public key that has been used previously, but is currently not in use. Note that this key could be the prior key, or an historic key
      */
-    function getPublicKey(uint256 _sidechainId) external view returns ( uint _versionNumber, uint256 _status, uint _blockNumber, bytes memory _key){
+    function getPublicKey(uint256 _sidechainId) external view returns ( uint64 _versionNumber, uint64 _status, uint _blockNumber, bytes memory _key){
 
-        (uint256 vsn, uint256 stat, uint256 blk, bytes memory key) = getLastActivePublicKey(_sidechainId);
+        (uint64 vsn, uint64 stat, uint256 blk, bytes memory key) = getLastActivePublicKey(_sidechainId);
 
         return (vsn, stat, blk, key);
     }
 
+
+    /**
+      * Return the details of the public key for a specific version number: status, block number and public key
+      */
+    function getVersionOfPublicKey(uint256 _sidechainId, uint64 _versionNumber) external view returns (uint64 _status, uint _blockNumber, bool _keyFound, bytes memory _key) {
+
+        (uint64 stat, uint256 blk, bool found, bytes memory key) = checkPublicKeyVersion(_sidechainId,_versionNumber);
+
+        return (stat, blk, found, key);
+    }
+
+
+    function checkPublicKeyVersion (uint256 _sidechainId, uint64 _versionNumber) private view returns (uint64 _status, uint _blockNumber, bool keyFound,  bytes memory _key) {
+        uint64 sidechainsNoOfKeys = sidechains[_sidechainId].numberOfKeys;
+        uint64 stat;
+        uint blk;
+        bool found = false;
+        bytes memory key = NULL_KEY;
+        uint64 i = 0;
+
+        while (!found && i < sidechainsNoOfKeys){
+            if (sidechains[_sidechainId].publicKeys[i].versionNumber == _versionNumber) {
+                found = true;
+                stat = sidechains[_sidechainId].publicKeys[i].status;
+                blk = sidechains[_sidechainId].publicKeys[i].blockNumber;
+                key = sidechains[_sidechainId].publicKeys[i].key;
+            }
+            i++;
+        }
+
+        return (stat, blk, found, key);
+    }
 
     /**
      * Get array of Sidechain's public key, version number, status and block number
@@ -543,8 +563,8 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
      *           2        This is a public key that has been used previously, but is currently not in use. Note that this key could be the prior key, or an historic key
      */
     function getPublicKeyArray (uint256 _sidechainId) private view returns ( PublicKey [] memory _publicKeyArray){
-        uint256 sidechainsNoOfKeys = sidechains[_sidechainId].numberOfKeys;
-        PublicKey [] memory publicKeyArray;
+        uint64 sidechainsNoOfKeys = sidechains[_sidechainId].numberOfKeys;  // If sidechain does not yet exist, then the number of keys will have the default value of 0.
+        PublicKey [] memory publicKeyArray;                                 // This should initialise all fields in the struct to default values, e.g. 0 for uint
         for (uint i = 0; i < sidechainsNoOfKeys; i++) {
             publicKeyArray[i] = sidechains[_sidechainId].publicKeys[i];
         }
@@ -557,20 +577,27 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
      * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
      * @return _activeKey latest active public key
      */
-    function getLastActivePublicKey(uint256 _sidechainId) private view returns ( uint _versionNumber, uint256 _status, uint _blockNumber, bytes memory _key){
-        // If there is exactly one public key then this is the one assigned when the sidechain was created & we would expect it to have
-        // a status of active, but this probably doesn't matter...
+    function getLastActivePublicKey(uint256 _sidechainId) private view returns ( uint64 _versionNumber, uint64 _status, uint _blockNumber, bytes memory _key){
+        // If there is exactly one public key then this is the one assigned when the sidechain was created & we would expect it to have a status of active
         PublicKey [] memory publicKeyArray = getPublicKeyArray(_sidechainId);
-        uint256 sidechainsNoOfKeys = sidechains[_sidechainId].numberOfKeys;
-        bool active;     // default initialisation is FALSE
-        uint i;
-        for (i = sidechainsNoOfKeys; (i == 0 || active); i--) {
-            publicKeyArray[i-1] = sidechains[_sidechainId].publicKeys[i];
-            if (publicKeyArray[i-1].status == uint256(PublicKeyStatus.KEY_CURRENT)) {
-                active = true;
+        uint64 sidechainsNoOfKeys = sidechains[_sidechainId].numberOfKeys;
+
+        // If the sidechain does not exist, return null and zero values, and indicate in the status that the public key is not a proposed or current key
+        if (sidechainsNoOfKeys == 0 || publicKeyArray.length == 0){
+            return(0,uint64(PublicKeyStatus.KEY_PREVIOUS),0,NULL_KEY);
+        } else {
+            bool active = false;
+            uint i;
+
+            for ( i = sidechainsNoOfKeys; (i == 0 || active); i--) {
+                publicKeyArray[i-1] = sidechains[_sidechainId].publicKeys[i-1];
+                if (publicKeyArray[i-1].status == uint64(PublicKeyStatus.KEY_CURRENT)) {
+                    active = true;
+                }
             }
+            // using i, not (i-1) since i would have been decreased at the end of the for loop
+            return(publicKeyArray[i].versionNumber, publicKeyArray[i].status, publicKeyArray[i].blockNumber, publicKeyArray[i].key);
         }
-        return(publicKeyArray[i].versionNumber, publicKeyArray[i].status, publicKeyArray[i].blockNumber, publicKeyArray[i].key);
     }
 
     /**
@@ -579,12 +606,11 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
      * @param  _sidechainId    The 256 bit sidechain identifier to which this public key belongs
      * @param  _publicKey      The new public key for the sidechain
      */
- //   function setPublicKey(uint256 _sidechainId, uint _versionNumber, uint256 _status, bytes storage _publicKey) private {
-    function setPublicKey(uint256 _sidechainId, uint _versionNumber, uint256 _status, bytes memory _publicKey) private {
+    function setPublicKey(uint256 _sidechainId, uint64 _versionNumber, uint64 _status, bytes memory _publicKey) private {
        // Check if we are adding or replacing a public key entry
-        uint256 index = sidechains[_sidechainId].numberOfKeys;
+        uint64 index = sidechains[_sidechainId].numberOfKeys;
         // Need to replace entry and not add an entry - assume that we are updating the block number too
-        // TODO - Do we need to update the block number?
+        //TODO - CHANGE THE CHECK HERE, SINCE VERSION NUMBER IS NOT NECESSARILY EQUIVALENT TO THE NO OF KEYS - PR SAYS IT IS PASSED IN THROUGH ADDITIONALINFO
         if (index == _versionNumber){
             sidechains[_sidechainId].publicKeys[index-1].status = _status;
             sidechains[_sidechainId].publicKeys[index-1].blockNumber = block.number;
@@ -601,57 +627,90 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         * There was a majority vote to change the public key of the Sidechain, so change the public key as has been voted on
         *
         * @param  _sidechainId     The 256 bit sidechain identifier to which this public key belongs
-        * @param  _status          Used to indicate if this change of public key is a proposed or commited change (trial execution = proposed)
         * @param  _newPublicKey    The new public key that has been proposed for the sidechain
         */
-    function changePublicKey(uint256 _sidechainId, uint _status, bytes memory _newPublicKey) private {
+    function changePublicKey(uint256 _sidechainId, bytes memory _newPublicKey) private {
         // TODO - Ensure that the current key matches what we expect it to be before we get a change underway
-        // Note: If the most current key for the sidechain is one that is not yet assigned a status of active, we need to replace it, rather than adding to the array of keys
-        //
-        // TODO - Question: If the status of the public key of this sidechain is 'in progress' would the block number remain unchanged?
-        // TODO   --------  or are we assigning the block number when we assign the new public key as the active key for the sidechain?
+        // Note: If the latest key for the sidechain is one that is not yet active, we need to replace it, signifying it is now active, rather than adding to the array of keys
 
-        (uint256 vsn, uint256 stat, uint256 blk, bytes memory activePublickey) = getLastActivePublicKey(_sidechainId);
+        (uint64 vsn, uint64 stat, uint256 blk, bytes memory activePublickey) = getLastActivePublicKey(_sidechainId);
 
-        uint256 totKeys = sidechains[_sidechainId].numberOfKeys;
-        bytes memory currentKey = sidechains[_sidechainId].publicKeys[totKeys-1].key;
-        uint currentKeyBlkNo = sidechains[_sidechainId].publicKeys[totKeys-1].blockNumber;
-        uint256 currentKeyStatus = sidechains[_sidechainId].publicKeys[totKeys-1].status;
-        uint currentVersionNumber = sidechains[_sidechainId].publicKeys[totKeys-1].versionNumber;
+        uint64 totKeys = sidechains[_sidechainId].numberOfKeys;
 
-        // Check if the most current key in the array has a status of active. If it has then its status is set to previous & a new key is added
-        if (currentKeyStatus == uint256 (PublicKeyStatus.KEY_CURRENT)){
-            require(currentKeyBlkNo == blk);           // If the current key is active, then we expect the last active key to be the current key
-            sidechains[_sidechainId].publicKeys[totKeys-1].status = uint256 (PublicKeyStatus.KEY_PREVIOUS); // current key becomes a historic key
-            setPublicKey(_sidechainId, currentVersionNumber + 1, uint256 (PublicKeyStatus.KEY_CURRENT), _newPublicKey);
-        // If the most current key is not active, then we expect it to be in the process of being changed, as you would expect the latest one to either be active or in the process of being changed
+        // If the getActivePublicKey returns a null key, then we know that no public kry exists for this sidechain
+        if (publicKeysEqual(activePublickey, NULL_KEY)){
+            setPublicKey(_sidechainId, FIRST_PUBLIC_KEY, uint64 (PublicKeyStatus.KEY_CURRENT), _newPublicKey);
         } else {
-            require(currentKeyStatus == uint256(PublicKeyStatus.KEY_PROPOSED));
-            setPublicKey(_sidechainId, currentVersionNumber, uint256 (PublicKeyStatus.KEY_CURRENT), _newPublicKey);
+            require(totKeys >=1, "Inconsistent information: total no of keys for sidechain is = 0, but the public key returned as being active, is not null.");
+            bytes memory currentKey = sidechains[_sidechainId].publicKeys[totKeys-1].key;
+            uint currentKeyBlkNo = sidechains[_sidechainId].publicKeys[totKeys-1].blockNumber;
+            uint64 currentKeyStatus = sidechains[_sidechainId].publicKeys[totKeys-1].status;
+            uint64 currentVersionNumber = sidechains[_sidechainId].publicKeys[totKeys-1].versionNumber;
+
+            // -----------------------------------------------------------------------------------------------------------------------------------------------
+            // The commented out code below has been replaced by checking the public keys. If that doesn't work, then some of the code below may again be used
+            // -----------------------------------------------------------------------------------------------------------------------------------------------
+            // Check if the most current key in the array has a status of active. If it has then its status is set to previous & a new key is added
+    //        if (currentKeyStatus == uint64 (PublicKeyStatus.KEY_CURRENT)){
+    //            require(currentKeyBlkNo == blk);           // If the current key is active, then we expect the last active key to be the current key
+    //            sidechains[_sidechainId].publicKeys[totKeys-1].status = uint64 (PublicKeyStatus.KEY_PREVIOUS); // current key becomes a historic key
+    //            setPublicKey(_sidechainId, currentVersionNumber + 1, uint64 (PublicKeyStatus.KEY_CURRENT), _newPublicKey);
+            // If the most current key is not active, then we expect it to be in the process of being changed, as you would expect the latest one to either be active or in the process of being changed
+    //        } else {
+    //           require(currentKeyStatus == uint256(PublicKeyStatus.KEY_PROPOSED));
+    //            setPublicKey(_sidechainId, currentVersionNumber, uint64 (PublicKeyStatus.KEY_CURRENT), _newPublicKey);
+    //       }
+            // -----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+            // There are two possible scenarios: the active key is the current key, or the current key is 'in progress'.
+            // Anything else is an error, e.g. Would not expect it to be set to previous, unless it is an empty key, i.e. no key has been added for sidechain yet
+
+            // TODO - How do you compare public keys in the dynamic bytes arrays????
+            // TODO   I've created a function, but need to test if it works as expected
+            // --------------------------------------------------------------------------
+            // If the current public key is the active public key then we need to add the new key and set the current one to being a previous key
+            if (publicKeysEqual(activePublickey, currentKey)) {
+                require(currentKeyBlkNo == blk,"The active key equals the current key, but the block numbers differ.");  // If the current key is active, then we expect the last active key to be the current key
+                sidechains[_sidechainId].publicKeys[totKeys-1].status = uint64 (PublicKeyStatus.KEY_PREVIOUS);           // current key becomes a historic key
+                setPublicKey(_sidechainId, currentVersionNumber + 1, uint64 (PublicKeyStatus.KEY_CURRENT), _newPublicKey);
+            } else {
+                // The new public key is the latest entry in the public key array, so we expect the status to be 'proposed'
+                if (publicKeysEqual(currentKey, _newPublicKey)) {
+                    require(currentKeyStatus == uint64(PublicKeyStatus.KEY_PROPOSED), "Expected current public key to have a status of proposed.");
+                    setPublicKey(_sidechainId, currentVersionNumber, uint64 (PublicKeyStatus.KEY_CURRENT), _newPublicKey);
+                } else {
+                    if (publicKeysEqual(currentKey, NULL_KEY)){
+                        setPublicKey(_sidechainId, currentVersionNumber, uint64 (PublicKeyStatus.KEY_CURRENT), _newPublicKey);
+                    }
+                }
+            }
         }
-
-        // There are two possible scenarios: the active key is the current key, or the current key is 'in progress'.
-        // Anything else is an error, e.g. Would not expect it to be set to previous
-
-        // TODO - How do you compare public keys in the dynamic bytes arrays????
-        // TODO - if (sidechains[_sidechainId].publicKeys[0].key == _activePublicKey){
-        // --------------------------------------------------------------------------
-        //if (currentKey.length == activePublicKey.length){
-        //    uint key_length = currentKey.length;
-        //    byte[] memory current = new byte[](key_length);
-        //    byte[] memory active = new byte[](key_length);
-        //    for (uint i = 0; i < key_length; i++) {
-        //        if (current[i] != active[i]){
-
-        //        }
-        //    }
-        //}
-        // --------------------------------------------------------------------------
     }
 
 
     function getVersion() external pure returns (uint16) {
         return VERSION_ONE;
+    }
+
+    function publicKeysEqual(bytes memory _firstKey,bytes memory _secondKey ) private pure returns (bool){
+
+        uint256 keyLength_1 = _firstKey.length;
+        uint256 keyLength_2 = _secondKey.length;
+        bool equal = false;
+        uint64 i = 0;
+
+        if (keyLength_1 != keyLength_2) {
+          return (false);
+        } else {
+            while (!equal && i < keyLength_1){
+                if (_firstKey[i] != _secondKey[i]) {
+                    equal = false ;
+                }
+                i++;
+            }
+            return(equal);
+        }
     }
 
 }
