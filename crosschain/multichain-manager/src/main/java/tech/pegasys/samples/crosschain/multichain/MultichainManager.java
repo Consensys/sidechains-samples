@@ -14,11 +14,15 @@ package tech.pegasys.samples.crosschain.multichain;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.web3j.crypto.Credentials;
-import tech.pegasys.samples.sidechains.common.BlockchainInfo;
-import tech.pegasys.samples.sidechains.common.DefaultBlockchainInfo;
+import tech.pegasys.samples.crosschain.multichain.commands.AbstractOption;
+import tech.pegasys.samples.crosschain.multichain.commands.MultichainManagerOptions;
+import tech.pegasys.samples.crosschain.multichain.commands.OptionConfig;
+import tech.pegasys.samples.crosschain.multichain.commands.OptionCoordination;
+import tech.pegasys.samples.crosschain.multichain.commands.OptionKey;
+import tech.pegasys.samples.crosschain.multichain.commands.OptionLinkedNodes;
+import tech.pegasys.samples.crosschain.multichain.commands.OptionShow;
+import tech.pegasys.samples.crosschain.multichain.config.MultichainManagerProperties;
 
-import java.math.BigInteger;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
@@ -32,19 +36,12 @@ public class MultichainManager {
 
   Map<String, MultichainManagerOptions> commands;
 
-  Map<BigInteger, BlockchainInfo> coordinationBlockchains;
-  Map<BigInteger, BlockchainInfo> blockchains;
-
-
-
-
-
   public static void main(String[] args) throws Exception {
     LOG.info("Multichain Node Manager - started");
     new MultichainManager().run(args);
   }
 
-  MultichainManager() {
+  MultichainManager() throws Exception {
     this.commands = new TreeMap<>();
     OptionShow show = new OptionShow();
     this.commands.put(show.getName(), show);
@@ -52,6 +49,10 @@ public class MultichainManager {
     this.commands.put(key.getName(), key);
     OptionCoordination coordination = new OptionCoordination();
     this.commands.put(coordination.getName(), coordination);
+    OptionConfig config = new OptionConfig();
+    this.commands.put(config.getName(), config);
+    OptionLinkedNodes linked = new OptionLinkedNodes();
+    this.commands.put(linked.getName(), linked);
   }
 
 
@@ -69,26 +70,12 @@ public class MultichainManager {
 
 
   private void run(final String[] args) throws Exception {
-
-    // Information about a node on each of the coordination blockchains.
-    this.coordinationBlockchains
-        = DefaultBlockchainInfo.getDefaultCoordinationBlockchains();
-
-    // Information about a node on each of the blockchains that make up this Multichain Node.
-    this.blockchains
-        = DefaultBlockchainInfo.getDefaultBlockchains();
-
     if (args.length == 0) {
       interactive();
     } else {
-      String cmd = args[0];
-      for (String possibleCommand : this.commands.keySet()) {
-        if (possibleCommand.equalsIgnoreCase(cmd)) {
-          MultichainManagerOptions commandToExecute = this.commands.get(possibleCommand);
-          commandToExecute.setMultichainInfo(blockchains, coordinationBlockchains);
-          commandToExecute.command(args, 1);
-        }
-      }
+      String cmd = args[0].toLowerCase();
+      MultichainManagerOptions commandToExecute = this.commands.get(cmd);
+      commandToExecute.command(args, 1);
     }
   }
 
@@ -114,7 +101,6 @@ public class MultichainManager {
         LOG.error("Unknown command: " + cmd);
         continue;
       }
-      commandToExecute.setMultichainInfo(blockchains, coordinationBlockchains);
       commandToExecute.interactive(myInput);
     }
   }

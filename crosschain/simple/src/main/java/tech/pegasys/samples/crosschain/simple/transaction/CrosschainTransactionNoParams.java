@@ -139,7 +139,7 @@ public class CrosschainTransactionNoParams {
         }
 
         // Set-up as a multichain node where the node on blockchain 1 can call a node on blockchain 2.
-        this.web3jSc1.crossAddMultichainNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
+        this.web3jSc1.crossAddLinkedNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
 
         this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
                 this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);

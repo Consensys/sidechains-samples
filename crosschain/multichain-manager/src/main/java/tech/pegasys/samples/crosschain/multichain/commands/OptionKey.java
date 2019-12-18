@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.samples.crosschain.multichain;
+package tech.pegasys.samples.crosschain.multichain.commands;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,9 +18,9 @@ import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.besu.crypto.crosschain.BlsThresholdCryptoSystem;
 import org.web3j.protocol.besu.response.crosschain.LongResponse;
 import org.web3j.protocol.core.methods.response.NetPeerCount;
+import tech.pegasys.samples.crosschain.multichain.config.ConfigControl;
 import tech.pegasys.samples.sidechains.common.BlockchainInfo;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Scanner;
 
@@ -34,12 +34,17 @@ public class OptionKey extends AbstractOption {
   private static final String COMMAND = "key";
   private static final String GENERATE = "generate";
 
+  public OptionKey() throws Exception {
+    super();
+  }
+
+
   public String getName() {
     return COMMAND;
   }
   public String getDescription() { return "Blockchain threshold keys"; }
 
-  public void interactive(Scanner myInput) throws IOException {
+  public void interactive(Scanner myInput) throws Exception {
     boolean stayHere = true;
     while (stayHere) {
       printSubCommandIntro();
@@ -52,10 +57,16 @@ public class OptionKey extends AbstractOption {
         System.out.println(" Blockchain id (in hex) of blockchain to generate new Blockchain Threshold Key for:");
         String blockchainId = myInput.next();
         BigInteger bcIdBigInt = new BigInteger(blockchainId, 16);
-        BlockchainInfo bcInfo = this.multichainBlockchains.get(bcIdBigInt);
+        BlockchainInfo bcInfo = ConfigControl.getInstance().linkedNodes().get(bcIdBigInt);
         if (bcInfo == null) {
           LOG.info(" Blockchain {} not part of multichain node", bcIdBigInt);
           LOG.info(" Please try again");
+          continue;
+        }
+        if (!bcInfo.isOnline()) {
+          LOG.error("Unable to generate key as node is offline: blockchain 0x{} at {}",
+              bcIdBigInt.toString(16),
+              bcInfo.ipAddressAndPort);
           continue;
         }
 
@@ -104,7 +115,7 @@ public class OptionKey extends AbstractOption {
 
   }
 
-  public void command(final String[] args, final int argOffset) throws IOException {
+  public void command(final String[] args, final int argOffset) throws Exception {
     printCommandLine(args, argOffset);
     if (args.length < argOffset+1) {
       help();
@@ -119,8 +130,7 @@ public class OptionKey extends AbstractOption {
     }
   }
 
-  void generate(String args[], final int argOffset) throws IOException {
-    LOG.info("Executing: {} {}", getName(), GENERATE);
+  void generate(final String[] args, final int argOffset) throws Exception {
     if (args.length < argOffset+3) {
       help();
       return;
@@ -130,9 +140,15 @@ public class OptionKey extends AbstractOption {
     String algorithmStr = args[argOffset+2];
 
     BigInteger bcIdBigInt = new BigInteger(blockchainIdStr, 16);
-    BlockchainInfo bcInfo = this.multichainBlockchains.get(bcIdBigInt);
+    BlockchainInfo bcInfo = ConfigControl.getInstance().linkedNodes().get(bcIdBigInt);
     if (bcInfo == null) {
       LOG.error(" Blockchain {} not part of multichain node", bcIdBigInt);
+      return;
+    }
+    if (!bcInfo.isOnline()) {
+      LOG.error("Unable to generate key as node is offline: blockchain 0x{} at {}",
+          bcIdBigInt.toString(16),
+          bcInfo.ipAddressAndPort);
       return;
     }
 
@@ -148,7 +164,6 @@ public class OptionKey extends AbstractOption {
       return;
     }
 
-    BlsThresholdCryptoSystem[] cryptoSystems = BlsThresholdCryptoSystem.values();
     int algorithm = Integer.parseInt(algorithmStr);
     BlsThresholdCryptoSystem cryptoSystem;
     try {

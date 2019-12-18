@@ -10,19 +10,20 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.samples.crosschain.multichain;
+package tech.pegasys.samples.crosschain.multichain.commands;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.protocol.besu.Besu;
+import org.web3j.protocol.besu.response.crosschain.BlockchainNodeInformation;
 import org.web3j.protocol.besu.response.crosschain.CoordinationContractInformation;
+import org.web3j.protocol.besu.response.crosschain.ListBlockchainNodesResponse;
 import org.web3j.protocol.besu.response.crosschain.ListCoordinationContractsResponse;
-import org.web3j.protocol.besu.response.crosschain.ListNodesResponse;
 import org.web3j.protocol.besu.response.crosschain.LongResponse;
+import tech.pegasys.samples.crosschain.multichain.config.ConfigControl;
 import tech.pegasys.samples.sidechains.common.BlockchainInfo;
+import tech.pegasys.samples.sidechains.common.CrosschainCoordinationContractInfo;
 
-import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 import java.util.Scanner;
@@ -38,6 +39,9 @@ public class OptionShow extends AbstractOption {
   public static final String ALL = "all";
 
 
+  public OptionShow() throws Exception {
+    super();
+  }
 
 
   public String getName() {
@@ -45,7 +49,7 @@ public class OptionShow extends AbstractOption {
   }
   public String getDescription() { return "Display information"; }
 
-  public void interactive(Scanner myInput) throws IOException {
+  public void interactive(Scanner myInput) throws Exception {
     boolean stayHere = true;
     while (stayHere) {
       printSubCommandIntro();
@@ -65,7 +69,7 @@ public class OptionShow extends AbstractOption {
 
   }
 
-  public void command(final String[] args, final int argOffset) throws IOException {
+  public void command(final String[] args, final int argOffset) throws Exception {
     printCommandLine(args, argOffset);
     if (args.length < argOffset+1) {
       help();
@@ -80,19 +84,29 @@ public class OptionShow extends AbstractOption {
     }
   }
 
-  void showAll() throws IOException {
-    LOG.info("Coordination Blockchains");
-    for (BlockchainInfo chain1: this.coordinationBlockchains.values()) {
-      if (checkNetworkConnection(chain1)) {
-        LOG.info(" Blockchain Id: 0x{}, {}",
-            chain1.blockchainId.toString(16),
-            chain1.ipAddressAndPort);
+  void showAll() throws Exception {
+    LOG.info("Coordination Contracts");
+    Collection<CrosschainCoordinationContractInfo> configuredCoordContracts =
+        ConfigControl.getInstance().coordContracts().values();
+    if (configuredCoordContracts.isEmpty()) {
+      LOG.info(" NONE");
+    }
+    for (CrosschainCoordinationContractInfo coordContractInfo: configuredCoordContracts) {
+      if (coordContractInfo.isOnline()) {
+        LOG.info(" Blockchain Id: 0x{}, {}, Contract Address: {}",
+            coordContractInfo.blockchainId.toString(16),
+            coordContractInfo.ipAddressAndPort,
+            coordContractInfo.contractAddress);
       }
     }
 
     LOG.info("Blockchains");
-    for (BlockchainInfo chain: this.multichainBlockchains.values()) {
-      if (checkNetworkConnection(chain)) {
+    Collection<BlockchainInfo> configuredNodes = ConfigControl.getInstance().linkedNodes().values();
+    if (configuredNodes.isEmpty()) {
+      LOG.info(" NONE");
+    }
+    for (BlockchainInfo chain: configuredNodes) {
+      if (chain.isOnline()) {
         LOG.info(" Blockchain Id: 0x{}, {}",
             chain.blockchainId.toString(16),
             chain.ipAddressAndPort);
@@ -103,14 +117,16 @@ public class OptionShow extends AbstractOption {
         LOG.info("  Active Key Version: {}",
             ((activeKeyVersion == 0) ? "NONE" : activeKeyVersion));
 
-        ListNodesResponse nodes = webService.crossListMultichainNodes().send();
-        List<BigInteger> nodeBlockchainIds = nodes.getNodes();
+        ListBlockchainNodesResponse nodes = webService.crossListLinkedNodes().send();
+        List<BlockchainNodeInformation> bcNodeInfo = nodes.getNodes();
         LOG.info("  Blockchains this node is connected to:");
-        if (nodeBlockchainIds.size() == 0) {
+        if (bcNodeInfo.size() == 0) {
           LOG.info("   NONE");
         } else {
-          for (BigInteger bcId : nodeBlockchainIds) {
-            LOG.info("   Blockchain id: 0x{}", bcId.toString(16));
+          for (BlockchainNodeInformation nodeInfo : bcNodeInfo) {
+            LOG.info("   Blockchain id: 0x{}, IP and Port: {}",
+                nodeInfo.blockchainId.toString(16),
+                nodeInfo.ipAddressAndPort);
           }
         }
 

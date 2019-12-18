@@ -112,7 +112,7 @@ public class AtomicSwapEther {
         }
 
         // Set-up as a multichain node where the node on blockchain 1 can call a node on blockchain 2.
-        this.web3jSc1.crossAddMultichainNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
+        this.web3jSc1.crossAddLinkedNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
 
         this.faucet = new Faucet(this.web3jSc1, SC1_SIDECHAIN_ID, this.web3jSc2, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
         this.registrationContractOwner = new RegistrationContractOwner(this.web3jSc1, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
