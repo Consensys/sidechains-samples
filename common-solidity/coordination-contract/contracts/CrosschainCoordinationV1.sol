@@ -522,7 +522,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     /**
       * Return the details of the public key for a specific version number: status, block number and public key
       * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
-      * @param _versionNumner The specific version of the public key that has been requested
+      * @param _versionNumber The specific version of the public key that has been requested
       */
     function getVersionOfPublicKey(uint256 _sidechainId, uint64 _versionNumber) external view returns (uint64 _status, uint _blockNumber, bool _keyFound, bytes memory _key) {
 
