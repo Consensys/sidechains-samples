@@ -18,11 +18,22 @@ import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.besu.crypto.crosschain.BlsThresholdCryptoSystem;
 import org.web3j.protocol.besu.response.crosschain.CrossBlockchainPublicKeyResponse;
 import org.web3j.protocol.besu.response.crosschain.LongResponse;
+import org.web3j.protocol.core.RemoteCall;
+import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.NetPeerCount;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tx.TransactionManager;
+import org.web3j.tx.gas.ContractGasProvider;
+import org.web3j.tx.gas.DefaultGasProvider;
+import org.web3j.tx.gas.StaticGasProvider;
 import tech.pegasys.samples.crosschain.multichain.config.ConfigControl;
 import tech.pegasys.samples.sidechains.common.BlockchainInfo;
+import tech.pegasys.samples.sidechains.common.CrosschainCoordinationContractInfo;
+import tech.pegasys.samples.sidechains.common.coordination.soliditywrappers.CrosschainCoordinationV1;
+import tech.pegasys.samples.sidechains.common.coordination.soliditywrappers.VotingAlgMajorityWhoVoted;
 
 import java.math.BigInteger;
+import java.util.Map;
 import java.util.Scanner;
 
 /**
@@ -230,7 +241,43 @@ public class OptionKey extends AbstractOption {
         encodedPublicKey);
 
 
+    TransactionManager tm = bcInfo.getTransactionManager(this.credentials);
+
+    // TODO: Need to define gas provider to use
+    ContractGasProvider freeGasProvider =  new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
+
+    // TODO: Need to ask what voting algorithm should be used.
+    RemoteCall<VotingAlgMajorityWhoVoted> remoteCallVotingContract =
+        VotingAlgMajorityWhoVoted.deploy(webService, tm, freeGasProvider);
+    VotingAlgMajorityWhoVoted votingContract = remoteCallVotingContract.send();
+    String votingContractAddress = votingContract.getContractAddress();
+    LOG.info("  Voting Contract deployed on blockchain (id={}), at address: {}",
+        bcIdBigInt.toString(16), votingContractAddress);
+
+    // TODO specify voting period
+    BigInteger VOTING_PERIOD = BigInteger.valueOf(10);
 
 
- }
+    // TODO check to see if the blockchain has already been added.
+    Map<String, CrosschainCoordinationContractInfo> coordContracts = ConfigControl.getInstance().coordContracts();
+    for (CrosschainCoordinationContractInfo coordContract: coordContracts.values()) {
+      CrosschainCoordinationV1 coordinationContract =
+          CrosschainCoordinationV1.load(coordContract.contractAddress, webService, tm, freeGasProvider);
+
+      // TODO check this translation
+      BigInteger val = new BigInteger(encodedPublicKey.substring(2), 16);
+      byte[] encodedPubKeyBytes = val.toByteArray();
+
+      TransactionReceipt txReceipt =
+          coordinationContract.addSidechain(bcIdBigInt, votingContractAddress, VOTING_PERIOD, BigInteger.valueOf(keyVersion), encodedPubKeyBytes).send();
+      LOG.info("Tx Receipt: {}", txReceipt);
+
+      boolean keyExists = coordinationContract.publicKeyExists(bcIdBigInt, BigInteger.valueOf(keyVersion)).send();
+      LOG.info("Key exists in coordination contract: {}", keyExists);
+    }
+
+
+
+
+  }
 }

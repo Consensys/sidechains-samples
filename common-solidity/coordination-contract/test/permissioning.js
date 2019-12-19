@@ -23,7 +23,7 @@ contract('Permissioning Check', function(accounts) {
         let coordInterface = await await common.getNewCrosschainCoordination();
         let didNotTriggerError = false;
         try {
-            await coordInterface.addSidechain(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.A_VALID_PUBLIC_KEY, {from: accounts[1]});
+            await coordInterface.addSidechain(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY, {from: accounts[1]});
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
