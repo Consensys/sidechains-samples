@@ -21,7 +21,7 @@ import tech.pegasys.samples.crosschain.multichain.commands.OptionCoordination;
 import tech.pegasys.samples.crosschain.multichain.commands.OptionKey;
 import tech.pegasys.samples.crosschain.multichain.commands.OptionLinkedNodes;
 import tech.pegasys.samples.crosschain.multichain.commands.OptionShow;
-import tech.pegasys.samples.crosschain.multichain.config.MultichainManagerProperties;
+import tech.pegasys.samples.crosschain.multichain.config.ConfigControl;
 
 import java.util.Map;
 import java.util.Scanner;
@@ -58,11 +58,11 @@ public class MultichainManager {
 
   public static void automatedRun() throws Exception {
     // Delete all properties files as a starting point. This will ensure all contracts are redeployed.
-    MultichainManagerProperties.deleteAllPropertiesFile();
+    ConfigControl.wipeConfig();;
     // Run the samples in a way that does not require input from the keyboard.
     new MultichainManager().run(new String[]{OptionShow.COMMAND, OptionShow.ALL});
     // Clean-up.
-    MultichainManagerProperties.deleteAllPropertiesFile();
+    ConfigControl.wipeConfig();;
   }
 
 

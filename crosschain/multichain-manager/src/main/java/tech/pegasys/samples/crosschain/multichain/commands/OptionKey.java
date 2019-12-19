@@ -16,6 +16,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.besu.crypto.crosschain.BlsThresholdCryptoSystem;
+import org.web3j.protocol.besu.response.crosschain.CrossBlockchainPublicKeyResponse;
 import org.web3j.protocol.besu.response.crosschain.LongResponse;
 import org.web3j.protocol.core.methods.response.NetPeerCount;
 import tech.pegasys.samples.crosschain.multichain.config.ConfigControl;
@@ -33,6 +34,8 @@ public class OptionKey extends AbstractOption {
 
   private static final String COMMAND = "key";
   private static final String GENERATE = "generate";
+  private static final String FIRST = "first";
+
 
   public OptionKey() throws Exception {
     super();
@@ -42,13 +45,17 @@ public class OptionKey extends AbstractOption {
   public String getName() {
     return COMMAND;
   }
-  public String getDescription() { return "Blockchain threshold keys"; }
+
+  public String getDescription() {
+    return "Blockchain threshold keys";
+  }
 
   public void interactive(Scanner myInput) throws Exception {
     boolean stayHere = true;
     while (stayHere) {
       printSubCommandIntro();
       printSubCommand(GENERATE, "Generate a new threshold key");
+      printSubCommand(FIRST, "Get the latest key, add this blockchain to the coord contract, and add key");
       printSubCommand(QUIT, "Exit the " + getName() + " command menu");
       String subCommand = myInput.next();
 
@@ -86,7 +93,7 @@ public class OptionKey extends AbstractOption {
 
         System.out.println(" Crypto system (algorithm) to use:");
         BlsThresholdCryptoSystem[] cryptoSystems = BlsThresholdCryptoSystem.values();
-        for (BlsThresholdCryptoSystem system: cryptoSystems) {
+        for (BlsThresholdCryptoSystem system : cryptoSystems) {
           System.out.println("  For " + system.name() + " choose " + system.value);
         }
         int algorithm = myInput.nextInt();
@@ -104,11 +111,21 @@ public class OptionKey extends AbstractOption {
             Integer.valueOf(threshold).toString(),
             Integer.valueOf(algorithm).toString()
         }, 0);
-      }
-      else if (subCommand.equalsIgnoreCase(QUIT)) {
+      } else if (subCommand.equalsIgnoreCase(FIRST)) {
+        LOG.info("Add a blockchain key to a coordination contract - assuming no existing keys");
+        System.out.println(" Blockchain id (in hex, no leading 0x) of blockchain:");
+        String blockchainId = myInput.next();
+        System.out.println(" Key verison (in decimal):");
+        String keyVersion = myInput.next();
+        command(new String[]{
+            FIRST,
+            blockchainId,
+            keyVersion,
+        }, 0);
+
+      } else if (subCommand.equalsIgnoreCase(QUIT)) {
         stayHere = false;
-      }
-      else {
+      } else {
         printUnknownSubCommandMessage(subCommand);
       }
     }
@@ -117,27 +134,28 @@ public class OptionKey extends AbstractOption {
 
   public void command(final String[] args, final int argOffset) throws Exception {
     printCommandLine(args, argOffset);
-    if (args.length < argOffset+1) {
+    if (args.length < argOffset + 1) {
       help();
       return;
     }
     String subCommand = args[argOffset];
     if (subCommand.equalsIgnoreCase(GENERATE)) {
-      generate(args, argOffset+1);
-    }
-    else {
+      generate(args, argOffset + 1);
+    } else if (subCommand.equalsIgnoreCase(FIRST)) {
+      first(args, argOffset + 1);
+    } else {
       printUnknownSubCommandMessage(subCommand);
     }
   }
 
   void generate(final String[] args, final int argOffset) throws Exception {
-    if (args.length < argOffset+3) {
+    if (args.length < argOffset + 3) {
       help();
       return;
     }
     String blockchainIdStr = args[argOffset];
-    String thresholdStr = args[argOffset+1];
-    String algorithmStr = args[argOffset+2];
+    String thresholdStr = args[argOffset + 1];
+    String algorithmStr = args[argOffset + 2];
 
     BigInteger bcIdBigInt = new BigInteger(blockchainIdStr, 16);
     BlockchainInfo bcInfo = ConfigControl.getInstance().linkedNodes().get(bcIdBigInt);
@@ -181,4 +199,38 @@ public class OptionKey extends AbstractOption {
 
   }
 
+
+  void first(final String[] args, final int argOffset) throws Exception {
+    if (args.length < argOffset + 2) {
+      help();
+      return;
+    }
+    String blockchainIdStr = args[argOffset];
+    String keyVersionStr = args[argOffset+1];
+
+    BigInteger bcIdBigInt = new BigInteger(blockchainIdStr, 16);
+    BlockchainInfo bcInfo = ConfigControl.getInstance().linkedNodes().get(bcIdBigInt);
+    if (bcInfo == null) {
+      LOG.error(" Blockchain {} not part of multichain node", bcIdBigInt);
+      return;
+    }
+    if (!bcInfo.isOnline()) {
+      LOG.error("Unable to execute upload first key process as node is offline: blockchain 0x{} at {}",
+          bcIdBigInt.toString(16),
+          bcInfo.ipAddressAndPort);
+      return;
+    }
+    long keyVersion = Long.valueOf(keyVersionStr);
+
+    Besu webService = bcInfo.getWebService();
+    CrossBlockchainPublicKeyResponse resp = webService.crossGetBlockchainPublicKey(keyVersion).send();
+    String encodedPublicKey = resp.getEncodedKey();
+    LOG.info(" Fetched key: version {}, encoded value: {}",
+        keyVersion,
+        encodedPublicKey);
+
+
+
+
+ }
 }

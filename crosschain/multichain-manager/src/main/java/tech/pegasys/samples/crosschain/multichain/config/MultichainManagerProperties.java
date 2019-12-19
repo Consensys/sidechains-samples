@@ -17,7 +17,7 @@ import java.util.TreeMap;
  * Stores the private key to use and the list of nodes which make up
  * the Multichain Node.
  */
-public class MultichainManagerProperties {
+class MultichainManagerProperties {
 
   Credentials credentials;
   Map<BigInteger, BlockchainInfo> bcInfos;

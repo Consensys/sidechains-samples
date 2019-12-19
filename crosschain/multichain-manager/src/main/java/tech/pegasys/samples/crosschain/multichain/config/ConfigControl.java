@@ -11,6 +11,7 @@ import org.web3j.protocol.besu.response.crosschain.ListCoordinationContractsResp
 import tech.pegasys.samples.sidechains.common.BlockchainInfo;
 import tech.pegasys.samples.sidechains.common.CrosschainCoordinationContractInfo;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,11 @@ public class ConfigControl {
       }
       return instance;
     }
+  }
+
+  public static void wipeConfig() throws Exception {
+    MultichainManagerProperties.deleteAllPropertiesFile();
+    instance = new ConfigControl();
   }
 
   private ConfigControl() throws Exception {
@@ -72,6 +78,9 @@ public class ConfigControl {
     final String mapKey = calcCoordMapKey(bcId, address);
     this.coordinationContracts.remove(mapKey);
   }
+  public void removeAllCoordContracts() {
+    this.coordinationContracts = new TreeMap<>();
+  }
 
   public void addLinkedNode(final BigInteger bcId, final String ipAndPort) {
     this.linkedNodes.put(bcId, new BlockchainInfo(bcId, ipAndPort));
@@ -83,6 +92,13 @@ public class ConfigControl {
     this.linkedNodes.remove(bcId);
     MultichainManagerProperties props = new MultichainManagerProperties();
     props.store(this.credentials.getEcKeyPair().getPrivateKey().toString(16), this.linkedNodes);
+  }
+
+  public void removeAllLinkedNodes() {
+    this.linkedNodes = new TreeMap<>();
+    MultichainManagerProperties props = new MultichainManagerProperties();
+    props.store(this.credentials.getEcKeyPair().getPrivateKey().toString(16), this.linkedNodes);
+
   }
 
     /**
@@ -148,14 +164,13 @@ public class ConfigControl {
       // Check to see if there are nodes linked to on the node that aren't in the configuration.
       // This check can only be done simply by checking length if the node
       // doesn't contain links that aren't in the configuration.
-      int diff = (nodeBlockchainIds.size() - 1) - this.linkedNodes.size();
+      int diff = nodeBlockchainIds.size() +1 - this.linkedNodes.size();
       if (validConfig && diff != 0) {
         validConfig = false;
-        LOG.error("Node at {} on blockchain 0x{} is not linked to additional {} node{}",
+        LOG.error("Node at {} on blockchain 0x{} is linked to  {} additional node(s)",
             configNodeInfo.ipAddressAndPort,
             configNodeInfo.blockchainId.toString(16),
-            diff,
-            (diff == 1 ? "" : "s"));
+            diff);
       }
 
       // If there isn't any coordination contracts set-up, then just use them. Otherwise,
