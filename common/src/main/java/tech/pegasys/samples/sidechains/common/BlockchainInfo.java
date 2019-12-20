@@ -1,5 +1,7 @@
 package tech.pegasys.samples.sidechains.common;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.http.HttpService;
@@ -8,8 +10,14 @@ import org.web3j.tx.RawTransactionManager;
 import org.web3j.tx.TransactionManager;
 
 import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
 
 public class BlockchainInfo {
+  private static final Logger LOG = LogManager.getLogger(BlockchainInfo.class);
+
   // Have the polling interval equal to the block time.
   private static final int DEFAULT_POLLING_INTERVAL = 2000;
   // Retry reqests to Ethereum Clients up to five times.
@@ -55,4 +63,23 @@ public class BlockchainInfo {
     return new RawTransactionManager(getWebService(), credentials, this.blockchainId.longValue(), DEFAULT_RETRY,
         DEFAULT_POLLING_INTERVAL);
   }
+
+  public boolean isOnline() {
+    Socket socket = new Socket();
+    try {
+      InetAddress ip = InetAddress.getByName(getIp());
+      SocketAddress addr = new InetSocketAddress(ip, getPort());
+      socket.connect(addr);
+    } catch (Exception ex) {
+      LOG.error(
+          "Error connecting with blockchainId 0x{} ({}:{}): {}",
+          this.blockchainId.toString(16),
+          getIp(),
+          getPort(),
+          ex.toString());
+      return false;
+    }
+    return true;
+  }
+
 }

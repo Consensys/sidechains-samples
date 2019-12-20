@@ -181,12 +181,12 @@ public class ThreeChainsSixContracts {
         }
 
         // Set-up as a multichain node so all blockchain nodes are aware of each other.
-        this.web3jSc1.crossAddMultichainNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
-        this.web3jSc1.crossAddMultichainNode(SC3_SIDECHAIN_ID, SC3_IP_PORT).send();
-        this.web3jSc2.crossAddMultichainNode(SC1_SIDECHAIN_ID, SC1_IP_PORT).send();
-        this.web3jSc2.crossAddMultichainNode(SC3_SIDECHAIN_ID, SC3_IP_PORT).send();
-        this.web3jSc3.crossAddMultichainNode(SC1_SIDECHAIN_ID, SC1_IP_PORT).send();
-        this.web3jSc3.crossAddMultichainNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
+        this.web3jSc1.crossAddLinkedNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
+        this.web3jSc1.crossAddLinkedNode(SC3_SIDECHAIN_ID, SC3_IP_PORT).send();
+        this.web3jSc2.crossAddLinkedNode(SC1_SIDECHAIN_ID, SC1_IP_PORT).send();
+        this.web3jSc2.crossAddLinkedNode(SC3_SIDECHAIN_ID, SC3_IP_PORT).send();
+        this.web3jSc3.crossAddLinkedNode(SC1_SIDECHAIN_ID, SC1_IP_PORT).send();
+        this.web3jSc3.crossAddLinkedNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
 
 
         this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,

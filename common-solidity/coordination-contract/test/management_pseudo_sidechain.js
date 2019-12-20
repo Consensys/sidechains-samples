@@ -33,7 +33,7 @@ contract('Management Pseduo Sidechain', function(accounts) {
         let coordInterface = await await common.getDeployedCrosschainCoordination();
         let didNotTriggerError = false;
         try {
-            await coordInterface.addSidechain(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.A_VALID_PUBLIC_KEY);
+            await coordInterface.addSidechain(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -46,14 +46,14 @@ contract('Management Pseduo Sidechain', function(accounts) {
 
     it("check that the account which deployed the contract can call addSidechain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await coordInterface.addSidechain(twoSidechainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addSidechain(twoSidechainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
     });
 
     it("check that accounts other than the one which deployed the contract can not call addSidechain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
         let didNotTriggerError = false;
         try {
-            await coordInterface.addSidechain(twoSidechainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.A_VALID_PUBLIC_KEY, {from: accounts[1]});
+            await coordInterface.addSidechain(twoSidechainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY, {from: accounts[1]});
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);

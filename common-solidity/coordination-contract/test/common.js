@@ -41,6 +41,7 @@ const REVERT = "Returned error: VM Exception while processing transaction: rever
 
 //TODO create a valid public key.
 const A_VALID_PUBLIC_KEY = "0x1234567";
+const KEY_VERSION = "1";
 
 const mineOneBlock = async function() {
     // Mine one or more blocks.
@@ -87,6 +88,7 @@ module.exports = {
     VOTING_PERIOD: VOTING_PERIOD,
     VOTING_PERIOD_PLUS_ONE: VOTING_PERIOD_PLUS_ONE,
     VOTING_PERIOD_MINUS_ONE: VOTING_PERIOD_MINUS_ONE,
+    KEY_VERSION: KEY_VERSION,
     getValidVotingContractAddress: async function() {
         return (await VotingAlgMajority.deployed()).address;
     },

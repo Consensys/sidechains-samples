@@ -28,7 +28,7 @@ interface CrosschainCoordinationInterface {
      * @param _votingPeriod The number of blocks by which time a vote must be finalized.
      * @param _votingAlgorithmContract The address of the initial contract to be used for all votes.
      */
-    function addSidechain(uint256 _sidechainId, address _votingAlgorithmContract, uint64 _votingPeriod, bytes calldata _publicKey) external;
+    function addSidechain(uint256 _sidechainId, address _votingAlgorithmContract, uint64 _votingPeriod, uint64 _keyVersion, bytes calldata _publicKey) external;
 
 
     /**
@@ -193,25 +193,33 @@ interface CrosschainCoordinationInterface {
 
 
     /**
-    * Get a blockchains's public key, version number, status and block number
+    * Get the active key for a blockchain.
     *
     * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
     * @return public key information for the current active public key
-    *         Value      Status
-    *           0        This is the active public key for the sidechain which is currently in use
-    *           1        The public key that has been returned is flagged as a proposed changed key, so it is dependent on the voting before it can become active
-    *           2        This is a public key that has been used previously, but is currently not in use. Note that this key could be the prior key, or an historic key
     */
-    function getPublicKey(uint256 _sidechainId) external view returns ( uint64 _versionNumber, uint64 _status, uint _blockNumber, bytes memory _key);
+    function getActivePublicKey(uint256 _sidechainId) external view returns ( uint64 _versionNumber, uint _blockNumber, bytes memory _key);
 
     /**
-        * Get the blockchains's public key information for a specifically requested version number
-        *
-        * @param _sidechainId    The 256 bit sidechain identifier to which this public key belongs
-        * @param _versionNumber  A specific version of the public key has been requested
-        * @return                Detail about the public key with that version and whether it was actually found
-        */
-    function getVersionOfPublicKey(uint256 _sidechainId, uint64 _versionNumber) external view returns (uint64 _status, uint _blockNumber, bool _keyFound, bytes memory _key);
+    * Get key information for a certain version of a key for a blockchain.
+    *
+    * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
+    * @param _keyVersion The version of the key to check.
+    * @return public key information for the current active public key
+    */
+    function getPublicKey(uint256 _sidechainId, uint64 _keyVersion) external view returns (uint64 keyVersion, uint256 blockNumber, bytes memory key);
+
+
+    /**
+     * Determine if a public key exists for a certain sidechain for a certain key version.
+     *
+     * @param _sidechainId    The 256 bit sidechain identifier to which this public key belongs
+     * @param _keyVersion     The key version to check
+     * @return                true if a key exists for this sidehcain and key version.
+     */
+    function publicKeyExists(uint256 _sidechainId, uint64 _keyVersion) external view returns (bool);
+
+
 
     /*
      * Return the implementation version.

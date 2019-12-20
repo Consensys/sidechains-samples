@@ -117,7 +117,7 @@ contract('Empty Tests', function(accounts) {
     it("get public key when not valid sidechain", async function() {
         let coordInterface = await await common.getDeployedCrosschainCoordination();
         // The getPublicKey function now returns several values, not only the public key
-          const pubKeyInfo = await coordInterface.getPublicKey.call(NON_EXISTANT_SIDECHAIN);
+          const pubKeyInfo = await coordInterface.getPublicKey.call(NON_EXISTANT_SIDECHAIN, common.KEY_VERSION);
           const {0: status, 1: blockNumber, 2: keyFound, 3: pubKey} = pubKeyInfo;
           assert.equal(pubKey, null);
     });

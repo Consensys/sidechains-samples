@@ -42,7 +42,7 @@ contract('Crosschain Transaction States:', function(accounts) {
 
 
     async function addSidechain(coordInterface) {
-        await coordInterface.addSidechain(A_SIDECHAIN_ID, (await VotingAlgMajority.deployed()).address, common.VOTING_PERIOD, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addSidechain(A_SIDECHAIN_ID, (await VotingAlgMajority.deployed()).address, common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
     }
 
     it("notstart", async function() {

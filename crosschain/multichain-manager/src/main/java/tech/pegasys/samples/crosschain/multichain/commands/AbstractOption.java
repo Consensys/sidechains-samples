@@ -10,20 +10,13 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.samples.crosschain.multichain;
+package tech.pegasys.samples.crosschain.multichain.commands;
 
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
-import tech.pegasys.samples.sidechains.common.BlockchainInfo;
-
-import java.math.BigInteger;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.util.Map;
+import tech.pegasys.samples.crosschain.multichain.config.ConfigControl;
 
 
 /**
@@ -33,23 +26,14 @@ import java.util.Map;
 public abstract class AbstractOption implements MultichainManagerOptions {
   private static final Logger LOG = LogManager.getLogger(AbstractOption.class);
 
-  protected static String QUIT = "q";
+  public static String QUIT = "q";
 
-  // Information about a node on each of the coordination blockchains.
-  // TODO this is not a good model for coordination contracts: there can be more than one per blockchain.
-  // TODO: If there are multiple coordination contracts on a blockchain, how do you know when you can remove a coordination blockchain from the map?
-  Map<BigInteger, BlockchainInfo> coordinationBlockchains;
+  protected Credentials credentials;
 
-  // Information about a node on each of the blockchains that make up this Multichain Node.
-  Map<BigInteger, BlockchainInfo> multichainBlockchains;
 
-  protected Credentials credentials = new MultichainManagerProperties().credentials;
-
-  public void setMultichainInfo(Map<BigInteger, BlockchainInfo> blockchains, Map<BigInteger, BlockchainInfo> coordinationBlockchains) {
-    this.multichainBlockchains = blockchains;
-    this.coordinationBlockchains = coordinationBlockchains;
+  protected AbstractOption() throws Exception {
+    this.credentials = ConfigControl.getInstance().credentials();
   }
-
 
   public void help() {
     LOG.info(getName() + " command not yet documented.");
@@ -79,22 +63,5 @@ public abstract class AbstractOption implements MultichainManagerOptions {
     LOG.info(builder.toString());
   }
 
-  protected boolean checkNetworkConnection(BlockchainInfo chain) {
-    Socket socket = new Socket();
-    try {
-      InetAddress ip = InetAddress.getByName(chain.getIp());
-      SocketAddress addr = new InetSocketAddress(ip, chain.getPort());
-      socket.connect(addr);
-    } catch (Exception ex) {
-      LOG.error(
-          "Error connecting with blockchainId {} ({}:{}): {}",
-          chain.blockchainId.toString(16),
-          chain.getIp(),
-          chain.getPort(),
-          ex.toString());
-      return false;
-    }
-    return true;
-  }
 
 }

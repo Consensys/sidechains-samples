@@ -10,26 +10,22 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.samples.crosschain.multichain;
+package tech.pegasys.samples.crosschain.multichain.commands;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.protocol.besu.Besu;
-import org.web3j.protocol.besu.response.crosschain.CoordinationContractInformation;
-import org.web3j.protocol.besu.response.crosschain.ListCoordinationContractsResponse;
 import org.web3j.protocol.core.RemoteCall;
-import org.web3j.tx.CrosschainTransactionManager;
 import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.tx.gas.StaticGasProvider;
+import tech.pegasys.samples.crosschain.multichain.config.ConfigControl;
 import tech.pegasys.samples.sidechains.common.BlockchainInfo;
 import tech.pegasys.samples.sidechains.common.coordination.soliditywrappers.CrosschainCoordinationV1;
 import tech.pegasys.samples.sidechains.common.coordination.soliditywrappers.VotingAlgMajorityWhoVoted;
 
-import java.io.IOException;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -43,6 +39,11 @@ public class OptionCoordination extends AbstractOption {
   private static final String ADD = "add";
   private static final String REMOVE = "remove";
   private static final String DEPLOY = "deploy";
+
+  public OptionCoordination() throws Exception {
+    super();
+  }
+
 
   public String getName() {
     return COMMAND;
@@ -63,35 +64,23 @@ public class OptionCoordination extends AbstractOption {
         LOG.info("Deploy a Crososchain Coordination Contract");
         System.out.println(" Blockchain id (in hex) of coordination blockchain:");
         String blockchainId = myInput.next();
-        BigInteger bcIdBigInt = new BigInteger(blockchainId, 16);
 
-        BlockchainInfo coordInfo = this.coordinationBlockchains.get(bcIdBigInt);
-        if (coordInfo == null) {
-          System.out.println(" IP address and RPC port of blockchain node (for example 127.0.0.1:8110):");
-          String ipAndPort = myInput.next();
-          coordInfo = new BlockchainInfo(bcIdBigInt, ipAndPort);
-          // TODO validate
-        }
+        System.out.println(" IP address and RPC port of blockchain node (for example 127.0.0.1:8110):");
+        String ipAndPort = myInput.next();
 
         command(new String[]{
             DEPLOY,
             blockchainId,
-            coordInfo.ipAddressAndPort
+            ipAndPort,
         }, 0);
       }
       else if (subCommand.equalsIgnoreCase(ADD)) {
         LOG.info("Add a Crososchain Coordination Contract");
         System.out.println(" Blockchain id (in hex, no leading 0x) of coordination blockchain:");
         String blockchainId = myInput.next();
-        BigInteger bcIdBigInt = new BigInteger(blockchainId, 16);
 
-        BlockchainInfo coordInfo = this.coordinationBlockchains.get(bcIdBigInt);
-        if (coordInfo == null) {
-          System.out.println(" IP address and RPC port of blockchain node (for example 127.0.0.1:8110):");
-          String ipAndPort = myInput.next();
-          coordInfo = new BlockchainInfo(bcIdBigInt, ipAndPort);
-          // TODO validate
-        }
+        System.out.println(" IP address and RPC port of blockchain node (for example 127.0.0.1:8110):");
+        String ipAndPort = myInput.next();
 
         System.out.println(" Coordination Contract Address (in hex, no leading 0x):");
         String address = myInput.next();
@@ -100,7 +89,7 @@ public class OptionCoordination extends AbstractOption {
         command(new String[]{
             ADD,
             blockchainId,
-            coordInfo.ipAddressAndPort,
+            ipAndPort,
             address
         }, 0);
       }
@@ -162,15 +151,13 @@ public class OptionCoordination extends AbstractOption {
     String ipAndPort = args[argOffset+1];
 
     BigInteger bcIdBigInt = new BigInteger(blockchainIdStr, 16);
-    BlockchainInfo bcInfo = this.coordinationBlockchains.get(bcIdBigInt);
-
-
-    if (bcInfo == null) {
-      bcInfo = new BlockchainInfo(bcIdBigInt, ipAndPort);
-      this.coordinationBlockchains.put(bcIdBigInt, bcInfo);
-      // TODO validate
+    BlockchainInfo bcInfo = new BlockchainInfo(bcIdBigInt, ipAndPort);
+    if (!bcInfo.isOnline()) {
+      LOG.error(" Unable to deploy coordination contract as unable to connect to node at {} for blockchain 0x{}",
+          ipAndPort,
+          bcIdBigInt.toString(16));
+      return;
     }
-
     Besu webService = bcInfo.getWebService();
     TransactionManager tm = bcInfo.getTransactionManager(this.credentials);
 
@@ -195,9 +182,10 @@ public class OptionCoordination extends AbstractOption {
     String crosschainCoordinationContractAddress = coordinationContract.getContractAddress();
     LOG.info("  Crosschain Coordination Contract deployed on blockchain (id={}), at address: {}",
         bcIdBigInt, crosschainCoordinationContractAddress);
+    ConfigControl.getInstance().addCoordContract(bcIdBigInt, ipAndPort, crosschainCoordinationContractAddress);
 
     //TODO Add to the nodes.
-    for (BlockchainInfo bc: this.multichainBlockchains.values()) {
+    for (BlockchainInfo bc: ConfigControl.getInstance().linkedNodes().values()) {
       Besu besu = bc.getWebService();
       besu.crossAddCoordinationContract(bcIdBigInt, crosschainCoordinationContractAddress, ipAndPort).send();
     }
@@ -214,23 +202,31 @@ public class OptionCoordination extends AbstractOption {
     String address = args[argOffset+2];
 
     BigInteger bcIdBigInt = new BigInteger(blockchainIdStr, 16);
-    BlockchainInfo bcInfo = this.coordinationBlockchains.get(bcIdBigInt);
-
-
-    if (bcInfo == null) {
-      bcInfo = new BlockchainInfo(bcIdBigInt, ipAndPort);
-      this.coordinationBlockchains.put(bcIdBigInt, bcInfo);
-      // TODO validate
+    BlockchainInfo coordBcInfo = new BlockchainInfo(bcIdBigInt, ipAndPort);
+    if (!coordBcInfo.isOnline()) {
+      LOG.error("Unable to add coordination contract as node is offline: blockchain 0x{} at {}",
+          coordBcInfo.blockchainId.toString(16),
+          coordBcInfo.ipAddressAndPort);
+      return;
     }
+    ConfigControl.getInstance().addCoordContract(bcIdBigInt, ipAndPort, address);
 
-
-    for (BlockchainInfo bc: this.multichainBlockchains.values()) {
+    LOG.info(" Configuring Coordination Contract as trusted on each node.");
+    for (BlockchainInfo bc: ConfigControl.getInstance().linkedNodes().values()) {
+      if (!bc.isOnline()) {
+        LOG.error("Unable to add coordination contract to node as node is offline: blockchain 0x{} at {}",
+            bc.blockchainId.toString(16),
+            bc.ipAddressAndPort);
+        continue;
+      }
       Besu besu = bc.getWebService();
       besu.crossAddCoordinationContract(bcIdBigInt, address, ipAndPort).send();
     }
   }
 
 
+  // Remove a coordination contract as trusted from nodes. Do this even if it isn't listed
+  // in the local configuration.
   void remove(String args[], final int argOffset) throws Exception {
     if (args.length != argOffset+2) {
       help();
@@ -240,18 +236,16 @@ public class OptionCoordination extends AbstractOption {
     String address = args[argOffset+1];
 
     BigInteger bcIdBigInt = new BigInteger(blockchainIdStr, 16);
-    BlockchainInfo bcInfo = this.coordinationBlockchains.get(bcIdBigInt);
-
-    if (bcInfo == null) {
-      LOG.error("Coordination Blockchain unknown in multichain manager: {}", bcIdBigInt.toString(16));
-      // TODO validate
-    }
-    else {
-      this.coordinationBlockchains.remove(bcIdBigInt);
-    }
+    ConfigControl.getInstance().removeCoordContract(bcIdBigInt, address);
 
     LOG.info(" Instructing all blockchain nodes to no longer trust: {}, {}", bcIdBigInt.toString(16), address);
-    for (BlockchainInfo bc: this.multichainBlockchains.values()) {
+    for (BlockchainInfo bc: ConfigControl.getInstance().linkedNodes().values()) {
+      if (!bc.isOnline()) {
+        LOG.error("Unable to remove coordination contract from node as node is offline: blockchain 0x{} at {}",
+            bc.blockchainId.toString(16),
+            bc.ipAddressAndPort);
+        continue;
+      }
       Besu besu = bc.getWebService();
       besu.crossRemoveCoordinationContract(bcIdBigInt, address).send();
     }
