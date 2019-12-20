@@ -233,6 +233,12 @@ public class OptionKey extends AbstractOption {
     }
     long keyVersion = Long.valueOf(keyVersionStr);
 
+    Map<String, CrosschainCoordinationContractInfo> coordContracts = ConfigControl.getInstance().coordContracts();
+    if (coordContracts.size() == 0) {
+      LOG.error("No crosschain coordination contracts configured.");
+      return;
+    }
+
     Besu webService = bcInfo.getWebService();
     CrossBlockchainPublicKeyResponse resp = webService.crossGetBlockchainPublicKey(keyVersion).send();
     String encodedPublicKey = resp.getEncodedKey();
@@ -259,7 +265,6 @@ public class OptionKey extends AbstractOption {
 
 
     // TODO check to see if the blockchain has already been added.
-    Map<String, CrosschainCoordinationContractInfo> coordContracts = ConfigControl.getInstance().coordContracts();
     for (CrosschainCoordinationContractInfo coordContract: coordContracts.values()) {
       CrosschainCoordinationV1 coordinationContract =
           CrosschainCoordinationV1.load(coordContract.contractAddress, webService, tm, freeGasProvider);
@@ -276,8 +281,16 @@ public class OptionKey extends AbstractOption {
       LOG.info("Key exists in coordination contract: {}", keyExists);
     }
 
+    // TODO what do you do if the key becomes active in one Crosschain Coordination Contract, but not all of them?
+
+    // Activate the key.
+    webService.crossActivateKey(keyVersion).send();
+
+    LongResponse activeKeyVersion = webService.crossGetActiveKeyVersion().send();
+    LOG.info("Key version now active: {}", activeKeyVersion.getValue());
 
 
 
   }
+
 }
