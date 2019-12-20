@@ -269,7 +269,7 @@ public class OptionKey extends AbstractOption {
       byte[] encodedPubKeyBytes = val.toByteArray();
 
       TransactionReceipt txReceipt =
-          coordinationContract.addSidechain(bcIdBigInt, votingContractAddress, VOTING_PERIOD, BigInteger.valueOf(keyVersion), encodedPubKeyBytes).send();
+          coordinationContract.addBlockchain(bcIdBigInt, votingContractAddress, VOTING_PERIOD, BigInteger.valueOf(keyVersion), encodedPubKeyBytes).send();
       LOG.info("Tx Receipt: {}", txReceipt);
 
       boolean keyExists = coordinationContract.publicKeyExists(bcIdBigInt, BigInteger.valueOf(keyVersion)).send();

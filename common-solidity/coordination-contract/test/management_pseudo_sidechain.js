@@ -16,14 +16,14 @@
  *
  */
 
-contract('Management Pseduo Sidechain', function(accounts) {
+contract('Management Pseduo Blockchain', function(accounts) {
     let common = require('./common');
 
-    const twoSidechainId = "0x2";
+    const twoBlockchainId = "0x2";
 
-    it("getSidechainExists for management sidechain", async function() {
+    it("getBlockchainExists for management sidechain", async function() {
         let coordInterface = await await common.getDeployedCrosschainCoordination();
-        const exists = await coordInterface.getSidechainExists.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID);
+        const exists = await coordInterface.getBlockchainExists.call(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID);
 
         assert.equal(exists, true);
     });
@@ -33,7 +33,7 @@ contract('Management Pseduo Sidechain', function(accounts) {
         let coordInterface = await await common.getDeployedCrosschainCoordination();
         let didNotTriggerError = false;
         try {
-            await coordInterface.addSidechain(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+            await coordInterface.addBlockchain(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -44,16 +44,16 @@ contract('Management Pseduo Sidechain', function(accounts) {
     });
 
 
-    it("check that the account which deployed the contract can call addSidechain", async function() {
+    it("check that the account which deployed the contract can call addBlockchain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await coordInterface.addSidechain(twoSidechainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
     });
 
-    it("check that accounts other than the one which deployed the contract can not call addSidechain", async function() {
+    it("check that accounts other than the one which deployed the contract can not call addBlockchain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
         let didNotTriggerError = false;
         try {
-            await coordInterface.addSidechain(twoSidechainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY, {from: accounts[1]});
+            await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY, {from: accounts[1]});
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -68,12 +68,12 @@ contract('Management Pseduo Sidechain', function(accounts) {
         let secondParticipant = accounts[1];
         let coordInterface = await await common.getNewCrosschainCoordination();
 
-        await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
+        await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
+        await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, secondParticipant);
 
-       let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
-       assert.equal(isParticipant, true, "unexpectedly, Second Participant: isSidechainParticipant == false");
+       let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, secondParticipant);
+       assert.equal(isParticipant, true, "unexpectedly, Second Participant: isBlockchainParticipant == false");
     });
 
 

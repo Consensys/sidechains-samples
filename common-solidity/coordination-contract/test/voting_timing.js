@@ -22,38 +22,38 @@ contract('Voting: timing tests', function(accounts) {
         let secondParticipant = accounts[1];
         let coordInterface = await await common.getNewCrosschainCoordination();
 
-        await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
+        await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
+        let actionResult = await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, secondParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
 
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, Second Participant: isUnmaskedSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, secondParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, Second Participant: isUnmaskedBlockchainParticipant == false");
     });
 
     it("finalise vote after voting period", async function() {
         let secondParticipant = accounts[1];
         let coordInterface = await await common.getNewCrosschainCoordination();
 
-        await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
+        await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
         await common.mineBlocks(parseInt(common.VOTING_PERIOD_PLUS_ONE));
-        let actionResult = await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
+        let actionResult = await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, secondParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
 
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, Second Participant: isUnmaskedSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, secondParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, Second Participant: isUnmaskedBlockchainParticipant == false");
     });
 
     it("finalise vote immediately: expect to fail", async function() {
         let secondParticipant = accounts[1];
         let coordInterface = await await common.getNewCrosschainCoordination();
 
-        await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
+        await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
         let didNotTriggerError = false;
         try {
-            await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
+            await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, secondParticipant);
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -61,29 +61,29 @@ contract('Voting: timing tests', function(accounts) {
         }
         assert.equal(didNotTriggerError, false);
 
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
-        assert.equal(isParticipant, false, "unexpectedly, Second Participant: isUnmaskedSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, secondParticipant);
+        assert.equal(isParticipant, false, "unexpectedly, Second Participant: isUnmaskedBlockchainParticipant != false");
     });
 
     it("dont finalise vote", async function() {
         let secondParticipant = accounts[1];
         let coordInterface = await await common.getNewCrosschainCoordination();
 
-        await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
+        await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
 
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
-        assert.equal(isParticipant, false, "unexpectedly, Second Participant: isUnmaskedSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, secondParticipant);
+        assert.equal(isParticipant, false, "unexpectedly, Second Participant: isUnmaskedBlockchainParticipant != false");
     });
 
     it("finalise vote early: expect to fail", async function() {
         let secondParticipant = accounts[1];
         let coordInterface = await await common.getNewCrosschainCoordination();
 
-        await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
+        await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, secondParticipant, "1", "0x0");
         await common.mineBlocks(parseInt(common.VOTING_PERIOD_MINUS_ONE));
         let didNotTriggerError = false;
         try {
-            await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
+            await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, secondParticipant);
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -91,8 +91,8 @@ contract('Voting: timing tests', function(accounts) {
         }
         assert.equal(didNotTriggerError, false);
 
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, secondParticipant);
-        assert.equal(isParticipant, false, "unexpectedly, Second Participant: isUnmaskedSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, secondParticipant);
+        assert.equal(isParticipant, false, "unexpectedly, Second Participant: isUnmaskedBlockchainParticipant != false");
     });
 
 

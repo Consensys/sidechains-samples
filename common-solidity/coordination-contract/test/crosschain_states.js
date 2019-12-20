@@ -19,7 +19,7 @@ const VotingAlgMajority = artifacts.require("./VotingAlgMajority.sol");
 contract('Crosschain Transaction States:', function(accounts) {
     let common = require('./common');
 
-    const A_SIDECHAIN_ID = "0x2";
+    const A_BLOCKCHAIN_ID = "0x2";
     const AN_CROSS_TX_ID = "0x123456789ABCDEF123455";
 
     const A_VALID_START_MESSAGE = "0x12345";
@@ -41,38 +41,38 @@ contract('Crosschain Transaction States:', function(accounts) {
 
 
 
-    async function addSidechain(coordInterface) {
-        await coordInterface.addSidechain(A_SIDECHAIN_ID, (await VotingAlgMajority.deployed()).address, common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+    async function addBlockchain(coordInterface) {
+        await coordInterface.addBlockchain(A_BLOCKCHAIN_ID, (await VotingAlgMajority.deployed()).address, common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
     }
 
     it("notstart", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
-        let state = await coordInterface.getCrosschainTransactionStatus.call(A_SIDECHAIN_ID, AN_CROSS_TX_ID);
+        await addBlockchain(coordInterface);
+        let state = await coordInterface.getCrosschainTransactionStatus.call(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID);
         assert.equal(NOT_STARTED, state, "state for transaction which does not exist should be not started");
     });
 
 
     it("start", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
 
         let blockNumber = await common.getBlockNumber();
         let timeoutBlockNumber = blockNumber + LONG_TIMEOUT_INT;
         // Ensure the time-out is long enough that the crosschain transaction won't expire prior to checking the status.
-        await coordInterface.start(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber.toString());
+        await coordInterface.start(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber.toString());
 
-        let state = await coordInterface.getCrosschainTransactionStatus.call(A_SIDECHAIN_ID, AN_CROSS_TX_ID);
+        let state = await coordInterface.getCrosschainTransactionStatus.call(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID);
         assert.equal(STARTED, state, "state is no started");
     });
 
     it("start with zero timeout", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
 
         let didNotTriggerError = false;
         try {
-            await coordInterface.start(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, "0");
+            await coordInterface.start(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, "0");
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -83,16 +83,16 @@ contract('Crosschain Transaction States:', function(accounts) {
 
     it("start same transaction a second time", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
         let blockNumber = await common.getBlockNumber();
         let timeoutBlockNumber = blockNumber + LONG_TIMEOUT_INT;
-        await coordInterface.start(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
+        await coordInterface.start(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
 
         let didNotTriggerError = false;
         try {
             blockNumber = await common.getBlockNumber();
             timeoutBlockNumber = blockNumber + LONG_TIMEOUT_INT;
-            await coordInterface.start(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
+            await coordInterface.start(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -104,36 +104,36 @@ contract('Crosschain Transaction States:', function(accounts) {
 
     it("timed-out", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
 
         let blockNumber = await common.getBlockNumber();
         let timeoutBlockNumber = blockNumber + SHORT_TIMEOUT_INT;
-        await coordInterface.start(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
+        await coordInterface.start(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
         await common.mineBlocks(parseInt(SHORT_TIMEOUT_PLUS_ONE));
-        let state = await coordInterface.getCrosschainTransactionStatus.call(A_SIDECHAIN_ID, AN_CROSS_TX_ID);
+        let state = await coordInterface.getCrosschainTransactionStatus.call(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID);
 
         assert.equal(IGNORED, state, "state is not ignored");
     });
 
     it("committed", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
 
         let blockNumber = await common.getBlockNumber();
         let timeoutBlockNumber = blockNumber + LONG_TIMEOUT_INT;
-        await coordInterface.start(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
-        await coordInterface.commit(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_COMMIT_MESSAGE);
-        let state = await coordInterface.getCrosschainTransactionStatus.call(A_SIDECHAIN_ID, AN_CROSS_TX_ID);
+        await coordInterface.start(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
+        await coordInterface.commit(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_COMMIT_MESSAGE);
+        let state = await coordInterface.getCrosschainTransactionStatus.call(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID);
         assert.equal(COMMITTED, state, "state is not committed");
     });
 
     it("commit without start", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
 
         let didNotTriggerError = false;
         try {
-            await coordInterface.commit(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_COMMIT_MESSAGE);
+            await coordInterface.commit(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_COMMIT_MESSAGE);
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -144,16 +144,16 @@ contract('Crosschain Transaction States:', function(accounts) {
 
     it("commit after timeout", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
 
         let blockNumber = await common.getBlockNumber();
         let timeoutBlockNumber = blockNumber + SHORT_TIMEOUT_INT;
-        await coordInterface.start(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
+        await coordInterface.start(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
         await common.mineBlocks(parseInt(SHORT_TIMEOUT_PLUS_ONE));
 
         let didNotTriggerError = false;
         try {
-            await coordInterface.commit(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_COMMIT_MESSAGE);
+            await coordInterface.commit(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_COMMIT_MESSAGE);
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -165,23 +165,23 @@ contract('Crosschain Transaction States:', function(accounts) {
 
     it("ignored", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
 
         let blockNumber = await common.getBlockNumber();
         let timeoutBlockNumber = blockNumber + LONG_TIMEOUT_INT;
-        await coordInterface.start(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
-        await coordInterface.ignore(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_IGNORE_MESSAGE);
-        let state = await coordInterface.getCrosschainTransactionStatus.call(A_SIDECHAIN_ID, AN_CROSS_TX_ID);
+        await coordInterface.start(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
+        await coordInterface.ignore(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_IGNORE_MESSAGE);
+        let state = await coordInterface.getCrosschainTransactionStatus.call(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID);
         assert.equal(IGNORED, state, "state is not ignored");
     });
 
     it("ignore without start", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
 
         let didNotTriggerError = false;
         try {
-            await coordInterface.ignore(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_COMMIT_MESSAGE);
+            await coordInterface.ignore(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_COMMIT_MESSAGE);
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -192,16 +192,16 @@ contract('Crosschain Transaction States:', function(accounts) {
 
     it("ignore after timeout", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
 
         let blockNumber = await common.getBlockNumber();
         let timeoutBlockNumber = blockNumber + SHORT_TIMEOUT_INT;
-        await coordInterface.start(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
+        await coordInterface.start(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_START_MESSAGE, timeoutBlockNumber);
         await common.mineBlocks(parseInt(SHORT_TIMEOUT_PLUS_ONE));
 
         let didNotTriggerError = false;
         try {
-            await coordInterface.ignore(A_SIDECHAIN_ID, AN_CROSS_TX_ID, A_VALID_COMMIT_MESSAGE);
+            await coordInterface.ignore(A_BLOCKCHAIN_ID, AN_CROSS_TX_ID, A_VALID_COMMIT_MESSAGE);
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);

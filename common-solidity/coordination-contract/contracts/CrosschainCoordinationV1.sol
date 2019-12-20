@@ -17,7 +17,7 @@ import "./VotingAlgInterface.sol";
 
 
 /**
- * Contract to manage multiple sidechains.
+ * Contract to manage multiple blockchains.
  *
  * Please see the interface for documentation on all topics except for the constructor.
  *
@@ -26,9 +26,9 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     // Implementation version of the of the Crosschain Coordination Contract.
     uint16 constant private VERSION_ONE = 1;
 
-    // The management sidechain is the sidechain with ID 0x00. It is used solely to restrict which
-    // users can create a new sidechain. Only members of this sidechain can call addSidechain().
-    uint256 public constant MANAGEMENT_PSEUDO_SIDECHAIN_ID = 0;
+    // The management blockchain is the blockchain with ID 0x00. It is used solely to restrict which
+    // users can create a new blockchain. Only members of this blockchain can call addBlockchain().
+    uint256 public constant MANAGEMENT_PSEUDO_BLOCKCHAIN_ID = 0;
 
     // Indications that a vote is underway.
     // VOTE_NONE indicates no vote is underway. Also matches the deleted value for integers.
@@ -73,7 +73,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         uint64 numVotedAgainst;
     }
 
-    struct SidechainRecord {
+    struct BlockchainRecord {
         // The algorithm for assessing the votes.
         address votingAlgorithmContract;
         // Voting period in blocks. This is the period in which participants can vote. Must be greater than 0.
@@ -99,13 +99,13 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         // Votes for adding and removing participants, for changing voting algorithm and voting period.
         mapping(uint256=>Votes) votes;
 
-        // Public keys for this sidechain.
+        // Public keys for this blockchain.
         uint64 publicKeyActiveVersion;
         uint64 publicKeyPreviousVersion;
-        mapping(uint256 => PublicKey) publicKeys;
+        mapping(uint64 => PublicKey) publicKeys;
     }
 
-    mapping(uint256=>SidechainRecord) private sidechains;
+    mapping(uint256=>BlockchainRecord) private blockchains;
 
 
     enum XTX_STATE {
@@ -127,13 +127,13 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
 
 
     /**
-     * Function modifier to ensure only unmasked sidechain participants can call the function.
+     * Function modifier to ensure only unmasked blockchain participants can call the function.
      *
-     * @param _sidechainId The 256 bit identifier of the Sidechain.
-     * @dev Throws if the message sender isn't a participant in the sidechain, or if the sidechain doesn't exist.
+     * @param _blockchainId The 256 bit identifier of the Blockchain.
+     * @dev Throws if the message sender isn't a participant in the blockchain, or if the blockchain doesn't exist.
      */
-    modifier onlyUnmaskedSidechainParticipant(uint256 _sidechainId) {
-        require(sidechains[_sidechainId].inUnmasked[msg.sender]);
+    modifier onlyUnmaskedBlockchainParticipant(uint256 _blockchainId) {
+        require(blockchains[_blockchainId].inUnmasked[msg.sender]);
         _;
     }
 
@@ -145,79 +145,79 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
      */
     constructor (address _votingAlg, uint32 _votingPeriod) public {
         bytes memory pubKey = "";
-        addSidechainInternal(MANAGEMENT_PSEUDO_SIDECHAIN_ID, _votingAlg, _votingPeriod, 0, pubKey);
+        addBlockchainInternal(MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, _votingAlg, _votingPeriod, 0, pubKey);
     }
 
 
-    // TODO an Add Sidechain method where an array of masked and unmasked participants are added.
-    //      Instead of using the addSidechain Internal function, code up a function that takes an array of participants (masked & unmasked) - add to interface
+    // TODO an Add Blockchain method where an array of masked and unmasked participants are added.
+    //      Instead of using the addBlockchain Internal function, code up a function that takes an array of participants (masked & unmasked) - add to interface
 
-    function addSidechain(uint256 _sidechainId, address _votingAlgorithmContract, uint64 _votingPeriod, uint64 _keyVersion, bytes calldata _publicKey) external onlyUnmaskedSidechainParticipant (MANAGEMENT_PSEUDO_SIDECHAIN_ID) {
+    function addBlockchain(uint256 _blockchainId, address _votingAlgorithmContract, uint64 _votingPeriod, uint64 _keyVersion, bytes calldata _publicKey) external onlyUnmaskedBlockchainParticipant (MANAGEMENT_PSEUDO_BLOCKCHAIN_ID) {
         bytes memory pubKey = _publicKey;
-        addSidechainInternal(_sidechainId, _votingAlgorithmContract, _votingPeriod, _keyVersion, pubKey);
+        addBlockchainInternal(_blockchainId, _votingAlgorithmContract, _votingPeriod, _keyVersion, pubKey);
     }
 
-    function addSidechainInternal(uint256 _sidechainId, address _votingAlgorithmContract, uint64 _votingPeriod, uint64 _keyVersion, bytes memory _pubKey) private {
-        // The sidechain can not exist prior to creation.
-        require(sidechains[_sidechainId].votingPeriod == 0);
+    function addBlockchainInternal(uint256 _blockchainId, address _votingAlgorithmContract, uint64 _votingPeriod, uint64 _keyVersion, bytes memory _pubKey) private {
+        // The blockchain can not exist prior to creation.
+        require(blockchains[_blockchainId].votingPeriod == 0);
         // The voting period must be greater than 0.
         require(_votingPeriod > 0);
-        emit AddedSidechain(_sidechainId);
+        emit AddedBlockchain(_blockchainId);
 
         // Create the entry in the map by assigning values to the structure.
-        sidechains[_sidechainId].votingPeriod = _votingPeriod;
-        sidechains[_sidechainId].votingAlgorithmContract = _votingAlgorithmContract;
+        blockchains[_blockchainId].votingPeriod = _votingPeriod;
+        blockchains[_blockchainId].votingAlgorithmContract = _votingAlgorithmContract;
 
-        // The creator of the sidechain is always an unmasked participant. Anyone who analysed the
+        // The creator of the blockchain is always an unmasked participant. Anyone who analysed the
         // transaction history would be able determine this account as the one which instigated the
         // transaction.
-        sidechains[_sidechainId].unmasked.push(msg.sender);
-        sidechains[_sidechainId].inUnmasked[msg.sender] = true;
-        sidechains[_sidechainId].numUnmaskedParticipants++;
+        blockchains[_blockchainId].unmasked.push(msg.sender);
+        blockchains[_blockchainId].inUnmasked[msg.sender] = true;
+        blockchains[_blockchainId].numUnmaskedParticipants++;
 
         // Add the key - no voting required for the first key.
-        setPublicKey(_sidechainId, _keyVersion, _pubKey);
+        setPublicKey(_blockchainId, _keyVersion, _pubKey);
     }
 
 
-    function unmask(uint256 _sidechainId, uint256 _index, uint256 _salt) external {
-        uint256 maskedParticipantActual = sidechains[_sidechainId].masked[_index];
+    function unmask(uint256 _blockchainId, uint256 _index, uint256 _salt) external {
+        uint256 maskedParticipantActual = blockchains[_blockchainId].masked[_index];
         uint256 maskedParticipantCalculated = uint256(keccak256(abi.encodePacked(msg.sender, _salt)));
         // An account can only unmask itself.
         require(maskedParticipantActual == maskedParticipantCalculated);
         // If the unmasked participant already exists, then remove the participant
         // from the masked list and don't add it to the unmasked list.
-        if (sidechains[_sidechainId].inUnmasked[msg.sender] == false) {
-            emit AddingSidechainUnmaskedParticipant(_sidechainId, msg.sender);
-            sidechains[_sidechainId].unmasked.push(msg.sender);
-            sidechains[_sidechainId].inUnmasked[msg.sender] = true;
-            sidechains[_sidechainId].numUnmaskedParticipants++;
+        if (blockchains[_blockchainId].inUnmasked[msg.sender] == false) {
+            emit AddingBlockchainUnmaskedParticipant(_blockchainId, msg.sender);
+            blockchains[_blockchainId].unmasked.push(msg.sender);
+            blockchains[_blockchainId].inUnmasked[msg.sender] = true;
+            blockchains[_blockchainId].numUnmaskedParticipants++;
         }
-        delete sidechains[_sidechainId].masked[_index];
-        delete sidechains[_sidechainId].inMasked[maskedParticipantActual];
+        delete blockchains[_blockchainId].masked[_index];
+        delete blockchains[_blockchainId].inMasked[maskedParticipantActual];
     }
 
 
-    function proposeVote(uint256 _sidechainId, uint16 _action, uint256 _voteTarget, uint256 _additionalInfo1, bytes calldata _additionalInfo2) external onlyUnmaskedSidechainParticipant (_sidechainId) {
+    function proposeVote(uint256 _blockchainId, uint16 _action, uint256 _voteTarget, uint256 _additionalInfo1, bytes calldata _additionalInfo2) external onlyUnmaskedBlockchainParticipant (_blockchainId) {
         // This will throw an error if the action is not a valid VoteType.
         VoteType action = VoteType(_action);
 
         // Can't start a vote if a vote is already underway.
-        require(sidechains[_sidechainId].votes[_voteTarget].voteType == VoteType.VOTE_NONE);
+        require(blockchains[_blockchainId].votes[_voteTarget].voteType == VoteType.VOTE_NONE);
 
         // If the action is to add a masked participant, then they shouldn't be a participant already.
         if (action == VoteType.VOTE_ADD_MASKED_PARTICIPANT) {
-            require(sidechains[_sidechainId].inMasked[_voteTarget] == false);
+            require(blockchains[_blockchainId].inMasked[_voteTarget] == false);
         }
         // If the action is to remove a masked participant, then they should be a participant already.
         // Additionally, they must supply the offset into the masked array of the participant to be removed.
         if (action == VoteType.VOTE_REMOVE_MASKED_PARTICIPANT) {
-            require(sidechains[_sidechainId].inMasked[_voteTarget] == true);
-            require(sidechains[_sidechainId].masked[_additionalInfo1] == _voteTarget);
+            require(blockchains[_blockchainId].inMasked[_voteTarget] == true);
+            require(blockchains[_blockchainId].masked[_additionalInfo1] == _voteTarget);
         }
         // If the action is to add an unmasked participant, then they shouldn't be a participant already.
         if (action == VoteType.VOTE_ADD_UNMASKED_PARTICIPANT) {
-            require(sidechains[_sidechainId].inUnmasked[address(_voteTarget)] == false);
+            require(blockchains[_blockchainId].inUnmasked[address(_voteTarget)] == false);
         }
         // If the action is to remove an unmasked participant, then they should be a participant
         // already and they can not be the sender. That is, the sender can not vote to remove
@@ -225,86 +225,88 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         // Additionally, they must supply the offset into the unmasked array of the participant to be removed.
         if (action == VoteType.VOTE_REMOVE_UNMASKED_PARTICIPANT) {
             address voteTargetAddr = address(_voteTarget);
-            require(sidechains[_sidechainId].inUnmasked[voteTargetAddr] == true);
+            require(blockchains[_blockchainId].inUnmasked[voteTargetAddr] == true);
             require(voteTargetAddr != msg.sender);
-            require(sidechains[_sidechainId].unmasked[_additionalInfo1] == voteTargetAddr);
+            require(blockchains[_blockchainId].unmasked[_additionalInfo1] == voteTargetAddr);
         }
 
         if (action == VoteType.VOTE_CHANGE_PUBLIC_KEY) {
             // The proposed public key is assumed to be valid.
             // TODO We could attempt to RLP decode the encoded public key.
+
+            // TODO ***** check version is greater than current version
         }
 
         // Set-up the vote.
-        sidechains[_sidechainId].votes[_voteTarget].voteType = action;
-        sidechains[_sidechainId].votes[_voteTarget].endOfVotingBlockNumber = block.number + sidechains[_sidechainId].votingPeriod;
-        sidechains[_sidechainId].votes[_voteTarget].additionalInfo1 = _additionalInfo1;
-        sidechains[_sidechainId].votes[_voteTarget].additionalInfo2 = _additionalInfo2;
+        blockchains[_blockchainId].votes[_voteTarget].voteType = action;
+        blockchains[_blockchainId].votes[_voteTarget].endOfVotingBlockNumber = block.number + blockchains[_blockchainId].votingPeriod;
+        blockchains[_blockchainId].votes[_voteTarget].additionalInfo1 = _additionalInfo1;
+        blockchains[_blockchainId].votes[_voteTarget].additionalInfo2 = _additionalInfo2;
 
         // The proposer is deemed to be voting for the proposal.
-        voteNoChecks(_sidechainId, _action, _voteTarget, true);
+        voteNoChecks(_blockchainId, _action, _voteTarget, true);
     }
 
 
-    function vote(uint256 _sidechainId, uint16 _action, uint256 _voteTarget, bool _voteFor) external onlyUnmaskedSidechainParticipant (_sidechainId) {
+    function vote(uint256 _blockchainId, uint16 _action, uint256 _voteTarget, bool _voteFor) external onlyUnmaskedBlockchainParticipant (_blockchainId) {
         // This will throw an error if the action is not a valid VoteType.
         VoteType action = VoteType(_action);
 
         // The type of vote must match what is currently being voted on.
         // Note that this will catch the case when someone is voting when there is no active vote.
-        require(sidechains[_sidechainId].votes[_voteTarget].voteType == action);
+        require(blockchains[_blockchainId].votes[_voteTarget].voteType == action);
         // Ensure the account has not voted yet.
-        require(sidechains[_sidechainId].votes[_voteTarget].hasVoted[msg.sender] == false);
+        require(blockchains[_blockchainId].votes[_voteTarget].hasVoted[msg.sender] == false);
 
         // Check voting period has not expired.
-        require(sidechains[_sidechainId].votes[_voteTarget].endOfVotingBlockNumber >= block.number);
+        require(blockchains[_blockchainId].votes[_voteTarget].endOfVotingBlockNumber >= block.number);
 
-        voteNoChecks(_sidechainId, _action, _voteTarget, _voteFor);
+        voteNoChecks(_blockchainId, _action, _voteTarget, _voteFor);
     }
 
 
-    function actionVotes(uint256 _sidechainId, uint256 _voteTarget) external onlyUnmaskedSidechainParticipant(_sidechainId) {
+    function actionVotes(uint256 _blockchainId, uint256 _voteTarget) external onlyUnmaskedBlockchainParticipant(_blockchainId) {
         // If no vote is underway, then there is nothing to action.
-        VoteType action = sidechains[_sidechainId].votes[_voteTarget].voteType;
+        VoteType action = blockchains[_blockchainId].votes[_voteTarget].voteType;
         require(action != VoteType.VOTE_NONE);
         // Can only action vote after voting period has ended.
-        require(sidechains[_sidechainId].votes[_voteTarget].endOfVotingBlockNumber < block.number);
+        require(blockchains[_blockchainId].votes[_voteTarget].endOfVotingBlockNumber < block.number);
 
-        VotingAlgInterface voteAlg = VotingAlgInterface(sidechains[_sidechainId].votingAlgorithmContract);
+        VotingAlgInterface voteAlg = VotingAlgInterface(blockchains[_blockchainId].votingAlgorithmContract);
         bool result = voteAlg.assess(
-                sidechains[_sidechainId].numUnmaskedParticipants,
-                sidechains[_sidechainId].votes[_voteTarget].numVotedFor,
-                sidechains[_sidechainId].votes[_voteTarget].numVotedAgainst);
-        emit VoteResult(_sidechainId, uint16(action), _voteTarget, result);
+                blockchains[_blockchainId].numUnmaskedParticipants,
+                blockchains[_blockchainId].votes[_voteTarget].numVotedFor,
+                blockchains[_blockchainId].votes[_voteTarget].numVotedAgainst);
+        emit VoteResult(_blockchainId, uint16(action), _voteTarget, result);
 
         if (result) {
             // The vote has been decided in the affimative.
-            uint256 additionalInfo1 = sidechains[_sidechainId].votes[_voteTarget].additionalInfo1;
+            uint256 additionalInfo1 = blockchains[_blockchainId].votes[_voteTarget].additionalInfo1;
             address participantAddr = address(_voteTarget);
             if (action == VoteType.VOTE_ADD_UNMASKED_PARTICIPANT) {
-                sidechains[_sidechainId].unmasked.push(participantAddr);
-                sidechains[_sidechainId].inUnmasked[participantAddr] = true;
-                sidechains[_sidechainId].numUnmaskedParticipants++;
+                blockchains[_blockchainId].unmasked.push(participantAddr);
+                blockchains[_blockchainId].inUnmasked[participantAddr] = true;
+                blockchains[_blockchainId].numUnmaskedParticipants++;
             }
             else if (action == VoteType.VOTE_ADD_MASKED_PARTICIPANT) {
-                sidechains[_sidechainId].masked.push(_voteTarget);
-                sidechains[_sidechainId].inMasked[_voteTarget] = true;
+                blockchains[_blockchainId].masked.push(_voteTarget);
+                blockchains[_blockchainId].inMasked[_voteTarget] = true;
             }
             else if (action == VoteType.VOTE_REMOVE_UNMASKED_PARTICIPANT) {
-                delete sidechains[_sidechainId].unmasked[additionalInfo1];
-                delete sidechains[_sidechainId].inUnmasked[participantAddr];
-                sidechains[_sidechainId].numUnmaskedParticipants--;
+                delete blockchains[_blockchainId].unmasked[additionalInfo1];
+                delete blockchains[_blockchainId].inUnmasked[participantAddr];
+                blockchains[_blockchainId].numUnmaskedParticipants--;
             }
             else if (action == VoteType.VOTE_REMOVE_MASKED_PARTICIPANT) {
-                delete sidechains[_sidechainId].masked[additionalInfo1];
-                delete sidechains[_sidechainId].inMasked[_voteTarget];
+                delete blockchains[_blockchainId].masked[additionalInfo1];
+                delete blockchains[_blockchainId].inMasked[_voteTarget];
             }
             else if (action == VoteType.VOTE_CHANGE_PUBLIC_KEY) {
                 // Change the current active public key to the one voted on by
                 // adding the new key to the list.
-                setPublicKey(_sidechainId,
-                uint64(sidechains[_sidechainId].votes[_voteTarget].additionalInfo1),
-                    sidechains[_sidechainId].votes[_voteTarget].additionalInfo2);
+                setPublicKey(_blockchainId,
+                uint64(blockchains[_blockchainId].votes[_voteTarget].additionalInfo1),
+                    blockchains[_blockchainId].votes[_voteTarget].additionalInfo2);
             }
         }
 
@@ -313,14 +315,14 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         // Remove all values from the map: Maps can't be deleted in Solidity.
         // NOTE: The code below has used values directly, rather than a local variable due to running
         // out of local variables.
-        for (uint i = 0; i < sidechains[_sidechainId].unmasked.length; i++) {
-            if( sidechains[_sidechainId].unmasked[i] != address(0)) {
-                delete sidechains[_sidechainId].votes[_voteTarget].hasVoted[sidechains[_sidechainId].unmasked[i]];
+        for (uint i = 0; i < blockchains[_blockchainId].unmasked.length; i++) {
+            if( blockchains[_blockchainId].unmasked[i] != address(0)) {
+                delete blockchains[_blockchainId].votes[_voteTarget].hasVoted[blockchains[_blockchainId].unmasked[i]];
             }
         }
         // This will recursively delete everything in the structure, except for the map, which was
         // deleted in the for loop above.
-        delete sidechains[_sidechainId].votes[_voteTarget];
+        delete blockchains[_blockchainId].votes[_voteTarget];
     }
 
 
@@ -331,15 +333,15 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     * TODO: Compare gas usage of keeping this integrated with the value checking.
     *       What is the trade-off of having one large structure, as opposed to separate structure (low priority)
     */
-    function voteNoChecks(uint256 _sidechainId, uint16 _action, uint256 _voteTarget, bool _voteFor) private {
+    function voteNoChecks(uint256 _blockchainId, uint16 _action, uint256 _voteTarget, bool _voteFor) private {
         // Indicate msg.sender has voted.
-        emit ParticipantVoted(_sidechainId, msg.sender, _action, _voteTarget, _voteFor);
-        sidechains[_sidechainId].votes[_voteTarget].hasVoted[msg.sender] = true;
+        emit ParticipantVoted(_blockchainId, msg.sender, _action, _voteTarget, _voteFor);
+        blockchains[_blockchainId].votes[_voteTarget].hasVoted[msg.sender] = true;
 
         if (_voteFor) {
-            sidechains[_sidechainId].votes[_voteTarget].numVotedFor++;
+            blockchains[_blockchainId].votes[_voteTarget].numVotedFor++;
         } else {
-            sidechains[_sidechainId].votes[_voteTarget].numVotedAgainst++;
+            blockchains[_blockchainId].votes[_voteTarget].numVotedAgainst++;
         }
     }
 
@@ -349,18 +351,18 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     *
     *
     */
-    // TODO should anyone be able to start, commit or ignore? Should it be limited to sidechain unmasked participants?
-    function start(uint256 _originatingSidechainId, uint256 _crosschainTransactionId,
+    // TODO should anyone be able to start, commit or ignore? Should it be limited to blockchain unmasked participants?
+    function start(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
         bytes calldata /*_signedStartMessage */, uint256 _transactionTimeoutBlock) external {
-        uint256 index = uint256(keccak256(abi.encodePacked(_originatingSidechainId, _crosschainTransactionId)));
+        uint256 index = uint256(keccak256(abi.encodePacked(_originatingBlockchainId, _crosschainTransactionId)));
 
         // The transaction id can not be re-used and the time-out block must be in the future.
         require(txMap[index].state == XTX_STATE.NOT_STARTED);
         require(_transactionTimeoutBlock > block.number);
 
         // TODO: validate the signed start message. Need to work out exact structure of message still.
-        // TODO check signature verifies, given the public key of the originating sidechain. (could be a private method) Callout to precompile of a BLS signature. Use the functions coded by Peter & John. 
-        // TODO check that the originating sidechain id in the message matches the parameter value.
+        // TODO check signature verifies, given the public key of the originating blockchain. (could be a private method) Callout to precompile of a BLS signature. Use the functions coded by Peter & John. 
+        // TODO check that the originating blockchain id in the message matches the parameter value.
         // TODO check that the Coordination Blockchain Identifier in the message matches the parameter value.
         // TODO check that the Crosschain Coordination Contract address in the message matches the parameter value.
         //   use   address(this)
@@ -377,16 +379,16 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     /**
      * Commit the Crosschain Transaction.
      */
-    function commit(uint256 _originatingSidechainId, uint256 _crosschainTransactionId, bytes calldata /*_signedCommitMessage*/) external {
-        uint256 index = uint256(keccak256(abi.encodePacked(_originatingSidechainId, _crosschainTransactionId)));
+    function commit(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId, bytes calldata /*_signedCommitMessage*/) external {
+        uint256 index = uint256(keccak256(abi.encodePacked(_originatingBlockchainId, _crosschainTransactionId)));
         // The transaction must be started and the time-out block must be in the future.
         require(txMap[index].state == XTX_STATE.STARTED);
         require(txMap[index].timeoutBlockNumber >= block.number);
 
 
         // TODO validate the signed commit message.
-        // TODO check signature verifies, given the public key of the originating sidechain.
-        // TODO check that the originating sidechain id in the message matches the parameter value.
+        // TODO check signature verifies, given the public key of the originating blockchain.
+        // TODO check that the originating blockchain id in the message matches the parameter value.
         // TODO check that the Coordination Blockchain Identifier in the message matches the parameter value.
         // TODO check that the Crosschain Coordination Contract address in the message matches the parameter value.
         //   use   address(this)
@@ -402,15 +404,15 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     /**
      * Ignore the Crosschain Transaction.
      */
-    function ignore(uint256 _originatingSidechainId, uint256 _crosschainTransactionId, bytes calldata /*_signedIgnoreMessage*/) external {
-        uint256 index = uint256(keccak256(abi.encodePacked(_originatingSidechainId, _crosschainTransactionId)));
+    function ignore(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId, bytes calldata /*_signedIgnoreMessage*/) external {
+        uint256 index = uint256(keccak256(abi.encodePacked(_originatingBlockchainId, _crosschainTransactionId)));
         // The transaction must be started and the time-out block must be in the future.
         require(txMap[index].state == XTX_STATE.STARTED);
         require(txMap[index].timeoutBlockNumber >= block.number);
 
         // TODO validate the signed ignore message.
-        // TODO check signature verifies, given the public key of the originating sidechain.
-        // TODO check that the originating sidechain id in the message matches the parameter value.
+        // TODO check signature verifies, given the public key of the originating blockchain.
+        // TODO check that the originating blockchain id in the message matches the parameter value.
         // TODO check that the Coordination Blockchain Identifier in the message matches the parameter value.
         // TODO check that the Crosschain Coordination Contract address in the message matches the parameter value.
         //   use   address(this)
@@ -422,8 +424,8 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     }
 
 
-    function getCrosschainTransactionStatus(uint256 _originatingSidechainId, uint256 _crosschainTransactionId) external view returns (uint32) {
-        uint256 index = uint256(keccak256(abi.encodePacked(_originatingSidechainId, _crosschainTransactionId)));
+    function getCrosschainTransactionStatus(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId) external view returns (uint32) {
+        uint256 index = uint256(keccak256(abi.encodePacked(_originatingBlockchainId, _crosschainTransactionId)));
         if (txMap[index].state == XTX_STATE.COMMITTED) {
             return uint32(XTX_STATE.COMMITTED);
         }
@@ -438,8 +440,8 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
         return uint32(txMap[index].state);
     }
 
-    function getCrosschainTransactionTimeout(uint256 _originatingSidechainId, uint256 _crosschainTransactionId) external view returns (uint256) {
-        uint256 index = uint256(keccak256(abi.encodePacked(_originatingSidechainId, _crosschainTransactionId)));
+    function getCrosschainTransactionTimeout(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId) external view returns (uint256) {
+        uint256 index = uint256(keccak256(abi.encodePacked(_originatingBlockchainId, _crosschainTransactionId)));
         return txMap[index].timeoutBlockNumber;
     }
 
@@ -449,78 +451,76 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
 
 
 
-    function getSidechainExists(uint256 _sidechainId) external view returns (bool) {
-        return sidechains[_sidechainId].votingPeriod != 0;
+    function getBlockchainExists(uint256 _blockchainId) external view returns (bool) {
+        return blockchains[_blockchainId].votingPeriod != 0;
     }
 
 
-    function getVotingPeriod(uint256 _sidechainId) external view returns (uint64) {
-        return sidechains[_sidechainId].votingPeriod;
+    function getVotingPeriod(uint256 _blockchainId) external view returns (uint64) {
+        return blockchains[_blockchainId].votingPeriod;
     }
 
 
-    function isUnmaskedSidechainParticipant(uint256 _sidechainId, address _participant) external view returns(bool) {
-        return sidechains[_sidechainId].inUnmasked[_participant];
+    function isUnmaskedBlockchainParticipant(uint256 _blockchainId, address _participant) external view returns(bool) {
+        return blockchains[_blockchainId].inUnmasked[_participant];
     }
 
 
-    function getUnmaskedSidechainParticipantsSize(uint256 _sidechainId) external view returns(uint256) {
-        return sidechains[_sidechainId].unmasked.length;
+    function getUnmaskedBlockchainParticipantsSize(uint256 _blockchainId) external view returns(uint256) {
+        return blockchains[_blockchainId].unmasked.length;
     }
 
 
-    function getUnmaskedSidechainParticipant(uint256 _sidechainId, uint256 _index) external view returns(address) {
-        return sidechains[_sidechainId].unmasked[_index];
+    function getUnmaskedBlockchainParticipant(uint256 _blockchainId, uint256 _index) external view returns(address) {
+        return blockchains[_blockchainId].unmasked[_index];
     }
 
 
-    function getMaskedSidechainParticipantsSize(uint256 _sidechainId) external view returns(uint256) {
-        return sidechains[_sidechainId].masked.length;
+    function getMaskedBlockchainParticipantsSize(uint256 _blockchainId) external view returns(uint256) {
+        return blockchains[_blockchainId].masked.length;
     }
 
 
-    function getMaskedSidechainParticipant(uint256 _sidechainId, uint256 _index) external view returns(uint256) {
-        return sidechains[_sidechainId].masked[_index];
+    function getMaskedBlockchainParticipant(uint256 _blockchainId, uint256 _index) external view returns(uint256) {
+        return blockchains[_blockchainId].masked[_index];
     }
 
 
      /**
      * Get blockchain's public key, version number, status and block number
      *
-     * @param _sidechainId The 256 bit sidechain identifier to which this public key belongs
+     * @param _blockchainId The 256 bit blockchain identifier to which this public key belongs
      * @return public key information for the currently active public key for the blockchain
      */
-    function getActivePublicKey(uint256 _sidechainId) external view returns ( uint64 _versionNumber, uint _blockNumber, bytes memory _key){
-        getPublicKey(0, 0);
-
-        return getPublicKey(_sidechainId, sidechains[_sidechainId].publicKeyActiveVersion);
+    function getActivePublicKey(uint256 _blockchainId) external view returns ( uint64 _versionNumber, uint _blockNumber, bytes memory _key){
+        return getPublicKey(_blockchainId, blockchains[_blockchainId].publicKeyActiveVersion);
     }
 
-    function publicKeyExists(uint256 _sidechainId, uint64 _keyVersion) external view returns (bool) {
-        return sidechains[_sidechainId].publicKeys[_keyVersion].blockNumber != 0;
+    function publicKeyExists(uint256 _blockchainId, uint64 _keyVersion) external view returns (bool) {
+        return blockchains[_blockchainId].publicKeys[_keyVersion].blockNumber != 0;
     }
 
-    function getPublicKey(uint256 _sidechainId, uint64 _keyVersion) public view returns (uint64 keyVersion, uint256 blockNumber, bytes memory key){
-        uint256 blk = sidechains[_sidechainId].publicKeys[_keyVersion].blockNumber;
-        bytes memory encodedKey = sidechains[_sidechainId].publicKeys[_keyVersion].encodedKey;
+    function getPublicKey(uint256 _blockchainId, uint64 _keyVersion) public view returns (uint64 keyVersion, uint256 blockNumber, bytes memory key){
+        uint256 blk = blockchains[_blockchainId].publicKeys[_keyVersion].blockNumber;
+        bytes memory encodedKey = blockchains[_blockchainId].publicKeys[_keyVersion].encodedKey;
         return (_keyVersion, blk, encodedKey);
     }
 
 
     /**
-     * Set the Sidechain's public key, version, status & block number
+     * Set the Blockchain's public key, version, status & block number
      *
-     * @param  _sidechainId    The 256 bit sidechain identifier to which this public key belongs
-     * @param  _encodedPublicKey      The new public key for the sidechain.
+     * @param  _blockchainId    The 256 bit blockchain identifier to which this public key belongs
+     * @param  _encodedPublicKey      The new public key for the blockchain.
      */
-    function setPublicKey(uint256 _sidechainId, uint64 _versionNumber, bytes memory _encodedPublicKey) private {
+    function setPublicKey(uint256 _blockchainId, uint64 _versionNumber, bytes memory _encodedPublicKey) private {
         // There must not be an entry for this key.
-        require(sidechains[_sidechainId].publicKeys[_versionNumber].blockNumber == 0);
+        require(blockchains[_blockchainId].publicKeys[_versionNumber].blockNumber == 0);
 
-        sidechains[_sidechainId].publicKeys[_versionNumber].blockNumber = block.number;
-        sidechains[_sidechainId].publicKeys[_versionNumber].encodedKey = _encodedPublicKey;
-        sidechains[_sidechainId].publicKeyPreviousVersion = sidechains[_sidechainId].publicKeyActiveVersion;
-        sidechains[_sidechainId].publicKeyActiveVersion = _versionNumber;
+        blockchains[_blockchainId].publicKeys[_versionNumber].blockNumber = block.number;
+        blockchains[_blockchainId].publicKeys[_versionNumber].encodedKey = _encodedPublicKey;
+        blockchains[_blockchainId].publicKeyPreviousVersion = blockchains[_blockchainId].publicKeyActiveVersion;
+        blockchains[_blockchainId].publicKeyActiveVersion = _versionNumber;
     }
 
 
