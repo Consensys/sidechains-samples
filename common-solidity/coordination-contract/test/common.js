@@ -23,7 +23,7 @@ const CrosschainCoordinationInterface = artifacts.require("./CrosschainCoordinat
 const VotingAlgMajority = artifacts.require("./VotingAlgMajority.sol");
 
 
-const MANAGEMENT_PSEUDO_SIDECHAIN_ID = "0";
+const MANAGEMENT_PSEUDO_BLOCKCHAIN_ID = "0";
 
 // Note that these values need to match what is set in the 1_initial_migration.js file.
 const VOTING_PERIOD = "3";
@@ -75,7 +75,7 @@ function sleep(ms) {
 
 
 module.exports = {
-    MANAGEMENT_PSEUDO_SIDECHAIN_ID: MANAGEMENT_PSEUDO_SIDECHAIN_ID,
+    MANAGEMENT_PSEUDO_BLOCKCHAIN_ID: MANAGEMENT_PSEUDO_BLOCKCHAIN_ID,
 
     VOTE_NONE: VOTE_NONE,
 

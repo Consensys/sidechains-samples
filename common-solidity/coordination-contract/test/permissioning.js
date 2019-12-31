@@ -19,11 +19,11 @@
 contract('Permissioning Check', function(accounts) {
     let common = require('./common');
 
-    it("addSidechain when account is not an unmasked participant of the Management Pseudo Sidechain", async function() {
+    it("addBlockchain when account is not an unmasked participant of the Management Pseudo Blockchain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
         let didNotTriggerError = false;
         try {
-            await coordInterface.addSidechain(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY, {from: accounts[1]});
+            await coordInterface.addBlockchain(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY, {from: accounts[1]});
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -33,11 +33,11 @@ contract('Permissioning Check', function(accounts) {
     });
 
 
-    it("proposeVote when account is not an unmasked participant of the Management Pseudo Sidechain", async function() {
+    it("proposeVote when account is not an unmasked participant of the Management Pseudo Blockchain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
         let didNotTriggerError = false;
         try {
-            await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, accounts[1], "1", "0x0", {from: accounts[1]});
+            await coordInterface.proposeVote(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, accounts[1], "1", "0x0", {from: accounts[1]});
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -46,11 +46,11 @@ contract('Permissioning Check', function(accounts) {
         assert.equal(didNotTriggerError, false);
     });
 
-    it("vote when account is not an unmasked participant of the Management Pseudo Sidechain", async function() {
+    it("vote when account is not an unmasked participant of the Management Pseudo Blockchain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
         let didNotTriggerError = false;
         try {
-            await coordInterface.vote(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, accounts[1], true, {from: accounts[1]});
+            await coordInterface.vote(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, accounts[1], true, {from: accounts[1]});
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);
@@ -59,11 +59,11 @@ contract('Permissioning Check', function(accounts) {
         assert.equal(didNotTriggerError, false);
     });
 
-    it("actionVotes when account is not an unmasked participant of the Management Pseudo Sidechain", async function() {
+    it("actionVotes when account is not an unmasked participant of the Management Pseudo Blockchain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
         let didNotTriggerError = false;
         try {
-            await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_SIDECHAIN_ID, accounts[1], {from: accounts[1]});
+            await coordInterface.actionVotes(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, accounts[1], {from: accounts[1]});
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);

@@ -19,19 +19,19 @@ const VotingAlgMajority = artifacts.require("./VotingAlgMajority.sol");
 contract('Unmasking masked participants:', function(accounts) {
     let common = require('./common');
 
-    const A_SIDECHAIN_ID = "0x2";
+    const A_BLOCKCHAIN_ID = "0x2";
 
 
-    async function addSidechain(coordInterface) {
-        await coordInterface.addSidechain(A_SIDECHAIN_ID, (await VotingAlgMajority.deployed()).address, common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+    async function addBlockchain(coordInterface) {
+        await coordInterface.addBlockchain(A_BLOCKCHAIN_ID, (await VotingAlgMajority.deployed()).address, common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
     }
 
     async function addMaskedParticipant(coordInterface, participant, salt) {
         let maskedParticipant  = web3.utils.keccak256(participant + salt);
 
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_MASKED_PARTICIPANT, maskedParticipant, "0", "0x0");
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_MASKED_PARTICIPANT, maskedParticipant, "0", "0x0");
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, maskedParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, maskedParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
         return maskedParticipant;
@@ -40,7 +40,7 @@ contract('Unmasking masked participants:', function(accounts) {
 
     it("unmask", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
 
         let newParticipant = accounts[1];
         let salt1 = "0000000000000000000000000000000000000000000000000000000000000001";
@@ -48,22 +48,22 @@ contract('Unmasking masked participants:', function(accounts) {
         let maskedParticipant  = await addMaskedParticipant(coordInterface, newParticipant, salt1);
 
         // Check that the masked participant exists and the unmasked participant does not exist.
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, false, "unexpectedly, New masked participant: isUnmaskedSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, false, "unexpectedly, New masked participant: isUnmaskedBlockchainParticipant != false");
 
         const EXPECTED_OFFSET = "0";
-        let maskedParticipantStored = await coordInterface.getMaskedSidechainParticipant.call(A_SIDECHAIN_ID, EXPECTED_OFFSET);
+        let maskedParticipantStored = await coordInterface.getMaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, EXPECTED_OFFSET);
         let maskedParticipantStoredHex = web3.utils.toHex(maskedParticipantStored);
         assert.equal(maskedParticipant, maskedParticipantStoredHex, "unexpectedly, the stored masked participant did not match the value supplied.");
 
 
-        await coordInterface.unmask(A_SIDECHAIN_ID, EXPECTED_OFFSET, salt, {from: newParticipant});
+        await coordInterface.unmask(A_BLOCKCHAIN_ID, EXPECTED_OFFSET, salt, {from: newParticipant});
 
         // Check that the masked participant doesn't exist and the unmasked participant does exist.
-        isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, unmasked participant doesnt exist: isUnmaskedSidechainParticipant == false");
+        isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, unmasked participant doesnt exist: isUnmaskedBlockchainParticipant == false");
 
-        maskedParticipantStored = await coordInterface.getMaskedSidechainParticipant.call(A_SIDECHAIN_ID, EXPECTED_OFFSET);
+        maskedParticipantStored = await coordInterface.getMaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, EXPECTED_OFFSET);
         maskedParticipantStoredHex = web3.utils.toHex(maskedParticipantStored);
         assert.equal("0x0", maskedParticipantStoredHex, "unexpectedly, the stored masked participant not zeroized.");
     });

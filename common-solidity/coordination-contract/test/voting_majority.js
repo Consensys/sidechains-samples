@@ -19,108 +19,108 @@ const VotingAlgMajority = artifacts.require("./VotingAlgMajority.sol");
 contract('Voting: majority voting tests:', function(accounts) {
     let common = require('./common');
 
-    const A_SIDECHAIN_ID = "0x2";
+    const A_BLOCKCHAIN_ID = "0x2";
 
 
-    async function addSidechain(coordInterface) {
-        await coordInterface.addSidechain(A_SIDECHAIN_ID, (await VotingAlgMajority.deployed()).address, common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+    async function addBlockchain(coordInterface) {
+        await coordInterface.addBlockchain(A_BLOCKCHAIN_ID, (await VotingAlgMajority.deployed()).address, common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
     }
 
     async function addSecondParticipant(coordInterface) {
         let newParticipant = accounts[1];
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedBlockchainParticipant == false");
     }
     async function addThirdParticipant(coordInterface) {
         let newParticipant = accounts[2];
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedBlockchainParticipant == false");
     }
     async function addFourthParticipant(coordInterface) {
         let newParticipant = accounts[3];
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[2]});
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[2]});
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedBlockchainParticipant == false");
     }
     async function addFifthParticipant(coordInterface) {
         let newParticipant = accounts[4];
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[2]});
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[3]});
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[2]});
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[3]});
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "unexpectedly, New Participant: isUnmaskedBlockchainParticipant == false");
     }
 
     it("one participant", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
         await addSecondParticipant(coordInterface);
     });
 
     it("two participants: unanimous vote yes", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
         await addSecondParticipant(coordInterface);
         await addThirdParticipant(coordInterface);
     });
 
     it("two participants: only one votes yes", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
         await addSecondParticipant(coordInterface);
 
         // There are now two participants. Only one votes yes. This should fail, as a majority have not voted yes.
         let newParticipant = accounts[2];
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(false, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedBlockchainParticipant != false");
     });
 
     it("two participants: one votes yes, one votes no", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
         await addSecondParticipant(coordInterface);
 
         let newParticipant = accounts[2];
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, false, {from: accounts[1]});
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, false, {from: accounts[1]});
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(false, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedBlockchainParticipant != false");
     });
 
     it("three participants: unanimous vote yes", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
         await addSecondParticipant(coordInterface);
         await addThirdParticipant(coordInterface);
         await addFourthParticipant(coordInterface);
@@ -128,110 +128,110 @@ contract('Voting: majority voting tests:', function(accounts) {
 
     it("three participants: only one vote yes", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
         await addSecondParticipant(coordInterface);
         await addThirdParticipant(coordInterface);
 
         let newParticipant = accounts[3];
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
-//        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
+//        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(false, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedBlockchainParticipant != false");
     });
 
     it("three participants: one votes yes, one votes no", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
         await addSecondParticipant(coordInterface);
         await addThirdParticipant(coordInterface);
 
         let newParticipant = accounts[3];
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, false, {from: accounts[1]});
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, false, {from: accounts[1]});
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(false, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedBlockchainParticipant != false");
     });
 
     it("three participants: one votes yes, two vote no", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
         await addSecondParticipant(coordInterface);
         await addThirdParticipant(coordInterface);
 
         let newParticipant = accounts[3];
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, false, {from: accounts[1]});
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, false, {from: accounts[2]});
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, false, {from: accounts[1]});
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, false, {from: accounts[2]});
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(false, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant != false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, false, "Majority did not vote yes. Unexpectedly, New Participant: isUnmaskedBlockchainParticipant != false");
     });
 
     it("three participants: two vote yes", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
         await addSecondParticipant(coordInterface);
         await addThirdParticipant(coordInterface);
 
         let newParticipant = accounts[3];
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "Majority voted yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "Majority voted yes. Unexpectedly, New Participant: isUnmaskedBlockchainParticipant == false");
     });
 
     it("three participants: two vote yes, one votes no", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
         await addSecondParticipant(coordInterface);
         await addThirdParticipant(coordInterface);
 
         let newParticipant = accounts[3];
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, false, {from: accounts[2]});
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, false, {from: accounts[2]});
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "Majority voted yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "Majority voted yes. Unexpectedly, New Participant: isUnmaskedBlockchainParticipant == false");
     });
 
     it("five participants: three vote yes, one votes no", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await addSidechain(coordInterface);
+        await addBlockchain(coordInterface);
         await addSecondParticipant(coordInterface);
         await addThirdParticipant(coordInterface);
         await addFourthParticipant(coordInterface);
         await addFifthParticipant(coordInterface);
 
         let newParticipant = accounts[6];
-        await coordInterface.proposeVote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[2]});
-        await coordInterface.vote(A_SIDECHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, false, {from: accounts[3]});
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, "1", "0x0");
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[1]});
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, true, {from: accounts[2]});
+        await coordInterface.vote(A_BLOCKCHAIN_ID, common.VOTE_ADD_UNMASKED_PARTICIPANT, newParticipant, false, {from: accounts[3]});
         await common.mineBlocks(parseInt(common.VOTING_PERIOD));
-        let actionResult = await coordInterface.actionVotes(A_SIDECHAIN_ID, newParticipant);
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, newParticipant);
         const result = await common.checkVotingResult(actionResult.logs);
         assert.equal(true, result, "incorrect result reported in event");
-        let isParticipant = await coordInterface.isUnmaskedSidechainParticipant.call(A_SIDECHAIN_ID, newParticipant);
-        assert.equal(isParticipant, true, "Majority voted yes. Unexpectedly, New Participant: isUnmaskedSidechainParticipant == false");
+        let isParticipant = await coordInterface.isUnmaskedBlockchainParticipant.call(A_BLOCKCHAIN_ID, newParticipant);
+        assert.equal(isParticipant, true, "Majority voted yes. Unexpectedly, New Participant: isUnmaskedBlockchainParticipant == false");
     });
 
 });
