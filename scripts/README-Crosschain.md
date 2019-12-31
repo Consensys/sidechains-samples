@@ -12,9 +12,9 @@ Inside of the sidechains-besu directory, build Besu with
 ./gradlew installDist
 ```
 
-This will skip tests (they take very long) and unpack the distribution file (which will leave the binary at  `build/install/besu/bin/besu`).
+This will skip tests (they take very long) and unpack the distribution file (which will leave the binary at  `sidechains-besu/build/install/besu/bin/besu`).
 
-### ... and prepare to run the helper scripts
+### Prepare to run the helper scripts
 
 They are written in JavaScript for coherence with Truffle and such.  
 In macOS, it's currently recommended to use Node v10, not the latest v12. (Truffle suffers the same issue)
@@ -22,7 +22,7 @@ In macOS, it's currently recommended to use Node v10, not the latest v12. (Truff
 brew install node@10
 ``` 
 
-Then install the libraries needed by the scripts: inside of the sidechains-samples directory,  run:
+Then install the libraries needed by the scripts: inside of the sidechains-samples directory, run:
 ```bash
 npm install scripts
 ```
@@ -48,23 +48,19 @@ Each node directory will contain the node's key and data directory.
 
 Each node will listen for RPC at port `8000 + chainId*10 + nodeN`. For example, node 0 of chain 22 will listen at port 8220. The script will remind you of this when it finishes.
 
-Each chain will know how to reach the RPC port of a node in other chains through the `--crosschain-config` CLI option, which is pre-configured with the file `crosschain_addresses.config` with chains 11-99, in localhost:8000-8990.
 
 
-## 3. Run Besu with the prepared config files
+## 3. Run each node with the prepared config files
 
 ### Quick start: 
+
 ```bash
-crosschain/run_node.js 11
-```
-... and in another console...
-```bash
-crosschain/run_node.js 22
+scripts/run_multichain.sh
 ```
 --------------------
 ### Explanation:
-The script `scripts/run_node.js <chainId>` invokes Besu with the appropriate arguments to use each data directory. 
-
+The script `scripts/run_multichain.sh` runs multiple nodes in a single terminal window using tmux. 
+Each node is run through another script, `scripts/run_node.js <chainId>`, which invokes Besu with the appropriate arguments to use each data directory. 
 
 
 ------------  

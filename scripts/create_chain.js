@@ -21,6 +21,8 @@ if (nodeCount>=10) {
     process.exit(3);
 }
 
+console.log("Creating a blockchain with chainID " + chainId + " and " + nodeCount + " validators in the genesis file...");
+
 const besuPath = process.env.BESUPATH || `../sidechains-besu/build/install/besu/bin/besu`
 const resourcesPath = `scripts/resources`;
 const destPath = process.env.HOME+`/crosschain_data`;
@@ -57,10 +59,6 @@ for (var i = 0; i < nodeCount; i++) {
     // miner-extra-data is just informative. Let's record who in the chain mined the block.
     config['miner-extra-data'] = "0x000000000000000000000000000000000000000000000000000000000000"+
                                     chainId.padStart(2, '0') + nodeNum.padStart(2,'0');
-
-    fs.copySync(resourcesPath + "/crosschain_addresses.config", chainPath+"/crosschain_addresses.config")
-    config['crosschain-config'] = chainPath + "/crosschain_addresses.config"
-
     fs.writeFileSync(`${nodePath}/config.toml`,tomlEncoder.toToml(config,{ replace:
         // JavaScript has no integers, only floats. Here we format all integer-like values to have 0 decimals.
         function (key, value) {
@@ -79,7 +77,7 @@ for (var i = 0; i < nodeCount; i++) {
     node_acct_list.push(node_acct);
 
     // Besu might show warnings, so make it clear that we finished successfully.
-    console.log(`\nCreated config files for node ${nodeNum} as a validator for chainId ${chainId} at port ${port}.`);
+    console.log(`Created config files for node ${nodeNum} as a validator for chainId ${chainId} at RPC port ${port}.`);
 
     child = execFileSync(besuPath, [`--data-path=${nodePath}`,'public-key', 'export',`--to=${nodePath}/enode`]);
     var enode = fs.readFileSync(`${nodePath}/enode`).toString().substring(2,);

@@ -5,12 +5,11 @@
 
 #logging="DEBUG"
 min-gas-price="0"
-miner-extra-data="This is just a template! Read README-Crosschains.md"
+miner-extra-data="This is just a template! Read README-Crosschain.md"
 
 p2p-enabled=false
 rpc-http-enabled=true
 rpc-http-api=["ETH","NET","WEB3","CROSSCHAIN"]
-rpc-http-port="This is just a template! Read README-Crosschains.md"
+rpc-http-port="This is just a template! Read README-Crosschain.md"
 
 crosschain-enabled=true
-crosschain-config="This is just a template! Read README-Crosschains.md"
