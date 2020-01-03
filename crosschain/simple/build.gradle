@@ -23,15 +23,8 @@ dependencies {
     compile project (':common')
 
     //compile 'org.web3j:core:4.1.0'
-    // Use the Crosschain version of web3j. 
-    implementation files('../libs/web3j-abi.jar')
-    implementation files('../libs/web3j-besu.jar')
-    implementation files('../libs/web3j-core.jar')
-    implementation files('../libs/web3j-crypto.jar')
-    implementation files('../libs/web3j-eea.jar')
-    implementation files('../libs/web3j-rlp.jar')
-    implementation files('../libs/web3j-tuples.jar')
-    implementation files('../libs/web3j-utils.jar')
+    // Use the Crosschain version of web3j.
+    implementation fileTree('../../../sidechains-web3j') {include '**/build/libs/*SNAPSHOT.jar'}
 
 	// Web3J dependencies
     compile "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion",
