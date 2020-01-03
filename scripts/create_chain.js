@@ -16,6 +16,11 @@ if (chainId>99) {
 }
 
 const nodeCount = process.argv[3];
+if (nodeCount>=10 || nodeCount<1) {
+    console.log("nodeCount must be at least 1 and less than 10");
+    process.exit(3);
+}
+
 if (nodeCount>=10) {
     console.log("Use a nodeCount < 10");
     process.exit(3);
