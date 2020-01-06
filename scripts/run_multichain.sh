@@ -4,8 +4,20 @@
 # running as many instances of CMD_LINE as params are in PARAMS.
 # Press Escape to exit everything.
 
-ARGS="33 22 11"
-CMD_LINE="scripts/run_node.js "
+if (( $# == 0 ))
+then
+    CMD_LINE="scripts/run_node.js"
+    ARGS="33 22 11"
+elif (( $# == 2 ))
+then
+    CMD_LINE="$1"
+    ARGS="$2"
+else
+    echo Needs 2 arguments
+    echo 'run_multiple.sh "cmd line to which args will be added one by one" "arg1 arg2 arg3" '
+    exit 1
+fi
+
 
 STANDOUT=`tput smso`
 OFFSTANDOUT=`tput rmso`
