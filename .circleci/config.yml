@@ -23,12 +23,21 @@ commands:
     description: "Prepare"
     steps:
       - checkout
-      - restore_cache:
-          name: Restore cached gradle dependencies
-          keys:
-            - deps-{{ checksum "build.gradle" }}-{{ .Branch }}-{{ .Revision }}
-            - deps-{{ checksum "build.gradle" }}
-            - deps-
+      - run:
+          name: Install Packages - Node v10
+          # following the official installation instructions
+          command: |
+            curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            npm install scripts
+
+#      # caching in CircleCI is messy. Disabling until we decide on what needs to be cached + is worth the effort + how to reliably detect it changed
+#      - restore_cache:
+#          name: Restore cached gradle dependencies
+#          keys:
+#            - deps-{{ checksum "../sidechains-besu/gradle/versions.gradle" + DEPENDENCY VERSIONS OF OTHER PROJS}}-{{ .Branch }}-{{ .Revision }}
+#            - deps-{{ checksum "../sidechains-besu/gradle/versions.gradle" }}
+#            - deps-
 
   capture_test_results:
     description: "Capture test results"
@@ -63,20 +72,24 @@ jobs:
             cd sidechains-web3j
             ./gradlew installDist
             # Build our Besu
-            #cd ..
-            #git clone https://github.com/PegaSysEng/sidechains-besu.git
-            #cd sidechains-besu
-            #./gradlew installDist
-            # Create sidechains and run them
-            # ...
+            cd ..
+            git clone https://github.com/PegaSysEng/sidechains-besu.git
+            cd sidechains-besu
+            ./gradlew installDist
             popd
-            ./gradlew --parallel clean compileJava compileTestJava assemble
-      - save_cache:
-          name: Caching gradle dependencies
-          key: deps-{{ checksum "build.gradle" }}-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - .gradle
-            - ~/.gradle
+            # Create sidechains and run them
+            scripts/create_chain.js 11 1
+            scripts/create_chain.js 22 1
+            scripts/create_chain.js 33 1
+            ./gradlew --parallel clean compileJava compileTestJava assemble --stacktrace --info
+ #     - save_cache:
+ #         name: Caching gradle dependencies
+ #         key: deps-{{ checksum "build.gradle" }}-{{ .Branch }}-{{ .Revision }}
+ #         paths:
+ #           - .gradle
+ #           - ../sidechains-web3j/.gradle
+ #           - ../sidechains-besu/.gradle
+ #           - ~/.gradle # includes build cache
       - persist_to_workspace:
           root: ~/project
           paths:
@@ -100,12 +113,26 @@ jobs:
             ./gradlew --parallel build
       - capture_test_results
 
+  integrationTests:
+    executor: besu_executor_xl
+    steps:
+      - prepare
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: IntegrationTests
+          no_output_timeout: 40m
+          command: |
+            ./gradlew --parallel integrationTest --stacktrace --info
+      - capture_test_results
 
 workflows:
   version: 2
   default:
     jobs:
       - assemble
-
+      - integrationTests:
+          requires:
+            - assemble
 
 
