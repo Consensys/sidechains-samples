@@ -100,6 +100,7 @@ jobs:
             popd
             # Build the samples
             ./gradlew --parallel clean compileJava compileTestJava assemble --stacktrace --info
+
       - save_cache:
           name: Caching Besu gradle dependencies
           key: deps-besu-{{ checksum "../sidechains-besu/gradle/versions.gradle" }}
@@ -156,26 +157,41 @@ jobs:
       - prepare
       - attach_workspace:
           at: ~/
+
+      - restore_cache:
+          name: Restore cached node dependencies
+          keys:
+            - deps-node-{{ checksum "package-lock.json" }}
+            - deps-node
       - run:
-          name: Install Packages - Node v10
+          name: Install Node v10
           # following the official installation instructions
           command: |
             curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
             sudo apt-get install -y nodejs
             npm install scripts
       - run:
-          name: IntegrationTests
+          name: Create sidechains
           no_output_timeout: 40m
           command: |
-            # Create sidechains
             scripts/create_chain.js 11 1
             scripts/create_chain.js 22 1
             scripts/create_chain.js 33 1
-            # Run them
+      - run:
+          name: IntegrationTests
+          no_output_timeout: 40m
+          command: |
+            # Run the sidechains
             nohup scripts/run_node.js 11 0 > node_11_0.out 2> node_11_0.err &
             nohup scripts/run_node.js 22 0 > node_22_0.out 2> node_22_0.err &
             nohup scripts/run_node.js 33 0 > node_33_0.out 2> node_33_0.err &
+            # Run the tests proper
             ./gradlew --parallel integrationTest --stacktrace --info
+      - save_cache:
+          name: Caching Node deps
+          key: deps-node-{{ checksum "package-lock.json" }}
+          paths:
+            - ./node_modules
       - capture_test_results
 
 workflows:
