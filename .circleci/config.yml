@@ -93,13 +93,13 @@ jobs:
             pushd .
             # Build our Web3j
             cd ../sidechains-web3j
-            ./gradlew installDist
+            ./gradlew --parallel --stacktrace --info --build-cache installDist
             # Build our Besu
             cd ../sidechains-besu
-            ./gradlew installDist
+            ./gradlew --parallel --stacktrace --info --build-cache installDist
             popd
             # Build the samples
-            ./gradlew --parallel clean compileJava compileTestJava assemble --stacktrace --info --build-cache
+            ./gradlew --parallel --stacktrace --info --build-cache clean compileJava compileTestJava assemble
 
       - save_cache:
           name: Caching Besu gradle dependencies
@@ -171,6 +171,11 @@ jobs:
             scripts/create_chain.js 11 1
             scripts/create_chain.js 22 1
             scripts/create_chain.js 33 1
+      - restore_cache:
+          name: Restore cached Samples gradle dependencies
+          keys:
+            - deps-samples-{{ checksum "build.gradle" }}
+            - deps-samples
       - run:
           name: IntegrationTests
           no_output_timeout: 40m
@@ -180,7 +185,7 @@ jobs:
             nohup scripts/run_node.js 22 0 > node_22_0.out 2> node_22_0.err &
             nohup scripts/run_node.js 33 0 > node_33_0.out 2> node_33_0.err &
             # Run the tests proper
-            ./gradlew --parallel integrationTest --stacktrace --info --build-cache
+            ./gradlew --parallel --stacktrace --info --build-cache integrationTest
       - capture_test_results
 
 workflows:
