@@ -27,10 +27,10 @@ commands:
           name: Check out Web3j and Besu
           command: |
             git clone https://github.com/PegaSysEng/sidechains-web3j.git ../sidechains-web3j
-            git --git-dir=../sidechains-web3j/.git rev-parse HEAD > ../sidechains-web3j/headcommit
+#            git --git-dir=../sidechains-web3j/.git rev-parse HEAD > ../sidechains-web3j/headcommit
             git clone https://github.com/PegaSysEng/sidechains-besu.git ../sidechains-besu
-            git --git-dir=../sidechains-besu/.git rev-parse HEAD > ../sidechains-besu/headcommit
-            git rev-parse HEAD > headcommit
+#            git --git-dir=../sidechains-besu/.git rev-parse HEAD > ../sidechains-besu/headcommit
+#            git rev-parse HEAD > headcommit
 
       - restore_cache:
           name: Restore cached Besu gradle dependencies
@@ -55,13 +55,13 @@ commands:
             - deps-samples-{{ checksum "build.gradle" }}
             - deps-samples
 
-      - restore_cache:
-          name: Restore gradle build cache
-          keys: # by decreasing rate of change...
-            - build-cache-{{ checksum "../sidechains-besu/headcommit" }}-{{ checksum "../sidechains-web3j/headcommit" }}-{{ .Revision }}
-            - build-cache-{{ checksum "../sidechains-besu/headcommit" }}-{{ checksum "../sidechains-web3j/headcommit" }}
-            - build-cache-{{ checksum "../sidechains-besu/headcommit" }}
-            - build-cache
+#      - restore_cache:
+#          name: Restore gradle build cache
+#          keys: # by decreasing rate of change...
+#            - build-cache-{{ checksum "../sidechains-besu/headcommit" }}-{{ checksum "../sidechains-web3j/headcommit" }}-{{ .Revision }}
+#            - build-cache-{{ checksum "../sidechains-besu/headcommit" }}-{{ checksum "../sidechains-web3j/headcommit" }}
+#            - build-cache-{{ checksum "../sidechains-besu/headcommit" }}
+#            - build-cache
 
   capture_test_results:
     description: "Capture test results"
@@ -121,11 +121,11 @@ jobs:
           key: products-besu-{{ .Revision }}
           paths:
             - ../sidechains-besu/build/
-      - save_cache:
-          name: Caching gradle build cache
-          key: build-cache-{{ .Revision }}-{{ checksum "../sidechains-web3j/headcommit" }}-{{ checksum "../sidechains-besu/headcommit" }}
-          paths:
-            - ~/.gradle
+#      - save_cache:
+#          name: Caching gradle build cache
+#          key: build-cache-{{ .Revision }}-{{ checksum "../sidechains-web3j/headcommit" }}-{{ checksum "../sidechains-besu/headcommit" }}
+#          paths:
+#            - ~/.gradle
       - persist_to_workspace:
           root: ~/
           paths:
@@ -173,9 +173,9 @@ jobs:
       - run:
           name: Create sidechains
           no_output_timeout: 40m
-          command: | # parallelize for speed
-            nohup scripts/create_chain.js 11 1 &
-            nohup scripts/create_chain.js 22 1 &
+          command: |
+            scripts/create_chain.js 11 1
+            scripts/create_chain.js 22 1
             scripts/create_chain.js 33 1
       - run:
           name: IntegrationTests
@@ -187,11 +187,11 @@ jobs:
             nohup scripts/run_node.js 33 0 > node_33_0.out 2> node_33_0.err &
             # Run the tests proper
             ./gradlew --parallel integrationTest --stacktrace --info
-      - save_cache:
-          name: Caching Node deps
-          key: deps-node-{{ checksum "package-lock.json" }}
-          paths:
-            - ./node_modules
+#      - save_cache:
+#          name: Caching Node deps
+#          key: deps-node-{{ checksum "package-lock.json" }}
+#          paths:
+#            - ./node_modules
       - capture_test_results
 
 workflows:
