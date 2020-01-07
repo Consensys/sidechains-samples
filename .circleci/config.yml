@@ -91,9 +91,11 @@ jobs:
  #           - ../sidechains-besu/.gradle
  #           - ~/.gradle # includes build cache
       - persist_to_workspace:
-          root: ~/project
+          root: ~
           paths:
-            - ./
+            - project
+            - sidechains-web3j
+            - sidechains-besu
       - store_artifacts:
           name: Distribution artifacts
           path:  build/distributions
@@ -118,7 +120,7 @@ jobs:
     steps:
       - prepare
       - attach_workspace:
-          at: ~/project
+          at: ~
       - run:
           name: IntegrationTests
           no_output_timeout: 40m
