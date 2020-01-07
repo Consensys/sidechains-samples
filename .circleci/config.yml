@@ -1,7 +1,7 @@
 ---
 version: 2.1
 executors:
-  web3j_executor_med: # 2cpu, 4G ram
+  executor_med: # 2cpu, 4G ram
     docker:
       - image: circleci/openjdk:11.0.4-jdk-stretch
     resource_class: medium
@@ -9,7 +9,7 @@ executors:
     environment:
       GRADLE_OPTS: -Xmx2048m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=2
 
-  web3j_executor_xl: # 8cpu, 16G ram
+  executor_xl: # 8cpu, 16G ram
     docker:
       - image: circleci/openjdk:11.0.4-jdk-stretch
     resource_class: xlarge
@@ -59,7 +59,7 @@ commands:
 
 jobs:
   assemble:
-    executor: web3j_executor_xl
+    executor: executor_xl
     steps:
       - prepare
       - run:
@@ -101,7 +101,7 @@ jobs:
           when: always
 
   unitTests:
-    executor: web3j_executor_xl
+    executor: executor_xl
     steps:
       - prepare
       - attach_workspace:
@@ -114,7 +114,7 @@ jobs:
       - capture_test_results
 
   integrationTests:
-    executor: besu_executor_xl
+    executor: executor_xl
     steps:
       - prepare
       - attach_workspace:
