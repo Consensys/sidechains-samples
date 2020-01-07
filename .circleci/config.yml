@@ -54,6 +54,7 @@ commands:
               mkdir -p "$TARGET"
               cp -rf ${FILE}/*/* "$TARGET"
             done
+            cp node_*.* "$TARGET"
       - store_test_results:
           path: build/test-results
 
@@ -77,10 +78,7 @@ jobs:
             cd sidechains-besu
             ./gradlew installDist
             popd
-            # Create sidechains and run them
-            scripts/create_chain.js 11 1
-            scripts/create_chain.js 22 1
-            scripts/create_chain.js 33 1
+            # Build the samples
             ./gradlew --parallel clean compileJava compileTestJava assemble --stacktrace --info
  #     - save_cache:
  #         name: Caching gradle dependencies
@@ -125,6 +123,14 @@ jobs:
           name: IntegrationTests
           no_output_timeout: 40m
           command: |
+            # Create sidechains
+            scripts/create_chain.js 11 1
+            scripts/create_chain.js 22 1
+            scripts/create_chain.js 33 1
+            # Run them
+            nohup scripts/run_node.js 11 0 > node_11_0.out 2> node_11_0.err &
+            nohup scripts/run_node.js 22 0 > node_22_0.out 2> node_22_0.err &
+            nohup scripts/run_node.js 33 0 > node_33_0.out 2> node_33_0.err &
             ./gradlew --parallel integrationTest --stacktrace --info
       - capture_test_results
 
