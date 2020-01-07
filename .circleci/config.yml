@@ -27,10 +27,10 @@ commands:
           name: Check out Web3j and Besu
           command: |
             git clone https://github.com/PegaSysEng/sidechains-web3j.git ../sidechains-web3j
-#            git --git-dir=../sidechains-web3j/.git rev-parse HEAD > ../sidechains-web3j/headcommit
+            #git --git-dir=../sidechains-web3j/.git rev-parse HEAD > ../sidechains-web3j/headcommit
             git clone https://github.com/PegaSysEng/sidechains-besu.git ../sidechains-besu
-#            git --git-dir=../sidechains-besu/.git rev-parse HEAD > ../sidechains-besu/headcommit
-#            git rev-parse HEAD > headcommit
+            #git --git-dir=../sidechains-besu/.git rev-parse HEAD > ../sidechains-besu/headcommit
+            #git rev-parse HEAD > headcommit
 
       - restore_cache:
           name: Restore cached Besu gradle dependencies
