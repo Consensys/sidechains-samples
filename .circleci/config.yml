@@ -92,14 +92,10 @@ jobs:
           command: |
             pushd .
             # Build our Web3j
-            cd ..
-            git clone https://github.com/PegaSysEng/sidechains-web3j.git
-            cd sidechains-web3j
+            cd ../sidechains-web3j
             ./gradlew installDist
             # Build our Besu
-            cd ..
-            git clone https://github.com/PegaSysEng/sidechains-besu.git
-            cd sidechains-besu
+            cd ../sidechains-besu
             ./gradlew installDist
             popd
             # Build the samples
