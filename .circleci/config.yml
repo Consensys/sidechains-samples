@@ -154,15 +154,15 @@ jobs:
   integrationTests:
     executor: executor_xl
     steps:
-      - prepare
+#      - prepare
       - attach_workspace:
           at: ~/
 
-      - restore_cache:
-          name: Restore cached node dependencies
-          keys:
-            - deps-node-{{ checksum "package-lock.json" }}
-            - deps-node
+#      - restore_cache:
+#          name: Restore cached node dependencies
+#          keys:
+#            - deps-node-{{ checksum "package-lock.json" }}
+#            - deps-node
       - run:
           name: Install Node v10
           # following the official installation instructions
@@ -173,9 +173,9 @@ jobs:
       - run:
           name: Create sidechains
           no_output_timeout: 40m
-          command: |
-            scripts/create_chain.js 11 1
-            scripts/create_chain.js 22 1
+          command: | # parallelize for speed
+            nohup scripts/create_chain.js 11 1 &
+            nohup scripts/create_chain.js 22 1 &
             scripts/create_chain.js 33 1
       - run:
           name: IntegrationTests
