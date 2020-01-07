@@ -24,20 +24,44 @@ commands:
     steps:
       - checkout
       - run:
-          name: Install Packages - Node v10
-          # following the official installation instructions
+          name: Check out Web3j and Besu
           command: |
-            curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            npm install scripts
+            git clone https://github.com/PegaSysEng/sidechains-web3j.git ../sidechains-web3j
+            git --git-dir=../sidechains-web3j/.git rev-parse HEAD > ../sidechains-web3j/headcommit
+            git clone https://github.com/PegaSysEng/sidechains-besu.git ../sidechains-besu
+            git --git-dir=../sidechains-besu/.git rev-parse HEAD > ../sidechains-besu/headcommit
+            git rev-parse HEAD > headcommit
 
-#      # caching in CircleCI is messy. Disabling until we decide on what needs to be cached + is worth the effort + how to reliably detect it changed
-#      - restore_cache:
-#          name: Restore cached gradle dependencies
-#          keys:
-#            - deps-{{ checksum "../sidechains-besu/gradle/versions.gradle" + DEPENDENCY VERSIONS OF OTHER PROJS}}-{{ .Branch }}-{{ .Revision }}
-#            - deps-{{ checksum "../sidechains-besu/gradle/versions.gradle" }}
-#            - deps-
+      - restore_cache:
+          name: Restore cached Besu gradle dependencies
+          keys:
+            - deps-besu-{{ checksum "../sidechains-besu/gradle/versions.gradle" }}
+            - deps-besu
+
+      - restore_cache:
+          name: Restore cached Besu build products
+          keys:
+            - products-besu-{{ .Revision }}
+
+      - restore_cache:
+          name: Restore cached Web3j gradle dependencies
+          keys:
+            - deps-web3j-{{ checksum "../sidechains-web3j/build.gradle" }}
+            - deps-web3j
+
+      - restore_cache:
+          name: Restore cached Samples gradle dependencies
+          keys:
+            - deps-samples-{{ checksum "build.gradle" }}
+            - deps-samples
+
+      - restore_cache:
+          name: Restore gradle build cache
+          keys: # by decreasing rate of change...
+            - build-cache-{{ checksum "../sidechains-besu/headcommit" }}-{{ checksum "../sidechains-web3j/headcommit" }}-{{ .Revision }}
+            - build-cache-{{ checksum "../sidechains-besu/headcommit" }}-{{ checksum "../sidechains-web3j/headcommit" }}
+            - build-cache-{{ checksum "../sidechains-besu/headcommit" }}
+            - build-cache
 
   capture_test_results:
     description: "Capture test results"
@@ -80,20 +104,37 @@ jobs:
             popd
             # Build the samples
             ./gradlew --parallel clean compileJava compileTestJava assemble --stacktrace --info
- #     - save_cache:
- #         name: Caching gradle dependencies
- #         key: deps-{{ checksum "build.gradle" }}-{{ .Branch }}-{{ .Revision }}
- #         paths:
- #           - .gradle
- #           - ../sidechains-web3j/.gradle
- #           - ../sidechains-besu/.gradle
- #           - ~/.gradle # includes build cache
+      - save_cache:
+          name: Caching Besu gradle dependencies
+          key: deps-besu-{{ checksum "../sidechains-besu/gradle/versions.gradle" }}
+          paths:
+            - ../sidechains-besu/.gradle
+      - save_cache:
+          name: Caching Web3j gradle dependencies
+          key: deps-web3j-{{ checksum "../sidechains-web3j/build.gradle" }}
+          paths:
+            - ../sidechains-web3j/.gradle
+      - save_cache:
+          name: Caching Samples gradle dependencies
+          key: deps-samples-{{ checksum "build.gradle" }}
+          paths:
+            - .gradle
+      - save_cache:
+          name: Caching Besu build products
+          key: products-besu-{{ .Revision }}
+          paths:
+            - ../sidechains-besu/build/
+      - save_cache:
+          name: Caching gradle build cache
+          key: build-cache-{{ .Revision }}-{{ checksum "../sidechains-web3j/headcommit" }}-{{ checksum "../sidechains-besu/headcommit" }}
+          paths:
+            - ~/.gradle
       - persist_to_workspace:
           root: ~/
           paths:
             - ./project
             - ./sidechains-web3j
-            - ./sidechains-besu
+            - ./sidechains-besu/build/install
       - store_artifacts:
           name: Distribution artifacts
           path:  build/distributions
@@ -119,6 +160,13 @@ jobs:
       - prepare
       - attach_workspace:
           at: ~/
+      - run:
+          name: Install Packages - Node v10
+          # following the official installation instructions
+          command: |
+            curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            npm install scripts
       - run:
           name: IntegrationTests
           no_output_timeout: 40m
