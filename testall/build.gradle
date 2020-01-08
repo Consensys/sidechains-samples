@@ -1,3 +1,4 @@
+import java.time.LocalTime
 
 dependencies {
     compile project(':crosschain-atomic-swap-ether')
@@ -14,10 +15,18 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
 
-// when a test fails, show its stacktrace in stdout
-test {
+test.enabled = false
+
+task integrationTest(type: Test) {
+    inputs.property "integration.date", LocalTime.now() // so it runs every time
+
+    description = 'Runs tests integrating sidechains-besu, sidechains-web3j and crosschain samples'
+
     testLogging {
         exceptionFormat = 'full'
         showStackTraces = true
+        //showStandardStreams = true
+        showExceptions = true
+        showCauses = true
     }
 }

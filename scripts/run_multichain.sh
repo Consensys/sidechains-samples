@@ -30,8 +30,9 @@ do
     if (( $IS_FIRST == 1))
     then
       IS_FIRST=0
-      tmux start-server \; set -g remain-on-exit on
       tmux new-session -s multichain -d "bash -c \"echo $STANDOUT Running '$FULL_CMD_LINE' $OFFSTANDOUT ; $FULL_CMD_LINE\""
+      tmux set -g remain-on-exit on
+      tmux setw remain-on-exit on
       tmux bind-key -n Escape kill-session
       tmux set -g mouse on
     else
