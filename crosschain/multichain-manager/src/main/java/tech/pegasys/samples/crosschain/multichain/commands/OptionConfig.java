@@ -45,7 +45,7 @@ public class OptionConfig extends AbstractOption {
             VALIDATE,
         }, 0);
       }
-      if (subCommand.equalsIgnoreCase(DERIVE)) {
+      else if (subCommand.equalsIgnoreCase(DERIVE)) {
         LOG.info("Defive the Multichain Node configuration from a node");
         System.out.println(" Blockchain id (in hex, no leading 0x) of blockchain:");
         String blockchainId = myInput.next();

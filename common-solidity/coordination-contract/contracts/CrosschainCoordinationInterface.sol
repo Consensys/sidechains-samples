@@ -239,5 +239,6 @@ interface CrosschainCoordinationInterface {
 
     event Dump1(uint256 a, uint256 b, address c);
     event Dump2(uint256 a, uint256 b, uint256 c, uint256 d);
+    event Dump3(bytes a);
 
 }

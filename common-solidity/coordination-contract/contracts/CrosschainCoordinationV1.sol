@@ -14,6 +14,7 @@ pragma solidity >=0.4.23;
 
 import "./CrosschainCoordinationInterface.sol";
 import "./VotingAlgInterface.sol";
+import "../../common-solidity/crosschain-precompile-calls/contracts/Crosschain.sol";
 
 
 /**
@@ -22,13 +23,19 @@ import "./VotingAlgInterface.sol";
  * Please see the interface for documentation on all topics except for the constructor.
  *
  */
-contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
+contract CrosschainCoordinationV1 is CrosschainCoordinationInterface is Crosschain {
     // Implementation version of the of the Crosschain Coordination Contract.
     uint16 constant private VERSION_ONE = 1;
 
     // The management blockchain is the blockchain with ID 0x00. It is used solely to restrict which
     // users can create a new blockchain. Only members of this blockchain can call addBlockchain().
+    // TODO this should probably be private.
     uint256 public constant MANAGEMENT_PSEUDO_BLOCKCHAIN_ID = 0;
+
+    // Message types of threshold signed messages.
+    uint256 private constant CROSSCHAIN_TRANSACTION_START = 1;
+    uint256 private constant CROSSCHAIN_TRANSACTION_COMMIT = 2;
+    uint256 private constant CROSSCHAIN_TRANSACTION_IGNORE = 3;
 
     // Indications that a vote is underway.
     // VOTE_NONE indicates no vote is underway. Also matches the deleted value for integers.
@@ -353,15 +360,39 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface {
     */
     // TODO should anyone be able to start, commit or ignore? Should it be limited to blockchain unmasked participants?
     function start(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
-        bytes calldata /*_signedStartMessage */, uint256 _transactionTimeoutBlock) external {
-        uint256 index = uint256(keccak256(abi.encodePacked(_originatingBlockchainId, _crosschainTransactionId)));
+        uint256 _hashOfMessage, uint256 _transactionTimeoutBlock, uint64 _keyVersion, bytes calldata _signature) external {
 
+        uint256 index = uint256(keccak256(abi.encodePacked(_originatingBlockchainId, _crosschainTransactionId)));
         // The transaction id can not be re-used and the time-out block must be in the future.
         require(txMap[index].state == XTX_STATE.NOT_STARTED);
         require(_transactionTimeoutBlock > block.number);
 
-        // TODO: validate the signed start message. Need to work out exact structure of message still.
-        // TODO check signature verifies, given the public key of the originating blockchain. (could be a private method) Callout to precompile of a BLS signature. Use the functions coded by Peter & John. 
+        uint256 myBlockchainId = crosschainGetInfoBlockchainId();
+
+        // Signed message is:
+        //  Message Type
+        //  Coordination Blockchain Id
+        //  Coordination Contract Address
+        //  Originating Blockchain Id
+        //  Crosschain Transaction Id
+        //  Message Digest of the transaction
+        //  Transaction time-out block number
+        bytes32 dataToBeVerified = keccak256(abi.encodePacked(
+            CROSSCHAIN_TRANSACTION_START,
+            myBlockchainId,
+            address(this),
+            _originatingBlockchainId,
+            _crosschainTransactionId,
+            _hashOfMessage,
+            _transactionTimeoutBlock));
+         emit Dump3(dataToBeVerified);
+
+
+//        bytes memory encodedKey = blockchains[_blockchainId].publicKeys[_keyVersion].encodedKey;
+
+
+
+        // TODO check signature verifies, given the public key of the originating blockchain. (could be a private method) Callout to precompile of a BLS signature. Use the functions coded by Peter & John.
         // TODO check that the originating blockchain id in the message matches the parameter value.
         // TODO check that the Coordination Blockchain Identifier in the message matches the parameter value.
         // TODO check that the Crosschain Coordination Contract address in the message matches the parameter value.
