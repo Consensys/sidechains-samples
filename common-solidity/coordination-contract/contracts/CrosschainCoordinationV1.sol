@@ -23,7 +23,7 @@ import "../../common-solidity/crosschain-precompile-calls/contracts/Crosschain.s
  * Please see the interface for documentation on all topics except for the constructor.
  *
  */
-contract CrosschainCoordinationV1 is CrosschainCoordinationInterface is Crosschain {
+contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain {
     // Implementation version of the of the Crosschain Coordination Contract.
     uint16 constant private VERSION_ONE = 1;
 
@@ -389,6 +389,17 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface is Crosscha
 
 
 //        bytes memory encodedKey = blockchains[_blockchainId].publicKeys[_keyVersion].encodedKey;
+
+//TODO extract public key
+//    function convertToArrayOfLength14(bytes memory data) public pure returns (uint256[] memory output)
+//        {
+//        output = new uint256[](14);
+//        for (uint256 i=32; i<=output.length*32; i+=32)
+//        {
+//        assembly { mstore(add(output, i), mload(add(data, i))) }
+//        }
+//        }
+
 
 
 
