@@ -35,7 +35,6 @@ contract SignatureTest is SignatureVerification {
             assembly { mstore(add(output, i), mload(add(_pubKey, i))) }
         }
 
-        pubKey = G2(); // Just allocate some memory for the point.
         pubKey.x[0] = output[0];
         pubKey.x[1] = output[1];
         pubKey.y[0] = output[2];
@@ -52,5 +51,5 @@ contract SignatureTest is SignatureVerification {
         signature.x = output[0];
         signature.y = output[1];
     }
-
 }
+

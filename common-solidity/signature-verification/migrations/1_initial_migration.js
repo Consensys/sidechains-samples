@@ -16,5 +16,5 @@ var SignatureTest = artifacts.require("./SignatureTest.sol");
 
 module.exports = function(deployer) {
     deployer.deploy(Migrations);
-    deployer.deploy(SignnatureTest);
+    deployer.deploy(SignatureTest);
 };
