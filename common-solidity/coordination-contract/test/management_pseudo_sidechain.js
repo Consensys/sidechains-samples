@@ -33,10 +33,10 @@ contract('Management Pseduo Blockchain', function(accounts) {
         let coordInterface = await await common.getDeployedCrosschainCoordination();
         let didNotTriggerError = false;
         try {
-            await coordInterface.addBlockchain(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+            await coordInterface.addBlockchain(common.MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, await common.getValidVotingContractAddress(), common.VOTING_PERIOD);
             didNotTriggerError = true;
         } catch(err) {
-            assert.equal(err.message, common.REVERT);
+            assert.equal(err.message, "Returned error: VM Exception while processing transaction: revert Blockchain already added -- Reason given: Blockchain already added.");
             //console.log("ERROR! " + err.message);
         }
 
@@ -46,14 +46,14 @@ contract('Management Pseduo Blockchain', function(accounts) {
 
     it("check that the account which deployed the contract can call addBlockchain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD);
     });
 
     it("check that accounts other than the one which deployed the contract can not call addBlockchain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
         let didNotTriggerError = false;
         try {
-            await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY, {from: accounts[1]});
+            await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, {from: accounts[1]});
             didNotTriggerError = true;
         } catch(err) {
             assert.equal(err.message, common.REVERT);

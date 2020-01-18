@@ -16,6 +16,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.core.RemoteCall;
+import org.web3j.protocol.core.methods.response.Log;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
@@ -26,6 +28,7 @@ import tech.pegasys.samples.sidechains.common.coordination.soliditywrappers.Cros
 import tech.pegasys.samples.sidechains.common.coordination.soliditywrappers.VotingAlgMajorityWhoVoted;
 
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -172,7 +175,7 @@ public class OptionCoordination extends AbstractOption {
     String votingContractAddress = votingContract.getContractAddress();
     LOG.info("  Voting Contract deployed on blockchain (id={}), at address: {}",
         bcIdBigInt.toString(16), votingContractAddress);
-
+    LOG.info("  Voting contract appears to be validly deployed: {}", votingContract.isValid());
     // TODO specify voting period
     BigInteger VOTING_PERIOD = BigInteger.valueOf(10);
 
@@ -183,11 +186,19 @@ public class OptionCoordination extends AbstractOption {
     LOG.info("  Crosschain Coordination Contract deployed on blockchain (id={}), at address: {}",
         bcIdBigInt, crosschainCoordinationContractAddress);
     ConfigControl.getInstance().addCoordContract(bcIdBigInt, ipAndPort, crosschainCoordinationContractAddress);
+    LOG.info("  Coord appears to be validly deployed: {}", coordinationContract.isValid());
 
-    //TODO Add to the nodes.
+    // Add coordination contract to the nodes.
     for (BlockchainInfo bc: ConfigControl.getInstance().linkedNodes().values()) {
       Besu besu = bc.getWebService();
       besu.crossAddCoordinationContract(bcIdBigInt, crosschainCoordinationContractAddress, ipAndPort).send();
+    }
+
+    // Add each blockchain to coordination contract.
+    for (BlockchainInfo bc: ConfigControl.getInstance().linkedNodes().values()) {
+      coordinationContract.addBlockchain(bc.blockchainId, votingContract.getContractAddress(), VOTING_PERIOD).send();
+      boolean registered = coordinationContract.getBlockchainExists(bc.blockchainId).send();
+      LOG.info("  Blockchain {} now registered with coordination contract: {}", bc.blockchainId, registered);
     }
   }
 

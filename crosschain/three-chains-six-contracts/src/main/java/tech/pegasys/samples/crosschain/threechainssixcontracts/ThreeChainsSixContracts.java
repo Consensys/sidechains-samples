@@ -189,6 +189,8 @@ public class ThreeChainsSixContracts {
         this.web3jSc3.crossAddLinkedNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
 
 
+
+
         this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
             this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
         this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,

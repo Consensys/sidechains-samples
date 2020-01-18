@@ -25,10 +25,10 @@ interface CrosschainCoordinationInterface {
      * Add a blockchain which could be used as an Originating Blockchain in an Atomic Crosschain Transaction.
      *
      * @param _blockchainId The 256 bit identifier of the Blockchain.
-     * @param _votingPeriod The number of blocks by which time a vote must be finalized.
      * @param _votingAlgorithmContract The address of the initial contract to be used for all votes.
+     * @param _votingPeriod The number of blocks by which time a vote must be finalized.
      */
-    function addBlockchain(uint256 _blockchainId, address _votingAlgorithmContract, uint64 _votingPeriod, uint64 _keyVersion, bytes calldata _publicKey) external;
+    function addBlockchain(uint256 _blockchainId, address _votingAlgorithmContract, uint64 _votingPeriod) external;
 
 
     /**
@@ -94,14 +94,13 @@ interface CrosschainCoordinationInterface {
     *         must match the value in the signed message.
     * @param _crosschainTransactionId The ID of the Atomic Crosschain Transaction. This value must match what is inside
     *          the signed message.
-    * @param _signedStartMessage The threshold signed message.
     * @param _transactionTimeoutBlock is the block number after which this crosschain transaction will be ignored if it
     *         has not been committed. Note: This is an absolute block number, and not a relative block number, and this number
     *         must match what is inside the signed message. The reason for requiring an absolute block number is to prevent
     *         possible mis-use of the message: say having it signed and one point but then not submitting it until some time later.
     */
     function start(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
-        bytes calldata _signedStartMessage, uint256 _transactionTimeoutBlock) external;
+        uint256 _hashOfMessage, uint256 _transactionTimeoutBlock, uint64 /*_keyVersion*/, bytes calldata /*_signature*/) external;
 
     /*
      * Commit the Crosschain Transaction.
@@ -198,7 +197,7 @@ interface CrosschainCoordinationInterface {
     * @param _blockchainId The 256 bit blockchain identifier to which this public key belongs
     * @return public key information for the current active public key
     */
-    function getActivePublicKey(uint256 _blockchainId) external view returns ( uint64 _versionNumber, uint _blockNumber, bytes memory _key);
+    function getActivePublicKey(uint256 _blockchainId) external view returns (uint256 blockNumber, uint32 algorithm, uint256[] memory _key);
 
     /**
     * Get key information for a certain version of a key for a blockchain.
@@ -207,7 +206,8 @@ interface CrosschainCoordinationInterface {
     * @param _keyVersion The version of the key to check.
     * @return public key information for the current active public key
     */
-    function getPublicKey(uint256 _blockchainId, uint64 _keyVersion) external view returns (uint64 keyVersion, uint256 blockNumber, bytes memory key);
+//    function getPublicKey(uint256 _blockchainId, uint64 _keyVersion) external view returns (uint64 keyVersion, uint256 blockNumber, bytes memory key);
+    function getPublicKey(uint256 _blockchainId, uint64 _keyVersion) external view returns (uint256 blockNumber, uint32 algorithm, uint256[] memory key);
 
 
     /**
@@ -236,9 +236,12 @@ interface CrosschainCoordinationInterface {
 
     event ParticipantVoted(uint256 _blockchainId, address _participant, uint16 _action, uint256 _voteTarget, bool _votedFor);
     event VoteResult(uint256 _blockchainId, uint16 _action, uint256 _voteTarget, bool _result);
+    event Start(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
+        uint256 _hashOfMessage, uint256 _transactionTimeoutBlock, uint64 _keyVersion);
 
     event Dump1(uint256 a, uint256 b, address c);
     event Dump2(uint256 a, uint256 b, uint256 c, uint256 d);
     event Dump3(bytes a);
 
+    event Alg(uint32 alg);
 }

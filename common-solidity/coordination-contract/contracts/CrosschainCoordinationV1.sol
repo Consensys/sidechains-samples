@@ -14,7 +14,8 @@ pragma solidity >=0.4.23;
 
 import "./CrosschainCoordinationInterface.sol";
 import "./VotingAlgInterface.sol";
-import "../../common-solidity/crosschain-precompile-calls/contracts/Crosschain.sol";
+import "../../crosschain-precompile-calls/contracts/Crosschain.sol";
+import "../../signature-verification/contracts/SignatureVerification.sol";
 
 
 /**
@@ -23,7 +24,7 @@ import "../../common-solidity/crosschain-precompile-calls/contracts/Crosschain.s
  * Please see the interface for documentation on all topics except for the constructor.
  *
  */
-contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain {
+contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain, SignatureVerification {
     // Implementation version of the of the Crosschain Coordination Contract.
     uint16 constant private VERSION_ONE = 1;
 
@@ -36,6 +37,18 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
     uint256 private constant CROSSCHAIN_TRANSACTION_START = 1;
     uint256 private constant CROSSCHAIN_TRANSACTION_COMMIT = 2;
     uint256 private constant CROSSCHAIN_TRANSACTION_IGNORE = 3;
+
+    // Size of BN128 public key and signature in bytes, assuming the public key is on the E2 curve
+    // and the signature is on the E1 curve.
+    uint256 constant private LENGTH_UINT32_IN_BYTES = 4;
+    uint256 constant private NUMBER_ELEMENTS_PUBLIC_KEY = 4;
+    uint256 constant private NUMBER_ELEMENTS_SIGNATURE_KEY = 2;
+    uint256 constant private BN128_FIELD_SIZE = 32;
+    uint256 constant private BN128_PUBLIC_KEY_SIZE = NUMBER_ELEMENTS_PUBLIC_KEY * BN128_FIELD_SIZE + LENGTH_UINT32_IN_BYTES;
+    uint256 constant private BN128_SIGNATURE_SIZE = 2 * BN128_FIELD_SIZE + LENGTH_UINT32_IN_BYTES;
+
+    // Crypto systems.
+    uint32 constant private ALT_BN_128_WITH_KECCAK256 = 1;
 
     // Indications that a vote is underway.
     // VOTE_NONE indicates no vote is underway. Also matches the deleted value for integers.
@@ -51,13 +64,8 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
     struct PublicKey {
         // Block number this key became active.
         uint256 blockNumber;
-        // RLP List containing the key and information about the key.
-        // keyVersion
-        // threshold
-        // algorithm
-        // Encoded publicKey point
-        // blockchainId
-        bytes encodedKey;
+        uint32 algorithm;
+        uint256[] publicKey;
     }
 
 
@@ -151,24 +159,21 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
      * @param _votingPeriod Management pseudo chain voting period in blocks.
      */
     constructor (address _votingAlg, uint32 _votingPeriod) public {
-        bytes memory pubKey = "";
-        addBlockchainInternal(MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, _votingAlg, _votingPeriod, 0, pubKey);
+        addBlockchainInternal(MANAGEMENT_PSEUDO_BLOCKCHAIN_ID, _votingAlg, _votingPeriod);
     }
 
 
     // TODO an Add Blockchain method where an array of masked and unmasked participants are added.
     //      Instead of using the addBlockchain Internal function, code up a function that takes an array of participants (masked & unmasked) - add to interface
-
-    function addBlockchain(uint256 _blockchainId, address _votingAlgorithmContract, uint64 _votingPeriod, uint64 _keyVersion, bytes calldata _publicKey) external onlyUnmaskedBlockchainParticipant (MANAGEMENT_PSEUDO_BLOCKCHAIN_ID) {
-        bytes memory pubKey = _publicKey;
-        addBlockchainInternal(_blockchainId, _votingAlgorithmContract, _votingPeriod, _keyVersion, pubKey);
+    function addBlockchain(uint256 _blockchainId, address _votingAlgorithmContract, uint64 _votingPeriod) external onlyUnmaskedBlockchainParticipant (MANAGEMENT_PSEUDO_BLOCKCHAIN_ID) {
+        addBlockchainInternal(_blockchainId, _votingAlgorithmContract, _votingPeriod);
     }
 
-    function addBlockchainInternal(uint256 _blockchainId, address _votingAlgorithmContract, uint64 _votingPeriod, uint64 _keyVersion, bytes memory _pubKey) private {
+    function addBlockchainInternal(uint256 _blockchainId, address _votingAlgorithmContract, uint64 _votingPeriod) private {
         // The blockchain can not exist prior to creation.
-        require(blockchains[_blockchainId].votingPeriod == 0);
+        require(blockchains[_blockchainId].votingPeriod == 0, "Blockchain already added");
         // The voting period must be greater than 0.
-        require(_votingPeriod > 0);
+        require(_votingPeriod > 0, "The voting period must be greater than zero");
         emit AddedBlockchain(_blockchainId);
 
         // Create the entry in the map by assigning values to the structure.
@@ -181,9 +186,6 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
         blockchains[_blockchainId].unmasked.push(msg.sender);
         blockchains[_blockchainId].inUnmasked[msg.sender] = true;
         blockchains[_blockchainId].numUnmaskedParticipants++;
-
-        // Add the key - no voting required for the first key.
-        setPublicKey(_blockchainId, _keyVersion, _pubKey);
     }
 
 
@@ -238,10 +240,11 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
         }
 
         if (action == VoteType.VOTE_CHANGE_PUBLIC_KEY) {
-            // The proposed public key is assumed to be valid.
-            // TODO We could attempt to RLP decode the encoded public key.
+            // Check that the proposed key version is greater than current version.
+            require(blockchains[_blockchainId].publicKeyActiveVersion < _additionalInfo1);
 
-            // TODO ***** check version is greater than current version
+            // Decode the public key in an attempt to check if it is valid.
+            decodeEncodedPublicKey(_additionalInfo2);
         }
 
         // Set-up the vote.
@@ -311,8 +314,9 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
             else if (action == VoteType.VOTE_CHANGE_PUBLIC_KEY) {
                 // Change the current active public key to the one voted on by
                 // adding the new key to the list.
-                setPublicKey(_blockchainId,
-                uint64(blockchains[_blockchainId].votes[_voteTarget].additionalInfo1),
+                setPublicKey(
+                    _blockchainId,
+                    uint64(blockchains[_blockchainId].votes[_voteTarget].additionalInfo1),
                     blockchains[_blockchainId].votes[_voteTarget].additionalInfo2);
             }
         }
@@ -334,31 +338,10 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
 
 
     /**
-    * This function is used to indicate that an entity has voted. It has been created so that
-    * calls to proposeVote do not have to incur all of the value checking in the vote call.
-    *
-    * TODO: Compare gas usage of keeping this integrated with the value checking.
-    *       What is the trade-off of having one large structure, as opposed to separate structure (low priority)
-    */
-    function voteNoChecks(uint256 _blockchainId, uint16 _action, uint256 _voteTarget, bool _voteFor) private {
-        // Indicate msg.sender has voted.
-        emit ParticipantVoted(_blockchainId, msg.sender, _action, _voteTarget, _voteFor);
-        blockchains[_blockchainId].votes[_voteTarget].hasVoted[msg.sender] = true;
-
-        if (_voteFor) {
-            blockchains[_blockchainId].votes[_voteTarget].numVotedFor++;
-        } else {
-            blockchains[_blockchainId].votes[_voteTarget].numVotedAgainst++;
-        }
-    }
-
-
-    /**
     * Start the Crosschain Transaction.
     *
     *
     */
-    // TODO should anyone be able to start, commit or ignore? Should it be limited to blockchain unmasked participants?
     function start(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
         uint256 _hashOfMessage, uint256 _transactionTimeoutBlock, uint64 _keyVersion, bytes calldata _signature) external {
 
@@ -377,45 +360,26 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
         //  Crosschain Transaction Id
         //  Message Digest of the transaction
         //  Transaction time-out block number
-        bytes32 dataToBeVerified = keccak256(abi.encodePacked(
+        bytes memory dataToBeVerified = abi.encodePacked(
             CROSSCHAIN_TRANSACTION_START,
             myBlockchainId,
             address(this),
             _originatingBlockchainId,
             _crosschainTransactionId,
             _hashOfMessage,
-            _transactionTimeoutBlock));
+            _transactionTimeoutBlock);
          emit Dump3(dataToBeVerified);
 
 
-//        bytes memory encodedKey = blockchains[_blockchainId].publicKeys[_keyVersion].encodedKey;
-
-//TODO extract public key
-//    function convertToArrayOfLength14(bytes memory data) public pure returns (uint256[] memory output)
-//        {
-//        output = new uint256[](14);
-//        for (uint256 i=32; i<=output.length*32; i+=32)
-//        {
-//        assembly { mstore(add(output, i), mload(add(data, i))) }
-//        }
-//        }
-
-
-
-
-        // TODO check signature verifies, given the public key of the originating blockchain. (could be a private method) Callout to precompile of a BLS signature. Use the functions coded by Peter & John.
-        // TODO check that the originating blockchain id in the message matches the parameter value.
-        // TODO check that the Coordination Blockchain Identifier in the message matches the parameter value.
-        // TODO check that the Crosschain Coordination Contract address in the message matches the parameter value.
-        //   use   address(this)
-        // TODO check that the time-out block number matches.
-        // TODO check that the it is a start message.
-
+        verifySignature(
+            blockchains[_originatingBlockchainId].publicKeys[_keyVersion],
+            dataToBeVerified,
+            _signature);
 
         txMap[index].state = XTX_STATE.STARTED;
         txMap[index].timeoutBlockNumber = _transactionTimeoutBlock;
-
-//        emit Dump2(index, block.number, txMap[index].timeoutBlockNumber, uint256(txMap[index].state));
+        emit Start(_originatingBlockchainId, _crosschainTransactionId,
+            _hashOfMessage, _transactionTimeoutBlock, _keyVersion);
     }
 
     /**
@@ -534,7 +498,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
      * @param _blockchainId The 256 bit blockchain identifier to which this public key belongs
      * @return public key information for the currently active public key for the blockchain
      */
-    function getActivePublicKey(uint256 _blockchainId) external view returns ( uint64 _versionNumber, uint _blockNumber, bytes memory _key){
+    function getActivePublicKey(uint256 _blockchainId) external view returns (uint256 blockNumber, uint32 algorithm, uint256[] memory _key){
         return getPublicKey(_blockchainId, blockchains[_blockchainId].publicKeyActiveVersion);
     }
 
@@ -542,12 +506,47 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
         return blockchains[_blockchainId].publicKeys[_keyVersion].blockNumber != 0;
     }
 
-    function getPublicKey(uint256 _blockchainId, uint64 _keyVersion) public view returns (uint64 keyVersion, uint256 blockNumber, bytes memory key){
-        uint256 blk = blockchains[_blockchainId].publicKeys[_keyVersion].blockNumber;
-        bytes memory encodedKey = blockchains[_blockchainId].publicKeys[_keyVersion].encodedKey;
-        return (_keyVersion, blk, encodedKey);
+    function getPublicKey(uint256 _blockchainId, uint64 _keyVersion) public view returns (uint256 blockNumber, uint32 algorithm, uint256[] memory key){
+        blockNumber = blockchains[_blockchainId].publicKeys[_keyVersion].blockNumber;
+        algorithm = blockchains[_blockchainId].publicKeys[_keyVersion].algorithm;
+        key = blockchains[_blockchainId].publicKeys[_keyVersion].publicKey;
     }
 
+//    function getPublicKey(uint256 _blockchainId, uint64 _keyVersion) public view returns (uint64 keyVersion, uint256 blockNumber, bytes memory key){
+//        uint256 blk = blockchains[_blockchainId].publicKeys[_keyVersion].blockNumber;
+//        bytes memory encodedKey = blockchains[_blockchainId].publicKeys[_keyVersion].encodedKey;
+//        return (_keyVersion, blk, encodedKey);
+//    }
+
+
+
+    function getVersion() external pure returns (uint16) {
+        return VERSION_ONE;
+    }
+
+
+    /************************************* PRIVATE FUNCTIONS BELOW HERE *************************************
+    /************************************* PRIVATE FUNCTIONS BELOW HERE *************************************
+    /************************************* PRIVATE FUNCTIONS BELOW HERE *************************************
+
+    /**
+    * This function is used to indicate that an entity has voted. It has been created so that
+    * calls to proposeVote do not have to incur all of the value checking in the vote call.
+    *
+    * TODO: Compare gas usage of keeping this integrated with the value checking.
+    *       What is the trade-off of having one large structure, as opposed to separate structure (low priority)
+    */
+    function voteNoChecks(uint256 _blockchainId, uint16 _action, uint256 _voteTarget, bool _voteFor) private {
+        // Indicate msg.sender has voted.
+        emit ParticipantVoted(_blockchainId, msg.sender, _action, _voteTarget, _voteFor);
+        blockchains[_blockchainId].votes[_voteTarget].hasVoted[msg.sender] = true;
+
+        if (_voteFor) {
+            blockchains[_blockchainId].votes[_voteTarget].numVotedFor++;
+        } else {
+            blockchains[_blockchainId].votes[_voteTarget].numVotedAgainst++;
+        }
+    }
 
     /**
      * Set the Blockchain's public key, version, status & block number
@@ -557,17 +556,65 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
      */
     function setPublicKey(uint256 _blockchainId, uint64 _versionNumber, bytes memory _encodedPublicKey) private {
         // There must not be an entry for this key.
-        require(blockchains[_blockchainId].publicKeys[_versionNumber].blockNumber == 0);
+        // TODO: Due to other checks, this probably can't happen, and hence is probably not required.
+        require(blockchains[_blockchainId].publicKeys[_versionNumber].blockNumber == 0, "Public Key exists for the specified version");
 
         blockchains[_blockchainId].publicKeys[_versionNumber].blockNumber = block.number;
-        blockchains[_blockchainId].publicKeys[_versionNumber].encodedKey = _encodedPublicKey;
+        uint32 algorithm;
+        uint256[] memory publicKey;
+        (algorithm, publicKey) = decodeEncodedPublicKey(_encodedPublicKey);
+
+        blockchains[_blockchainId].publicKeys[_versionNumber].algorithm = algorithm;
+        blockchains[_blockchainId].publicKeys[_versionNumber].publicKey = publicKey;
         blockchains[_blockchainId].publicKeyPreviousVersion = blockchains[_blockchainId].publicKeyActiveVersion;
         blockchains[_blockchainId].publicKeyActiveVersion = _versionNumber;
     }
 
 
 
-    function getVersion() external pure returns (uint16) {
-        return VERSION_ONE;
+    function decodeEncodedPublicKey(bytes memory _encodedPublicKey) private pure returns (uint32 algorithm, uint256[] memory publicKey) {
+        uint256 val;
+        assembly { mstore(val, mload(_encodedPublicKey)) }
+        val = val & 0x7fffffff;
+        algorithm = uint32(val);
+
+        // TODO THERE IS SOMETHING WRONG WITH THE ALGORITHM ENCODE / DECODE.
+        // Remove the check until that is resolved, and assume all keys are ALT_BN_128_WITH_KECCAK256
+        //require(algorithm == ALT_BN_128_WITH_KECCAK256, "Unknown crypto system1");
+        require(_encodedPublicKey.length == BN128_PUBLIC_KEY_SIZE, "Public key wrong size for algorithm");
+
+        publicKey = new uint256[](NUMBER_ELEMENTS_PUBLIC_KEY);
+        for (uint256 i=BN128_FIELD_SIZE+LENGTH_UINT32_IN_BYTES; i<=publicKey.length*BN128_FIELD_SIZE+LENGTH_UINT32_IN_BYTES; i+=BN128_FIELD_SIZE) {
+            assembly { mstore(add(publicKey, i), mload(add(_encodedPublicKey, i))) }
+        }
     }
+
+    function verifySignature(
+        PublicKey storage _pubKeyInfo,
+        bytes memory _message,
+        bytes memory _signature   // an E1 point
+    ) private view {
+        // TODO THERE IS SOMETHING WRONG WITH THE ALGORITHM ENCODE / DECODE.
+        // Remove the check until that is resolved, and assume all keys are ALT_BN_128_WITH_KECCAK256
+//        require(_pubKeyInfo.algorithm == ALT_BN_128_WITH_KECCAK256, "Unknown crypto system2");
+
+        E2Point memory pub = E2Point(
+            {x: [_pubKeyInfo.publicKey[0], _pubKeyInfo.publicKey[1]],
+             y: [_pubKeyInfo.publicKey[2], _pubKeyInfo.publicKey[3]]});
+        E1Point memory sig = decodeSignature(_signature);
+        bool verified = verify(pub, _message, sig);
+        require(verified, "Signature failed verification");
+    }
+
+    function decodeSignature(bytes memory _sig) private pure returns (E1Point memory signature) {
+        uint256[] memory output = new uint256[](NUMBER_ELEMENTS_SIGNATURE_KEY);
+        for (uint256 i=BN128_FIELD_SIZE; i<=output.length*BN128_FIELD_SIZE; i+=BN128_FIELD_SIZE) {
+            assembly { mstore(add(output, i), mload(add(_sig, i))) }
+        }
+
+        signature = E1Point(0, 0);
+        signature.x = output[0];
+        signature.y = output[1];
+    }
+
 }

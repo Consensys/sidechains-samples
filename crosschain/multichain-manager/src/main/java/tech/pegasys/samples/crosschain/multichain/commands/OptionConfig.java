@@ -7,6 +7,7 @@ import org.web3j.protocol.besu.response.crosschain.BlockchainNodeInformation;
 import org.web3j.protocol.besu.response.crosschain.CoordinationContractInformation;
 import org.web3j.protocol.besu.response.crosschain.ListBlockchainNodesResponse;
 import org.web3j.protocol.besu.response.crosschain.ListCoordinationContractsResponse;
+import tech.pegasys.samples.crosschain.multichain.MultichainManager;
 import tech.pegasys.samples.crosschain.multichain.config.ConfigControl;
 import tech.pegasys.samples.sidechains.common.BlockchainInfo;
 
@@ -20,6 +21,7 @@ public class OptionConfig extends AbstractOption {
   private static final String COMMAND = "config";
   private static final String VALIDATE = "validate";
   private static final String DERIVE = "derive";
+  private static final String AUTO = "auto";
 
   public OptionConfig() throws Exception {
     super();
@@ -29,7 +31,7 @@ public class OptionConfig extends AbstractOption {
   public String getName() {
     return COMMAND;
   }
-  public String getDescription() { return "Blockchain threshold keys"; }
+  public String getDescription() { return "Configuration set-up"; }
 
   public void interactive(Scanner myInput) throws Exception {
     boolean stayHere = true;
@@ -37,6 +39,7 @@ public class OptionConfig extends AbstractOption {
       printSubCommandIntro();
       printSubCommand(VALIDATE, "Validate the Multichain Node configuration");
       printSubCommand(DERIVE, "Derive the Multichain Node configuration from a node");
+      printSubCommand(AUTO, "Automatically configure the Multichain Node configuration for use with the sample code");
       printSubCommand(QUIT, "Exit the " + getName() + " command menu");
       String subCommand = myInput.next();
 
@@ -58,6 +61,11 @@ public class OptionConfig extends AbstractOption {
             ipAndPort,
         }, 0);
       }
+      else if (subCommand.equalsIgnoreCase(AUTO)) {
+        command(new String[]{
+            AUTO,
+        }, 0);
+      }
       else if (subCommand.equalsIgnoreCase(QUIT)) {
         stayHere = false;
       }
@@ -77,7 +85,9 @@ public class OptionConfig extends AbstractOption {
     else if (subCommand.equalsIgnoreCase(DERIVE)) {
       deriveConfig(args, argOffset+1);
     }
-    else {
+    else if (subCommand.equalsIgnoreCase(AUTO)) {
+      autoConfigForSamples(args, argOffset+1);
+    } else {
       printUnknownSubCommandMessage(subCommand);
     }
   }
@@ -136,5 +146,46 @@ public class OptionConfig extends AbstractOption {
     boolean valid = ConfigControl.getInstance().validateConfig();
     LOG.info("Configuration valid: {}", valid);
   }
+
+
+  public void autoConfigForSamples(String args[], final int argOffset) throws Exception {
+    if (args.length != argOffset + 0) {
+      help();
+      return;
+    }
+
+    ConfigControl config = ConfigControl.getInstance();
+    config.removeAllCoordContracts();
+    config.removeAllLinkedNodes();
+
+    String bc1Id = "b";
+    String bc2Id = "16";
+    String bc3Id = "21";
+
+    String bc1IpPort = "127.0.0.1:8110";
+    String bc2IpPort = "127.0.0.1:8220";
+    String bc3IpPort = "127.0.0.1:8330";
+
+    // TODO: Check to see if the config is already what is expected!
+
+    MultichainManager.main(new String[]{"linked", "add", bc1Id, bc1IpPort});
+    MultichainManager.main(new String[]{"linked", "add", bc2Id, bc2IpPort});
+    MultichainManager.main(new String[]{"linked", "add", bc3Id, bc3IpPort});
+
+    MultichainManager.main(new String[]{"coord", "deploy", bc3Id, bc3IpPort});
+
+    MultichainManager.main(new String[]{"key", "generate", bc1Id, "1", "1"});
+    MultichainManager.main(new String[]{"key", "activate", bc1Id, "1"});
+
+    MultichainManager.main(new String[]{"key", "generate", bc2Id, "1", "1"});
+    MultichainManager.main(new String[]{"key", "activate", bc2Id, "1"});
+
+    MultichainManager.main(new String[]{"key", "generate", bc3Id, "1", "1"});
+    MultichainManager.main(new String[]{"key", "activate", bc3Id, "1"});
+
+  }
+
+
+
 
 }

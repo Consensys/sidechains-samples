@@ -19,7 +19,6 @@ import org.web3j.protocol.besu.crypto.crosschain.BlsThresholdCryptoSystem;
 import org.web3j.protocol.besu.response.crosschain.CrossBlockchainPublicKeyResponse;
 import org.web3j.protocol.besu.response.crosschain.LongResponse;
 import org.web3j.protocol.core.RemoteCall;
-import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.NetPeerCount;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tx.TransactionManager;
@@ -45,7 +44,7 @@ public class OptionKey extends AbstractOption {
 
   private static final String COMMAND = "key";
   private static final String GENERATE = "generate";
-  private static final String FIRST = "first";
+  private static final String ACTIVATE = "activate";
 
 
   public OptionKey() throws Exception {
@@ -66,7 +65,7 @@ public class OptionKey extends AbstractOption {
     while (stayHere) {
       printSubCommandIntro();
       printSubCommand(GENERATE, "Generate a new threshold key");
-      printSubCommand(FIRST, "Get the latest key, add this blockchain to the coord contract, and add key");
+      printSubCommand(ACTIVATE, "Activate key: upload to coordination contract and activate");
       printSubCommand(QUIT, "Exit the " + getName() + " command menu");
       String subCommand = myInput.next();
 
@@ -122,14 +121,14 @@ public class OptionKey extends AbstractOption {
             Integer.valueOf(threshold).toString(),
             Integer.valueOf(algorithm).toString()
         }, 0);
-      } else if (subCommand.equalsIgnoreCase(FIRST)) {
+      } else if (subCommand.equalsIgnoreCase(ACTIVATE)) {
         LOG.info("Add a blockchain key to a coordination contract - assuming no existing keys");
         System.out.println(" Blockchain id (in hex, no leading 0x) of blockchain:");
         String blockchainId = myInput.next();
         System.out.println(" Key verison (in decimal):");
         String keyVersion = myInput.next();
         command(new String[]{
-            FIRST,
+            ACTIVATE,
             blockchainId,
             keyVersion,
         }, 0);
@@ -152,8 +151,8 @@ public class OptionKey extends AbstractOption {
     String subCommand = args[argOffset];
     if (subCommand.equalsIgnoreCase(GENERATE)) {
       generate(args, argOffset + 1);
-    } else if (subCommand.equalsIgnoreCase(FIRST)) {
-      first(args, argOffset + 1);
+    } else if (subCommand.equalsIgnoreCase(ACTIVATE)) {
+      activate(args, argOffset + 1);
     } else {
       printUnknownSubCommandMessage(subCommand);
     }
@@ -211,7 +210,7 @@ public class OptionKey extends AbstractOption {
   }
 
 
-  void first(final String[] args, final int argOffset) throws Exception {
+  void activate(final String[] args, final int argOffset) throws Exception {
     if (args.length < argOffset + 2) {
       help();
       return;
@@ -252,45 +251,71 @@ public class OptionKey extends AbstractOption {
     // TODO: Need to define gas provider to use
     ContractGasProvider freeGasProvider =  new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
 
-    // TODO: Need to ask what voting algorithm should be used.
-    RemoteCall<VotingAlgMajorityWhoVoted> remoteCallVotingContract =
-        VotingAlgMajorityWhoVoted.deploy(webService, tm, freeGasProvider);
-    VotingAlgMajorityWhoVoted votingContract = remoteCallVotingContract.send();
-    String votingContractAddress = votingContract.getContractAddress();
-    LOG.info("  Voting Contract deployed on blockchain (id={}), at address: {}",
-        bcIdBigInt.toString(16), votingContractAddress);
-
-    // TODO specify voting period
-    BigInteger VOTING_PERIOD = BigInteger.valueOf(10);
-
-
     // TODO check to see if the blockchain has already been added.
     for (CrosschainCoordinationContractInfo coordContract: coordContracts.values()) {
+      LOG.info("  Add key for blockchain {} to Coordination Contract {}, {}",
+          bcIdBigInt,
+          coordContract.blockchainId,
+          coordContract.contractAddress);
+      Besu coordWebService = coordContract.getWebService();
+      TransactionManager coordTm = coordContract.getTransactionManager(this.credentials);
       CrosschainCoordinationV1 coordinationContract =
-          CrosschainCoordinationV1.load(coordContract.contractAddress, webService, tm, freeGasProvider);
+          CrosschainCoordinationV1.load(coordContract.contractAddress, coordWebService, coordTm, freeGasProvider);
 
-      // TODO check this translation
-      BigInteger val = new BigInteger(encodedPublicKey.substring(2), 16);
-      byte[] encodedPubKeyBytes = val.toByteArray();
+      byte[] encodedPubKeyBytes = stringToBytes(encodedPublicKey);
 
-      TransactionReceipt txReceipt =
-          coordinationContract.addBlockchain(bcIdBigInt, votingContractAddress, VOTING_PERIOD, BigInteger.valueOf(keyVersion), encodedPubKeyBytes).send();
-      LOG.info("Tx Receipt: {}", txReceipt);
+      LOG.info(" Propose vote to add key");
+      TransactionReceipt receipt = coordinationContract.proposeVote(
+          coordContract.blockchainId,
+          BigInteger.valueOf(5) /*VOTE_CHANGE_PUBLIC_KEY */,
+          BigInteger.ZERO,
+          BigInteger.valueOf(keyVersion),
+          encodedPubKeyBytes).send();
+      LOG.info(" TX Receipt: {}", receipt);
+
+      // Sleep for voting period
+      for (int i = 0; i < 21; i++) {
+        LOG.info("Waiting for end of voting period {}", i);
+        Thread.sleep(1000);
+      }
+
+      LOG.info(" Action vote to add key");
+      receipt = coordinationContract.actionVotes(coordContract.blockchainId, BigInteger.ZERO).send();
+      LOG.info(" TX Receipt: {}", receipt);
+
+      for (int i = 0; i < 3; i++) {
+        LOG.info("Waiting for block to be mined {}", i);
+        Thread.sleep(1000);
+      }
 
       boolean keyExists = coordinationContract.publicKeyExists(bcIdBigInt, BigInteger.valueOf(keyVersion)).send();
-      LOG.info("Key exists in coordination contract: {}", keyExists);
+      if (keyExists) {
+        LOG.info("Key successfully added to coordination contract");
+      }
+      else {
+        LOG.error("FAILED to add key to contract");
+        return;
+      }
     }
-
-    // TODO what do you do if the key becomes active in one Crosschain Coordination Contract, but not all of them?
 
     // Activate the key.
     webService.crossActivateKey(keyVersion).send();
 
     LongResponse activeKeyVersion = webService.crossGetActiveKeyVersion().send();
     LOG.info("Key version now active: {}", activeKeyVersion.getValue());
-
-
-
   }
 
+
+  public static byte[] stringToBytes(String str1) {
+    System.out.println(str1);
+    String str = str1.substring(2);
+    byte[] out = new byte[(str.length()) / 2];
+    for (int i = 0; i < out.length; i++) {
+      String s = str.substring(i * 2, i * 2 + 2);
+      System.out.println(s);
+      byte b = (byte) (Integer.decode("0x" + s) & 0xff);
+      out[i] = b;
+    }
+    return out;
+  }
 }
