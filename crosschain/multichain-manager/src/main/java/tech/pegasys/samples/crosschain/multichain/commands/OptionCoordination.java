@@ -38,6 +38,22 @@ import java.util.Scanner;
 public class OptionCoordination extends AbstractOption {
   private static final Logger LOG = LogManager.getLogger(OptionCoordination.class);
 
+  // Coordination Contract types of votes.
+  public static final BigInteger VOTE_CHANGE_PUBLIC_KEY = BigInteger.valueOf(5);
+
+  // Voting period used with the Coordination Contract.
+  // This is in terms of blocks.
+  public static final BigInteger VOTING_PERIOD = BigInteger.valueOf(10);
+  // Note: This one block voting period is OK for the example when there is only one party voting, but
+  // wouldn't work if there were multiple parties that need to recognise that a vote is occuring and then
+  // cast a vote.
+  public static final long SHORT_VOTING_PERIOD_LONG = 1;
+  public static final BigInteger SHORT_VOTING_PERIOD = BigInteger.valueOf(SHORT_VOTING_PERIOD_LONG);
+  // Amount of time to wait for votes to occur and to be able to be actioned.
+  // If the block period isn't 2000ms, this will need to change.
+  public static final long BLOCK_PERIOD = 2000;
+  public static final long SHORT_VOTING_WAIT_TIME = SHORT_VOTING_PERIOD_LONG * BLOCK_PERIOD;
+
   private static final String COMMAND = "coord";
   private static final String ADD = "add";
   private static final String REMOVE = "remove";
@@ -176,11 +192,9 @@ public class OptionCoordination extends AbstractOption {
     LOG.info("  Voting Contract deployed on blockchain (id={}), at address: {}",
         bcIdBigInt.toString(16), votingContractAddress);
     LOG.info("  Voting contract appears to be validly deployed: {}", votingContract.isValid());
-    // TODO specify voting period
-    BigInteger VOTING_PERIOD = BigInteger.valueOf(10);
 
     RemoteCall<CrosschainCoordinationV1> remoteCallCoordinationContract =
-        CrosschainCoordinationV1.deploy(webService, tm, freeGasProvider, votingContractAddress, VOTING_PERIOD);
+        CrosschainCoordinationV1.deploy(webService, tm, freeGasProvider, votingContractAddress, SHORT_VOTING_PERIOD);
     CrosschainCoordinationV1 coordinationContract = remoteCallCoordinationContract.send();
     String crosschainCoordinationContractAddress = coordinationContract.getContractAddress();
     LOG.info("  Crosschain Coordination Contract deployed on blockchain (id={}), at address: {}",
@@ -196,7 +210,7 @@ public class OptionCoordination extends AbstractOption {
 
     // Add each blockchain to coordination contract.
     for (BlockchainInfo bc: ConfigControl.getInstance().linkedNodes().values()) {
-      coordinationContract.addBlockchain(bc.blockchainId, votingContract.getContractAddress(), VOTING_PERIOD).send();
+      coordinationContract.addBlockchain(bc.blockchainId, votingContract.getContractAddress(), SHORT_VOTING_PERIOD).send();
       boolean registered = coordinationContract.getBlockchainExists(bc.blockchainId).send();
       LOG.info("  Blockchain {} now registered with coordination contract: {}", bc.blockchainId, registered);
     }

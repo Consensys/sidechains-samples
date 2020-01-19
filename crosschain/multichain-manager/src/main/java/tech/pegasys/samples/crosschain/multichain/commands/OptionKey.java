@@ -230,7 +230,7 @@ public class OptionKey extends AbstractOption {
           bcInfo.ipAddressAndPort);
       return;
     }
-    long keyVersion = Long.valueOf(keyVersionStr);
+    long keyVersion = Long.parseLong(keyVersionStr);
 
     Map<String, CrosschainCoordinationContractInfo> coordContracts = ConfigControl.getInstance().coordContracts();
     if (coordContracts.size() == 0) {
@@ -244,12 +244,7 @@ public class OptionKey extends AbstractOption {
     LOG.info(" Fetched key: version {}, encoded value: {}",
         keyVersion,
         encodedPublicKey);
-
-
-    TransactionManager tm = bcInfo.getTransactionManager(this.credentials);
-
-    // TODO: Need to define gas provider to use
-    ContractGasProvider freeGasProvider =  new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
+    byte[] encodedPubKeyBytes = stringToBytes(encodedPublicKey);
 
     // TODO check to see if the blockchain has already been added.
     for (CrosschainCoordinationContractInfo coordContract: coordContracts.values()) {
@@ -257,36 +252,33 @@ public class OptionKey extends AbstractOption {
           bcIdBigInt,
           coordContract.blockchainId,
           coordContract.contractAddress);
+
+      // TODO: Need to define gas provider to use for this coordination contract.
+      ContractGasProvider freeGasProvider =  new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
       Besu coordWebService = coordContract.getWebService();
       TransactionManager coordTm = coordContract.getTransactionManager(this.credentials);
       CrosschainCoordinationV1 coordinationContract =
           CrosschainCoordinationV1.load(coordContract.contractAddress, coordWebService, coordTm, freeGasProvider);
 
-      byte[] encodedPubKeyBytes = stringToBytes(encodedPublicKey);
-
       LOG.info(" Propose vote to add key");
       TransactionReceipt receipt = coordinationContract.proposeVote(
-          coordContract.blockchainId,
-          BigInteger.valueOf(5) /*VOTE_CHANGE_PUBLIC_KEY */,
+          bcIdBigInt,
+          OptionCoordination.VOTE_CHANGE_PUBLIC_KEY,
           BigInteger.ZERO,
           BigInteger.valueOf(keyVersion),
           encodedPubKeyBytes).send();
       LOG.info(" TX Receipt: {}", receipt);
 
       // Sleep for voting period
-      for (int i = 0; i < 21; i++) {
-        LOG.info("Waiting for end of voting period {}", i);
-        Thread.sleep(1000);
-      }
+      LOG.info("Waiting for end of voting period");
+      Thread.sleep(OptionCoordination.SHORT_VOTING_WAIT_TIME);
 
       LOG.info(" Action vote to add key");
-      receipt = coordinationContract.actionVotes(coordContract.blockchainId, BigInteger.ZERO).send();
+      receipt = coordinationContract.actionVotes(bcIdBigInt, BigInteger.ZERO).send();
       LOG.info(" TX Receipt: {}", receipt);
 
-      for (int i = 0; i < 3; i++) {
-        LOG.info("Waiting for block to be mined {}", i);
-        Thread.sleep(1000);
-      }
+      LOG.info("Waiting for block to be mined");
+      Thread.sleep(OptionCoordination.BLOCK_PERIOD);
 
       boolean keyExists = coordinationContract.publicKeyExists(bcIdBigInt, BigInteger.valueOf(keyVersion)).send();
       if (keyExists) {
@@ -312,7 +304,6 @@ public class OptionKey extends AbstractOption {
     byte[] out = new byte[(str.length()) / 2];
     for (int i = 0; i < out.length; i++) {
       String s = str.substring(i * 2, i * 2 + 2);
-      System.out.println(s);
       byte b = (byte) (Integer.decode("0x" + s) & 0xff);
       out[i] = b;
     }
