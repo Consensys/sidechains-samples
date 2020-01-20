@@ -13,9 +13,13 @@
 package tech.pegasys.samples.sidechains.common.utils;
 
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,6 +33,8 @@ import java.util.Properties;
  */
 public class BasePropertiesFile {
     // Name of properties file which holds information for this sample code.
+    private static final Logger LOG = LogManager.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
+
     private final String samplePropertiesFileName;
 
     public Properties properties = new Properties();
@@ -58,6 +64,7 @@ public class BasePropertiesFile {
         try {
             FileInputStream fis = new FileInputStream(path.toFile());
             properties.load(fis);
+            LOG.info("Loaded properties from file {}", path.toString());
         } catch (IOException ioEx) {
             // By the time we have reached the loadProperties method, we should be sure the file
             // exists. As such, just throw an exception to stop.
@@ -71,6 +78,7 @@ public class BasePropertiesFile {
             final FileOutputStream fos = new FileOutputStream(path.toFile());
             properties.store(fos, "Sample code properties file");
             fos.close();
+            LOG.info("Stored properties to file {}", path.toString());
         } catch (IOException ioEx) {
             // By the time we have reached the loadProperties method, we should be sure the file
             // exists. As such, just throw an exception to stop.
