@@ -42,6 +42,7 @@ commands:
           name: Restore cached Besu build products
           keys:
             - products-besu-{{ checksum "../sidechains-besu/headcommit" }}
+            - products-besu
 
       - restore_cache:
           name: Restore cached Web3j gradle dependencies
