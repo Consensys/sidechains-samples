@@ -8,6 +8,7 @@ import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Bool;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
+import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.RemoteFunctionCall;
@@ -27,13 +28,17 @@ import org.web3j.tx.gas.ContractGasProvider;
  */
 @SuppressWarnings("rawtypes")
 public class Sc2Contract2 extends CrosschainContract {
-    private static final String BINARY = "608060405234801561001057600080fd5b5060c28061001f6000396000f3fe6080604052348015600f57600080fd5b5060043610603c5760003560e01c806352efea6e1460415780636d4ce63c146049578063b8e010de146063575b600080fd5b60476069565b005b604f6075565b604080519115158252519081900360200190f35b6047607e565b6000805460ff19169055565b60005460ff1690565b6000805460ff1916600117905556fea265627a7a7230582037ac3e6dc3be993b9542b66b8f42d0f3ef099b3a20fa9b907da031df435b71e964736f6c634300050a0032";
+    private static final String BINARY = "608060405234801561001057600080fd5b50610113806100206000396000f3fe6080604052348015600f57600080fd5b506004361060505760003560e01c806352efea6e1460555780636889597914605d5780636d4ce63c146075578063b8e010de14608f578063d2282dc5146095575b600080fd5b605b60af565b005b606360bb565b60408051918252519081900360200190f35b607b60c1565b604080519115158252519081900360200190f35b605b60ca565b605b6004803603602081101560a957600080fd5b503560d9565b6000805460ff19169055565b60015490565b60005460ff1690565b6000805460ff19166001179055565b60015556fea265627a7a72315820e0969ebeaea3f36df3d9fa174da89585c767e32a56aa5b3bfada5d80257b842764736f6c634300050c0032";
 
     public static final String FUNC_CLEAR = "clear";
 
     public static final String FUNC_GET = "get";
 
+    public static final String FUNC_GETUINT256 = "getUint256";
+
     public static final String FUNC_SET = "set";
+
+    public static final String FUNC_SETUINT256 = "setUint256";
 
     @Deprecated
     protected Sc2Contract2(String contractAddress, Besu besu, CrosschainTransactionManager crosschainTransactionManager, BigInteger gasPrice, BigInteger gasLimit) {
@@ -60,7 +65,7 @@ public class Sc2Contract2 extends CrosschainContract {
         return createSignedSubordinateTransaction(function, crosschainContext);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> clear_AsCrosschainTransaction(final CrosschainContext crosschainContext) {
+    public RemoteFunctionCall<TransactionReceipt> clear_AsCrosschainOriginatingTransaction(final CrosschainContext crosschainContext) {
         final Function function = new Function(
                 FUNC_CLEAR, 
                 Arrays.<Type>asList(), 
@@ -82,6 +87,20 @@ public class Sc2Contract2 extends CrosschainContract {
         return createSignedSubordinateView(function, crosschainContext);
     }
 
+    public RemoteFunctionCall<BigInteger> getUint256() {
+        final Function function = new Function(FUNC_GETUINT256, 
+                Arrays.<Type>asList(), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
+        return executeRemoteCallSingleValueReturn(function, BigInteger.class);
+    }
+
+    public byte[] getUint256_AsSignedCrosschainSubordinateView(final CrosschainContext crosschainContext) throws IOException {
+        final Function function = new Function(FUNC_GETUINT256, 
+                Arrays.<Type>asList(), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
+        return createSignedSubordinateView(function, crosschainContext);
+    }
+
     public RemoteFunctionCall<TransactionReceipt> set() {
         final Function function = new Function(
                 FUNC_SET, 
@@ -98,10 +117,34 @@ public class Sc2Contract2 extends CrosschainContract {
         return createSignedSubordinateTransaction(function, crosschainContext);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> set_AsCrosschainTransaction(final CrosschainContext crosschainContext) {
+    public RemoteFunctionCall<TransactionReceipt> set_AsCrosschainOriginatingTransaction(final CrosschainContext crosschainContext) {
         final Function function = new Function(
                 FUNC_SET, 
                 Arrays.<Type>asList(), 
+                Collections.<TypeReference<?>>emptyList());
+        return executeRemoteCallCrosschainTransaction(function, crosschainContext);
+    }
+
+    public RemoteFunctionCall<TransactionReceipt> setUint256(BigInteger v) {
+        final Function function = new Function(
+                FUNC_SETUINT256, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(v)), 
+                Collections.<TypeReference<?>>emptyList());
+        return executeRemoteCallTransaction(function);
+    }
+
+    public byte[] setUint256_AsSignedCrosschainSubordinateTransaction(BigInteger v, final CrosschainContext crosschainContext) throws IOException {
+        final Function function = new Function(
+                FUNC_SETUINT256, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(v)), 
+                Collections.<TypeReference<?>>emptyList());
+        return createSignedSubordinateTransaction(function, crosschainContext);
+    }
+
+    public RemoteFunctionCall<TransactionReceipt> setUint256_AsCrosschainOriginatingTransaction(BigInteger v, final CrosschainContext crosschainContext) {
+        final Function function = new Function(
+                FUNC_SETUINT256, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(v)), 
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallCrosschainTransaction(function, crosschainContext);
     }
