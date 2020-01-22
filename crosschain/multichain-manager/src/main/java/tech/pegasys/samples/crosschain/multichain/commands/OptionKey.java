@@ -260,6 +260,9 @@ public class OptionKey extends AbstractOption {
       CrosschainCoordinationV1 coordinationContract =
           CrosschainCoordinationV1.load(coordContract.contractAddress, coordWebService, coordTm, freeGasProvider);
 
+      boolean exists = coordinationContract.getBlockchainExists(bcIdBigInt).send();
+      LOG.info(" Blockchain {} has been added to coordination contract: {}", bcIdBigInt, exists);
+      
       LOG.info(" Propose vote to add key");
       TransactionReceipt receipt = coordinationContract.proposeVote(
           bcIdBigInt,
