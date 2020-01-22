@@ -35,6 +35,7 @@ do
       tmux setw remain-on-exit on
       tmux bind-key -n Escape kill-session
       tmux set -g mouse on
+      tmux unbind -T copy-mode MouseDragEnd1Pane # so mouse selection stays put
     else
       tmux split-window -b -t 0 -d "bash -c \"echo $STANDOUT Running '$FULL_CMD_LINE' $OFFSTANDOUT ; $FULL_CMD_LINE\""
     fi

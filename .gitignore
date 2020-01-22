@@ -32,12 +32,6 @@ site/
 
 
 # Sidechains:
-sample.properties
-sample.accepting.properties
-sample.faucet.properties
-sample.offering.properties
-sample.registration.properties
-sample.crosschaincoordination.properties
-sample.multichain.properties
+sample*.properties
 **/node_modules
 package-lock.json
