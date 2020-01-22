@@ -18,10 +18,10 @@ import java.util.Scanner;
 public class OptionConfig extends AbstractOption {
   private static final Logger LOG = LogManager.getLogger(OptionConfig.class);
 
-  private static final String COMMAND = "config";
+  public static final String COMMAND = "config";
   private static final String VALIDATE = "validate";
   private static final String DERIVE = "derive";
-  private static final String AUTO = "auto";
+  public static final String AUTO = "auto";
 
   public OptionConfig() throws Exception {
     super();

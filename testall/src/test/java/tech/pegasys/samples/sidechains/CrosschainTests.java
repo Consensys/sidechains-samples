@@ -33,21 +33,25 @@ public class CrosschainTests {
 
 	@Test
 	public void atomicSwapEther() throws Exception {
+		MultichainManager.automatedSetup();
 		AtomicSwapEther.automatedRun();
 	}
 
 	@Test
 	public void threeChainsSixContracts() throws Exception {
+		MultichainManager.automatedSetup();
 		ThreeChainsSixContracts.automatedRun();
 	}
 
 	@Test
 	public void crosschainTransactionNoParams() throws Exception {
+		MultichainManager.automatedSetup();
 		CrosschainTransactionNoParams.automatedRun();
 	}
 
 	@Test
 	public void crosschainViewNoParamsReturnUint256() throws Exception {
+		MultichainManager.automatedSetup();
 		CrosschainViewNoParamsReturnUint256.automatedRun();
 	}
 
