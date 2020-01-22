@@ -55,11 +55,6 @@ public class ThreeChainsSixContracts {
     // For this sample to work, three Hyperledger Besu Ethereum Clients which represent
     // three sidechains / blockchains need to be deployed at the addresses shown below,
     // with the blockchain IDs indicated.
-    // The crosschain coordination contract needs to be on a blockchain. So as to not
-    // require another blockchain to be deployed for this sample, just use the same sidechain
-    // as Contract 1.
-    private static final BigInteger SC0_SIDECHAIN_ID = BigInteger.valueOf(11);
-    private static final String SC0_URI = "http://127.0.0.1:8110/";
     private static final BigInteger SC1_SIDECHAIN_ID = BigInteger.valueOf(11);
     private static final String SC1_IP_PORT = "127.0.0.1:8110";
     private static final String SC1_URI = "http://" + SC1_IP_PORT + "/";
@@ -94,7 +89,6 @@ public class ThreeChainsSixContracts {
     private Credentials credentials;
 
     // Web services for each blockchain / sidechain.
-    private Besu web3jSc0;
     private Besu web3jSc1;
     private Besu web3jSc2;
     private Besu web3jSc3;
@@ -145,7 +139,6 @@ public class ThreeChainsSixContracts {
 
     private static void deleteAllPropertiesFile() throws IOException {
         Files.deleteIfExists(getSamplePropertiesPath());
-        (new CrosschainCoordinationContractSetup.CrosschainCoordinationContractSetupProperties()).deletePropertiesFile();
     }
 
 
@@ -170,40 +163,32 @@ public class ThreeChainsSixContracts {
     private void setupBesuServiceTransactionManager() throws Exception {
         LOG.info("Setting up Besu service and transaction managers");
 
-        this.web3jSc0 = Besu.build(new HttpService(SC0_URI), POLLING_INTERVAL);
         this.web3jSc1 = Besu.build(new HttpService(SC1_URI), POLLING_INTERVAL);
         this.web3jSc2 = Besu.build(new HttpService(SC2_URI), POLLING_INTERVAL);
         this.web3jSc3 = Besu.build(new HttpService(SC3_URI), POLLING_INTERVAL);
 
-        this.coordinationContractSetup = new CrosschainCoordinationContractSetup(this.web3jSc0, SC0_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
-        if (this.coordinationContractSetup.getCrosschainCoordinationContractAddress() == null) {
-            deployAndSetupCoordinationContract();
-        }
-
-        // Set-up as a multichain node so all blockchain nodes are aware of each other.
-        this.web3jSc1.crossAddLinkedNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
-        this.web3jSc1.crossAddLinkedNode(SC3_SIDECHAIN_ID, SC3_IP_PORT).send();
-        this.web3jSc2.crossAddLinkedNode(SC1_SIDECHAIN_ID, SC1_IP_PORT).send();
-        this.web3jSc2.crossAddLinkedNode(SC3_SIDECHAIN_ID, SC3_IP_PORT).send();
-        this.web3jSc3.crossAddLinkedNode(SC1_SIDECHAIN_ID, SC1_IP_PORT).send();
-        this.web3jSc3.crossAddLinkedNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
-
-
-
+        // Note that the multi-chain node is assumed to be configured.
+        // If this is not the case, please use the Multichain Manager sample with the options "config auto".
+        CrosschainCoordinationContractSetup coordinationContractSetup = new CrosschainCoordinationContractSetup(this.web3jSc1);
 
         this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
-            this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
+            coordinationContractSetup.getCrosschainCoordinationWeb3J(),
+            coordinationContractSetup.getCrosschainCoordinationContractBlockcainId(),
+            coordinationContractSetup.getCrosschainCoordinationContractAddress(),
+            CROSSCHAIN_TRANSACTION_TIMEOUT);
         this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
-            this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
+            coordinationContractSetup.getCrosschainCoordinationWeb3J(),
+            coordinationContractSetup.getCrosschainCoordinationContractBlockcainId(),
+            coordinationContractSetup.getCrosschainCoordinationContractAddress(),
+            CROSSCHAIN_TRANSACTION_TIMEOUT);
         this.tmSc3 = new CrosschainTransactionManager(this.web3jSc3, this.credentials, SC3_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
-            this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
+            coordinationContractSetup.getCrosschainCoordinationWeb3J(),
+            coordinationContractSetup.getCrosschainCoordinationContractBlockcainId(),
+            coordinationContractSetup.getCrosschainCoordinationContractAddress(),
+            CROSSCHAIN_TRANSACTION_TIMEOUT);
 
         // Hyperledger Besu is configured as an IBFT2, free gas network. We need a free gas provider.
         this.freeGasProvider = new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
-    }
-
-    private void deployAndSetupCoordinationContract() throws Exception {
-        this.coordinationContractSetup.deployCrosschainCoordinationContract();
     }
 
     private void loadContracts() {
