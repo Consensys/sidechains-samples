@@ -29,9 +29,24 @@ contract Crosschain {
     uint32 constant private GET_INFO_FROM_CONTRACT_ADDRESS = 6;
     uint32 constant private GET_INFO_CROSSCHAIN_TRANSACTION_ID = 7;
 
-    /** Generic calling of functions across chains.
-      * Combined with abi.encodeWithSelector, allows to use Solidity function types and arbitrary arguments.
-      * @param encodedFunctionCall  = abi.encodeWithSelector(function.selector, ...)
+    address constant private PRECOMPILE_SUBORDINATE_VIEW = address(11);
+    address constant private PRECOMPILE_SUBORDINATE_TRANSACTION = address(10);
+
+
+    /**
+      * Functions allowing for generic calling of functions across chains.
+      *
+      * Combined with abi.encodeWithSelector, these functions allow to use normal Solidity function types and arbitrary arguments in a
+      * convenient way.
+      * For example, to call the function foo(arg1, arg2, ...) across chains, use one of the convenience functions with
+      *     encodedFunctionCall = abi.encodeWithSelector(foo.selector, arg1, arg2, ... )
+      */
+
+    /**
+      * Generic call for crosschain transactions.
+      *
+      * Since transactions return nothing, and the encodedFunctionCall accepts any arguments, this call generalizes all
+      * transactions.
       */
     function crosschainTransaction(uint256 sidechainId, address addr, bytes memory encodedFunctionCall) internal {
 
@@ -44,47 +59,29 @@ contract Crosschain {
         // Therefore we hackishly compensate the "bytes" length and deal with it inside the precompile.
         uint256 dataBytesRawLength = dataBytes.length + LENGTH_OF_LENGTH_FIELD;
 
-        // Note: the tuple being encoded contains a dynamic type itself, which changes its internal representation;
-        // but since it is abi.encoded in Solidity, it's transparent.
-        // The problem only appears when using the wrapping "bytes" in Assembly.
-
         assembly {
         // Read: https://medium.com/@rbkhmrcr/precompiles-solidity-e5d29bd428c4
         //call(gasLimit, to, value, inputOffset, inputSize, outputOffset, outputSize)
-        // SUBORDINATE_TRANSACTION_PRECOMPILE = 10. Inline assembler doesn't support constants.
             if iszero(call(not(0), 10, 0, dataBytes, dataBytesRawLength, 0, 0)) {
                 revert(0, 0)
             }
         }
     }
 
-
-
+    /**
+      * Generic call for crosschain views with no parameters and returning an Uint256.
+      */
     function crosschainViewUint256(uint256 sidechainId, address addr, bytes memory encodedFunctionCall) internal view returns (uint256) {
 
         bytes memory dataBytes = abi.encode(sidechainId, addr, encodedFunctionCall);
-        // The "bytes" type has a 32 byte header containing the size in bytes of the actual data,
-        // which is transparent to Solidity, so the bytes.length property doesn't report it.
-        // But the assembly "call" instruction gets the underlying bytes of the "bytes" data type, so the length needs
-        // to be corrected.
-        // Also, as of Solidity 0.5.11 there is no sane way to convert a dynamic type to a static array.
-        // Therefore we hackishly compensate the "bytes" length and deal with it inside the precompile.
-        uint256 dataBytesRawLength = dataBytes.length + LENGTH_OF_LENGTH_FIELD;
-
-        // Note: the tuple being encoded contains a dynamic type itself, which changes its internal representation;
-        // but since it is abi.encoded in Solidity, it's transparent.
-        // The problem only appears when using the wrapping "bytes" in Assembly.
+        uint256 dataBytesRawLength = calculateRawLength(dataBytes);
 
         uint256[1] memory result;
         uint256 resultLength = LENGTH_OF_UINT256;
+        address a = PRECOMPILE_SUBORDINATE_VIEW;
 
         assembly {
-            // Read: https://medium.com/@rbkhmrcr/precompiles-solidity-e5d29bd428c4
-            // and
-            // https://www.reddit.com/r/ethdev/comments/7p8b86/it_is_possible_to_call_a_precompiled_contracts/
-            //  staticcall(gasLimit, to, inputOffset, inputSize, outputOffset, outputSize)
-            // SUBORDINATE_VIEW_PRECOMPILE = 11. Inline assembler doesn't support constants.
-            if iszero(staticcall(not(0), 11, dataBytes, dataBytesRawLength, result, resultLength)) {
+            if iszero(staticcall(not(0), a, dataBytes, dataBytesRawLength, result, resultLength)) {
                 revert(0, 0)
             }
         }
@@ -92,6 +89,21 @@ contract Crosschain {
         return result[0];
     }
 
+
+    function calculateRawLength(bytes memory b) internal pure returns (uint256){
+        // The "bytes" type has a 32 byte header containing the size in bytes of the actual data,
+        // which is transparent to Solidity, so the bytes.length property doesn't report it.
+        // But the assembly "call" instruction gets the underlying bytes of the "bytes" data type, so the length needs
+        // to be corrected.
+        // Also, as of Solidity 0.5.11 there is no sane way to convert a dynamic type to a static array.
+        // Therefore we hackishly compensate the "bytes" length and deal with it inside the precompile.
+
+        // FYI: at this point, b is an abi-encoded tuple of multiple types, the last of which is again a "bytes" array, which is dynamic.
+        // This affects the tuple's internal representation; but since it was abi-encoded in Solidity, it's still transparent to us.
+        // The problem we are fixing here only appears when using b in Assembly.
+
+        return b.length + LENGTH_OF_LENGTH_FIELD;
+    }
 
     /**
      * Determine the type of crosschain transaction being executed.
@@ -138,6 +150,7 @@ contract Crosschain {
      * @return Blockchain ID of this blockchain.
      */
     function crosschainGetInfoBlockchainId() internal view returns (uint256) {
+        /* should probably be changed to use EIP-1344 once it is supported by sidechains-Besu */
         return getInfoBlockchainId(GET_INFO_BLOCKCHAIN_ID);
     }
 

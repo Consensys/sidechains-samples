@@ -24,6 +24,7 @@ import tech.pegasys.samples.sidechains.common.utils.BasePropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,10 +36,10 @@ import static tech.pegasys.samples.sidechains.common.coordination.CrosschainCoor
 /* This example runs a Crosschain Transaction from Contract1 in Chain 1 to Contract2 in chain 2.
  * Steps:
  * - App deploys Contract1 in chain 1 and Contract2 in chain 2.
- * - App sets Contract2's variable `val` to false.
- * - App calls Contract1.crosschain_setter()
- * - Contract1.crosschain_setter() calls Contract2.set() in Chain 2, which sets `val` to true
- * - App calls Contract2.get() to show that the initial value has been changed by the crosschain transaction.
+ * - App calls directly Contract2.set() to set variable `val` to false.
+ * - App changes that same variable through a crosschain call, by calling Contract1.crosschain_setter()
+ *      - Contract1.crosschain_setter() calls Contract2.set() in Chain 2, which sets `val` to true
+ * - App calls directly Contract2.get() to show that the initial value has been changed by the crosschain transaction.
  */
 
 public class CrosschainTransactionNoParams {
@@ -142,7 +143,7 @@ public class CrosschainTransactionNoParams {
         this.web3jSc1.crossAddLinkedNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
 
         this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
-                this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
+                 this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
         this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
                 this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
 
@@ -216,7 +217,7 @@ public class CrosschainTransactionNoParams {
         LOG.info("  Executing Crosschain Transaction");
         // The originating transaction starts in Contract 1.
         subordinateContext = contextGenerator.createCrosschainContext(subordinateTransactionsAndViewsForC1);
-        transactionReceipt = this.contract1.crosschain_setter_AsCrosschainTransaction(subordinateContext).send();
+        transactionReceipt = this.contract1.crosschain_setter_AsCrosschainOriginatingTransaction(subordinateContext).send();
         LOG.info("  Transaction Receipt: {}", transactionReceipt.toString());
         assertTrue(transactionReceipt.isStatusOK());
 
@@ -265,9 +266,8 @@ public class CrosschainTransactionNoParams {
     private void loadStoreProperties() throws Exception {
         SampleProperties props = new SampleProperties();
         if (props.propertiesFileExists()) {
+            LOG.info("Properties file exists, loading");
             props.loadProperties();
-            setupBesuServiceTransactionManager();
-            loadContracts();
         }
         else {
             this.credentials = Credentials.create(new KeyPairGen().generateKeyPairGetPrivateKey());
@@ -282,6 +282,8 @@ public class CrosschainTransactionNoParams {
         this.credentials = Credentials.create(props.properties.getProperty(PRIVATE_KEY));
         this.contract1Address = props.properties.getProperty(CONTRACT1_ADDRESS);
         this.contract2Address = props.properties.getProperty(CONTRACT2_ADDRESS);
+        setupBesuServiceTransactionManager();
+        loadContracts();
 
     }
 
@@ -289,7 +291,7 @@ public class CrosschainTransactionNoParams {
     static class SampleProperties extends BasePropertiesFile {
 
         SampleProperties() {
-            super("");
+            super(MethodHandles.lookup().lookupClass().getEnclosingClass().getSimpleName());
         }
 
     }
