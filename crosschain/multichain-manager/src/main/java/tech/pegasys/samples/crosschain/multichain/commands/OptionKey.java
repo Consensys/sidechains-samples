@@ -262,7 +262,7 @@ public class OptionKey extends AbstractOption {
 
       boolean exists = coordinationContract.getBlockchainExists(bcIdBigInt).send();
       LOG.info(" Blockchain {} has been added to coordination contract: {}", bcIdBigInt, exists);
-      
+
       LOG.info(" Propose vote to add key");
       TransactionReceipt receipt = coordinationContract.proposeVote(
           bcIdBigInt,

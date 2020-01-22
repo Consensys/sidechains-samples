@@ -244,7 +244,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
             require(blockchains[_blockchainId].publicKeyActiveVersion < _additionalInfo1);
 
             // Decode the public key in an attempt to check if it is valid.
-            decodeEncodedPublicKey(_additionalInfo2);
+            //TODO re-enable decodeEncodedPublicKey(_additionalInfo2);
         }
 
         // Set-up the vote.
