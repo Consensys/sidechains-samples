@@ -7,7 +7,7 @@ executors:
     resource_class: medium
     working_directory: ~/project
     environment:
-      GRADLE_OPTS: -Xmx2048m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=2
+      GRADLE_OPTS: -Xmx2048m -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=2
 
   executor_xl: # 8cpu, 16G ram
     docker:
@@ -15,7 +15,6 @@ executors:
     resource_class: xlarge
     working_directory: ~/project
     environment:
-      #GRADLE_OPTS: -Xmx4096m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4
       GRADLE_OPTS: -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4
 
 commands:
@@ -79,9 +78,24 @@ commands:
               mkdir -p "$TARGET"
               cp -rf ${FILE}/*/* "$TARGET"
             done
-            cp node_*.* "$TARGET"
+            # show what is being gathered
+            ls -R build/test-results
       - store_test_results:
           path: build/test-results
+
+  capture_nodes_outputs:
+    description: "Capture nodes' outputs"
+    steps:
+      - run:
+          name: Gather nodes' outputs
+          when: always
+          command: |
+            mkdir -p nodes_output
+            cp node_*.* nodes_output/
+            # show what is being gathered
+            ls -R nodes_output
+      - store_artifacts:
+          path: nodes_output/
 
 jobs:
   assemble:
@@ -167,7 +181,7 @@ jobs:
             npm install scripts
       - run:
           name: Create sidechains
-          no_output_timeout: 40m
+          no_output_timeout: 1m
           command: |
             scripts/create_chain.js 11 1
             scripts/create_chain.js 22 1
@@ -179,7 +193,7 @@ jobs:
             - deps-samples
       - run:
           name: IntegrationTests
-          no_output_timeout: 40m
+          no_output_timeout: 1m
           command: |
             # Run the sidechains
             nohup scripts/run_node.js 11 0 > node_11_0.out 2> node_11_0.err &
@@ -188,6 +202,7 @@ jobs:
             # Run the tests proper
             ./gradlew --parallel --stacktrace --info --build-cache integrationTest
       - capture_test_results
+      - capture_nodes_outputs
 
 workflows:
   version: 2
