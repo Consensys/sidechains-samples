@@ -27,11 +27,11 @@ contract('Voting: types of voting / things to vote on:', function(accounts) {
 
 
     async function addBlockchain(coordInterface) {
-        await coordInterface.addBlockchain(A_BLOCKCHAIN_ID, (await VotingAlgMajority.deployed()).address, common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addBlockchain(A_BLOCKCHAIN_ID, (await VotingAlgMajority.deployed()).address, common.VOTING_PERIOD);
     }
 
 
-    it("add a  unmasked participant", async function() {
+    it("add an unmasked participant", async function() {
         let coordInterface = await common.getNewCrosschainCoordination();
         await addBlockchain(coordInterface);
 
@@ -152,7 +152,19 @@ contract('Voting: types of voting / things to vote on:', function(accounts) {
     });
 
 
+    it("add public key", async function() {
+        let coordInterface = await common.getNewCrosschainCoordination();
+        await addBlockchain(coordInterface);
 
-    // TODO Vote to change public key
+        let newParticipant = accounts[1];
+        await coordInterface.proposeVote(A_BLOCKCHAIN_ID, common.VOTE_CHANGE_PUBLIC_KEY, "0", "1", common.PUBLIC_KEY);
+        await common.mineBlocks(parseInt(common.VOTING_PERIOD));
+        let actionResult = await coordInterface.actionVotes(A_BLOCKCHAIN_ID, "0");
+        const result = await common.checkVotingResult(actionResult.logs);
+        assert.equal(true, result, "incorrect result reported in event");
+
+        let exists = await coordInterface.publicKeyExists(A_BLOCKCHAIN_ID, "1");
+        assert.equal(true, exists, "unexpectedly, the key is not in the contract.");
+    });
 
 });

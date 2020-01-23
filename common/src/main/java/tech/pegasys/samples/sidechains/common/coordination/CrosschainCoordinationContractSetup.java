@@ -16,7 +16,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
+import org.web3j.protocol.besu.response.crosschain.CoordinationContractInformation;
+import org.web3j.protocol.besu.response.crosschain.ListCoordinationContractsResponse;
 import org.web3j.protocol.core.RemoteCall;
+import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.RawTransactionManager;
 import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
@@ -28,111 +31,52 @@ import tech.pegasys.samples.sidechains.common.utils.BasePropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.math.BigInteger;
+import java.util.List;
 
 /**
  * Act as the entity which is deploying and setting up the crosschain coordination contract.
+ *
+ * Note the way this code does not match how you should do things in a production environment.
+ * All nodes in a multichain node will need to trust the same coordination contracts. The
+ * coordination contract to use will depend on which blockchains are going to be used, and
+ * which coordination contracts the other participants trust.
  */
 public class CrosschainCoordinationContractSetup {
+    // The polling interval should be the same at the block period of the coordination blockchain.
+    private static final int POLLING_INTERVAL = 2000;
+
+
     private static final Logger LOG = LogManager.getLogger(CrosschainCoordinationContractSetup.class);
 
-    // The voting period used for adding members to the consortia who can add sidechains. Also used for
-    // voting on public keys.
-    private static final BigInteger VOTING_PERIOD = BigInteger.valueOf(5);
-
-    private Credentials credentials;
-    private TransactionManager tmSc0;
-    private Besu web3jSc0;
-    private BigInteger sc0Id;
-
-    // A gas provider which indicates no gas is charged for transactions.
-    private ContractGasProvider freeGasProvider = new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
-
     private String crosschainCoordinationContractAddress;
+    private BigInteger crosschainCoordinationContractBlockcainId;
+    private Besu crosschainCoordinationBesu;
 
 
-    public CrosschainCoordinationContractSetup(final Besu web3jSc0, BigInteger sc0Id, int retry, int pollingInterval) {
-        loadStoreProperties();
-        this.web3jSc0 = web3jSc0;
-        this.tmSc0 = new RawTransactionManager(this.web3jSc0, this.credentials, sc0Id.longValue(), retry, pollingInterval);
-        this.sc0Id = sc0Id;
+    public CrosschainCoordinationContractSetup(final Besu blockchainNodeWeb3j) throws Exception {
+        ListCoordinationContractsResponse resp = blockchainNodeWeb3j.crossListCoordinationContracts().send();
+        List<CoordinationContractInformation> info = resp.getInfo();
+        if (info.isEmpty()) {
+            LOG.error("No Crosschain Coordination Contract appears to have been configured");
+            LOG.error("Please run the Multichain Manager sample with the options: config auto");
+            System.exit(-1);
+        }
+        CoordinationContractInformation coordContractInfo = info.get(0);
+        this.crosschainCoordinationContractAddress = coordContractInfo.coodinationContract;
+        this.crosschainCoordinationContractBlockcainId = coordContractInfo.coordinationBlockchainId;
+        String uri = "http://" + coordContractInfo.ipAddressAndPort + "/";
+        this.crosschainCoordinationBesu = Besu.build(new HttpService(uri), POLLING_INTERVAL);
     }
-
-    public void deployCrosschainCoordinationContract() throws Exception {
-        LOG.info(" Deploying Crosschain Coordination contract and Voting contract used with Crosschain Coordination");
-        RemoteCall<VotingAlgMajorityWhoVoted> remoteCallVotingContract =
-            VotingAlgMajorityWhoVoted.deploy(this.web3jSc0, this.tmSc0, this.freeGasProvider);
-        VotingAlgMajorityWhoVoted votingContract = remoteCallVotingContract.send();
-        String votingContractAddress = votingContract.getContractAddress();
-        LOG.info("  Voting Contract deployed on sidechain 0 (id={}), at address: {}",
-            this.sc0Id, votingContractAddress);
-
-        RemoteCall<CrosschainCoordinationV1> remoteCallCoordinationContract =
-            CrosschainCoordinationV1.deploy(this.web3jSc0, this.tmSc0, this.freeGasProvider, votingContractAddress, VOTING_PERIOD);
-        CrosschainCoordinationV1 coordinationContract = remoteCallCoordinationContract.send();
-        this.crosschainCoordinationContractAddress = coordinationContract.getContractAddress();
-        LOG.info("  Crosschain Coordination Contract deployed on sidechain 0 (id={}), at address: {}",
-            this.sc0Id, this.crosschainCoordinationContractAddress);
-        storeContractAddress();
-    }
-
-
-    public void registerSidechainWithCrosschainCoordinationContract() {
-        // TODO Need to register the IP addres, chain id, and crosschain coordination contract address with the node, and get the public key.
-        // TODO In the crosschain coordination contract, need to create the entry for the sidechain, and register the public key.
-    }
-
-
 
     public String getCrosschainCoordinationContractAddress() {
         return this.crosschainCoordinationContractAddress;
     }
 
-    private void loadStoreProperties() {
-        CrosschainCoordinationContractSetupProperties props = new CrosschainCoordinationContractSetupProperties();
-        if (props.propertiesFileExists()) {
-            props.load();
-            this.crosschainCoordinationContractAddress = props.crosschainCoordinationContractAddress;
-        }
-        else {
-            // Generate a key and store it in the format required for Credentials.
-            props.privateKey = new KeyPairGen().generateKeyPairGetPrivateKey();
-            System.out.println("Priv2: " + props.privateKey);
-            props.store();
-        }
-        this.credentials = Credentials.create(props.privateKey);
+    public BigInteger getCrosschainCoordinationContractBlockcainId() {
+        return this.crosschainCoordinationContractBlockcainId;
     }
 
-    private void storeContractAddress() {
-        CrosschainCoordinationContractSetupProperties props = new CrosschainCoordinationContractSetupProperties();
-        props.load();
-        props.crosschainCoordinationContractAddress = this.crosschainCoordinationContractAddress;
-        props.store();
-    }
-
-
-
-    public static class CrosschainCoordinationContractSetupProperties extends BasePropertiesFile {
-        private static final String PROP_PRIV_KEY = "privateKey";
-        private static final String PROP_CROSSCHAIN_CONTRACT_ADDRESS = "CrosschainCoordinationContractAddress";
-        String privateKey;
-        String crosschainCoordinationContractAddress;
-
-        public CrosschainCoordinationContractSetupProperties() {
-            super("crosschaincoordination");
-        }
-
-        void load() {
-            loadProperties();
-            this.privateKey = this.properties.getProperty(PROP_PRIV_KEY);
-            this.crosschainCoordinationContractAddress = this.properties.getProperty(PROP_CROSSCHAIN_CONTRACT_ADDRESS);
-        }
-
-        void store() {
-            this.properties.setProperty(PROP_PRIV_KEY, this.privateKey);
-            if (crosschainCoordinationContractAddress != null) {
-                this.properties.setProperty(PROP_CROSSCHAIN_CONTRACT_ADDRESS, this.crosschainCoordinationContractAddress);
-            }
-            storeProperties();
-        }
+    public Besu getCrosschainCoordinationWeb3J() {
+        return this.crosschainCoordinationBesu;
     }
 }

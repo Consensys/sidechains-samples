@@ -23,12 +23,12 @@ contract('Add One Blockchain', function(accounts) {
 
     it("addBlockchain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD);
     });
 
     it("getBlockchainExists for valid blockchain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD);
 
         const hasD1 = await coordInterface.getBlockchainExists.call(twoBlockchainId);
         assert.equal(hasD1, true, "Found blockchain 0");
@@ -37,7 +37,7 @@ contract('Add One Blockchain', function(accounts) {
 
     it("getBlockchainExists for invalid blockchain", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD);
 
         const hasD2 = await coordInterface.getBlockchainExists.call(oneBlockchainId);
         assert.equal(hasD2, false, "Unexpectedly found blockchain 1, which shouldn't exist");
@@ -47,8 +47,8 @@ contract('Add One Blockchain', function(accounts) {
         let votingPeriodTen = 10;
         let votingPeriodEleven = 11;
         let coordInterface = await common.getNewCrosschainCoordination();
-        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), votingPeriodTen, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
-        await coordInterface.addBlockchain(oneBlockchainId, await common.getValidVotingContractAddress(), votingPeriodEleven, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), votingPeriodTen);
+        await coordInterface.addBlockchain(oneBlockchainId, await common.getValidVotingContractAddress(), votingPeriodEleven);
 
         const actualVotingPeriod = await coordInterface.getVotingPeriod.call(twoBlockchainId);
         assert.equal(actualVotingPeriod, votingPeriodTen, "twoChainId returned unexpected voting period");
@@ -59,7 +59,7 @@ contract('Add One Blockchain', function(accounts) {
 
     it("isBlockchainParticipant", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD);
 
         const isPartBad = await coordInterface.isUnmaskedBlockchainParticipant.call(twoBlockchainId, accounts[1]);
         assert.equal(isPartBad, false, "unexpectedly, account which should not be part of the blockchain is");
@@ -70,7 +70,7 @@ contract('Add One Blockchain', function(accounts) {
 
     it("getUnmaskedBlockchainParticipantsSize", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD);
 
         const numUnmasked = await coordInterface.getUnmaskedBlockchainParticipantsSize.call(twoBlockchainId);
         assert.equal(numUnmasked, 1, "unexpected number of unmasked participants");
@@ -78,7 +78,7 @@ contract('Add One Blockchain', function(accounts) {
 
     it("getMaskedBlockchainParticipantsSize", async function() {
         let coordInterface = await await common.getNewCrosschainCoordination();
-        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addBlockchain(twoBlockchainId, await common.getValidVotingContractAddress(), common.VOTING_PERIOD);
 
         const numMasked = await coordInterface.getMaskedBlockchainParticipantsSize.call(twoBlockchainId);
         assert.equal(numMasked, 0, "unexpected number of unmasked participants");

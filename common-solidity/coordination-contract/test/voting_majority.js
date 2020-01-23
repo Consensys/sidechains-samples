@@ -23,7 +23,7 @@ contract('Voting: majority voting tests:', function(accounts) {
 
 
     async function addBlockchain(coordInterface) {
-        await coordInterface.addBlockchain(A_BLOCKCHAIN_ID, (await VotingAlgMajority.deployed()).address, common.VOTING_PERIOD, common.KEY_VERSION, common.A_VALID_PUBLIC_KEY);
+        await coordInterface.addBlockchain(A_BLOCKCHAIN_ID, (await VotingAlgMajority.deployed()).address, common.VOTING_PERIOD);
     }
 
     async function addSecondParticipant(coordInterface) {

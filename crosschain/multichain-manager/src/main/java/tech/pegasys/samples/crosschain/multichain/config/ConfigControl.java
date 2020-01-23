@@ -72,32 +72,38 @@ public class ConfigControl {
   public void addCoordContract(final BigInteger bcId, final String ipAndPort, final String address) {
     final String mapKey = calcCoordMapKey(bcId, address);
     this.coordinationContracts.put(mapKey, new CrosschainCoordinationContractInfo(bcId, ipAndPort, address));
+    MultichainManagerProperties props = new MultichainManagerProperties();
+    props.store(this.credentials.getEcKeyPair().getPrivateKey().toString(16), this.linkedNodes, this.coordinationContracts);
   }
 
   public void removeCoordContract(final BigInteger bcId, final String address) {
     final String mapKey = calcCoordMapKey(bcId, address);
     this.coordinationContracts.remove(mapKey);
+    MultichainManagerProperties props = new MultichainManagerProperties();
+    props.store(this.credentials.getEcKeyPair().getPrivateKey().toString(16), this.linkedNodes, this.coordinationContracts);
   }
   public void removeAllCoordContracts() {
     this.coordinationContracts = new TreeMap<>();
+    MultichainManagerProperties props = new MultichainManagerProperties();
+    props.store(this.credentials.getEcKeyPair().getPrivateKey().toString(16), this.linkedNodes, this.coordinationContracts);
   }
 
   public void addLinkedNode(final BigInteger bcId, final String ipAndPort) {
     this.linkedNodes.put(bcId, new BlockchainInfo(bcId, ipAndPort));
     MultichainManagerProperties props = new MultichainManagerProperties();
-    props.store(this.credentials.getEcKeyPair().getPrivateKey().toString(16), this.linkedNodes);
+    props.store(this.credentials.getEcKeyPair().getPrivateKey().toString(16), this.linkedNodes, this.coordinationContracts);
   }
 
   public void removeLinkedNode(final BigInteger bcId) {
     this.linkedNodes.remove(bcId);
     MultichainManagerProperties props = new MultichainManagerProperties();
-    props.store(this.credentials.getEcKeyPair().getPrivateKey().toString(16), this.linkedNodes);
+    props.store(this.credentials.getEcKeyPair().getPrivateKey().toString(16), this.linkedNodes, this.coordinationContracts);
   }
 
   public void removeAllLinkedNodes() {
     this.linkedNodes = new TreeMap<>();
     MultichainManagerProperties props = new MultichainManagerProperties();
-    props.store(this.credentials.getEcKeyPair().getPrivateKey().toString(16), this.linkedNodes);
+    props.store(this.credentials.getEcKeyPair().getPrivateKey().toString(16), this.linkedNodes, this.coordinationContracts);
 
   }
 
@@ -194,7 +200,7 @@ public class ConfigControl {
     return validConfig;
   }
 
-  private static String calcCoordMapKey(final BigInteger bcId, final String address) {
+  public static String calcCoordMapKey(final BigInteger bcId, final String address) {
     return bcId.toString(16) + address;
   }
 

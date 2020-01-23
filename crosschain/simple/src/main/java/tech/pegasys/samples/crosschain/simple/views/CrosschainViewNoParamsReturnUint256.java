@@ -19,7 +19,6 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.tx.gas.StaticGasProvider;
 import tech.pegasys.samples.crosschain.simple.soliditywrappers.Sc1Contract1;
 import tech.pegasys.samples.crosschain.simple.soliditywrappers.Sc2Contract2;
-import tech.pegasys.samples.crosschain.simple.views.CrosschainViewNoParamsReturnUint256.SampleProperties;
 import tech.pegasys.samples.sidechains.common.coordination.CrosschainCoordinationContractSetup;
 import tech.pegasys.samples.sidechains.common.utils.BasePropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
@@ -29,7 +28,6 @@ import java.lang.invoke.MethodHandles;
 import java.math.BigInteger;
 import java.util.Scanner;
 
-import static tech.pegasys.samples.sidechains.common.coordination.CrosschainCoordinationContractSetup.CrosschainCoordinationContractSetupProperties;
 
 /* This example runs a Crosschain View (with no params and returning an uint256) from Contract1 in Chain 1 to Contract2
  *      in chain 2.
@@ -43,9 +41,6 @@ import static tech.pegasys.samples.sidechains.common.coordination.CrosschainCoor
 public class CrosschainViewNoParamsReturnUint256 {
     private static final Logger LOG = LogManager.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
 
-    private static final BigInteger SC0_SIDECHAIN_ID = BigInteger.valueOf(11);
-    private static final String SC0_IP_PORT = "127.0.0.1:8110";
-    private static final String SC0_URI = "http://" + SC0_IP_PORT + "/";
     private static final BigInteger SC1_SIDECHAIN_ID = BigInteger.valueOf(22);
     private static final String SC1_IP_PORT = "127.0.0.1:8220";
     private static final String SC1_URI = "http://" + SC1_IP_PORT + "/";
@@ -70,7 +65,6 @@ public class CrosschainViewNoParamsReturnUint256 {
     private Credentials credentials;
 
     // Web services for each blockchain / sidechain.
-    private Besu web3jSc0;
     private Besu web3jSc1;
     private Besu web3jSc2;
 
@@ -78,7 +72,6 @@ public class CrosschainViewNoParamsReturnUint256 {
     private ContractGasProvider freeGasProvider;
 
     // Transaction manager for each sidechain.
-    private CrosschainTransactionManager tmSc0;
     private CrosschainTransactionManager tmSc1;
     private CrosschainTransactionManager tmSc2;
 
@@ -88,8 +81,6 @@ public class CrosschainViewNoParamsReturnUint256 {
 
     private Sc1Contract1 contract1;
     private Sc2Contract2 contract2;
-
-    private CrosschainCoordinationContractSetup coordinationContractSetup;
 
     private CallSimulator sim;
 
@@ -114,7 +105,6 @@ public class CrosschainViewNoParamsReturnUint256 {
 
     private static void deleteAllPropertiesFile() throws IOException {
         new SampleProperties().deletePropertiesFile();
-        new CrosschainCoordinationContractSetupProperties().deletePropertiesFile();
     }
 
 
@@ -129,29 +119,27 @@ public class CrosschainViewNoParamsReturnUint256 {
     private void setupBesuServiceTransactionManager() throws Exception {
         LOG.info("Setting up Besu service and transaction managers");
 
-        this.web3jSc0 = Besu.build(new HttpService(SC0_URI), POLLING_INTERVAL);
         this.web3jSc1 = Besu.build(new HttpService(SC1_URI), POLLING_INTERVAL);
         this.web3jSc2 = Besu.build(new HttpService(SC2_URI), POLLING_INTERVAL);
 
-        this.coordinationContractSetup = new CrosschainCoordinationContractSetup(this.web3jSc0, SC0_SIDECHAIN_ID, RETRY, POLLING_INTERVAL);
-        if (this.coordinationContractSetup.getCrosschainCoordinationContractAddress() == null) {
-            deployAndSetupCoordinationContract();
-        }
+        CrosschainCoordinationContractSetup coordinationContractSetup = new CrosschainCoordinationContractSetup(this.web3jSc1);
 
         // Set-up as a multichain node where the node on blockchain 1 can call a node on blockchain 2.
         this.web3jSc1.crossAddLinkedNode(SC2_SIDECHAIN_ID, SC2_IP_PORT).send();
 
         this.tmSc1 = new CrosschainTransactionManager(this.web3jSc1, this.credentials, SC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
-                this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
+            coordinationContractSetup.getCrosschainCoordinationWeb3J(),
+            coordinationContractSetup.getCrosschainCoordinationContractBlockcainId(),
+            coordinationContractSetup.getCrosschainCoordinationContractAddress(),
+            CROSSCHAIN_TRANSACTION_TIMEOUT);
         this.tmSc2 = new CrosschainTransactionManager(this.web3jSc2, this.credentials, SC2_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
-                this.web3jSc0, SC0_SIDECHAIN_ID, this.coordinationContractSetup.getCrosschainCoordinationContractAddress(), CROSSCHAIN_TRANSACTION_TIMEOUT);
+            coordinationContractSetup.getCrosschainCoordinationWeb3J(),
+            coordinationContractSetup.getCrosschainCoordinationContractBlockcainId(),
+            coordinationContractSetup.getCrosschainCoordinationContractAddress(),
+            CROSSCHAIN_TRANSACTION_TIMEOUT);
 
         // Hyperledger Besu is configured as an IBFT2, free gas network. We need a free gas provider.
         this.freeGasProvider = new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
-    }
-
-    private void deployAndSetupCoordinationContract() throws Exception {
-        this.coordinationContractSetup.deployCrosschainCoordinationContract();
     }
 
     private void loadContracts() {
