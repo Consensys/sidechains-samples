@@ -74,7 +74,7 @@ public class Sc2Contract2 extends CrosschainContract {
         return createSignedSubordinateTransaction(function, crosschainContext);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> setVal_AsCrosschainTransaction(BigInteger _val, final CrosschainContext crosschainContext) {
+    public RemoteFunctionCall<TransactionReceipt> setVal_AsCrosschainOriginatingTransaction(BigInteger _val, final CrosschainContext crosschainContext) {
         final Function function = new Function(
                 FUNC_SETVAL, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_val)), 

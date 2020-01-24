@@ -34,7 +34,7 @@ import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 import java.math.BigInteger;
 
 /**
- * Act as the entity which accepts offers Ether on sidechain 2 and gives Ether on sidechain 1.
+ * Act as the entity which accepts offers of Ether on sidechain 2 and gives Ether on sidechain 1.
  */
 public class EntityAcceptingOffer {
     private static final Logger LOG = LogManager.getLogger(EntityAcceptingOffer.class);
@@ -110,7 +110,7 @@ public class EntityAcceptingOffer {
                 LOG.error("No offers available");
                 return true;
             }
-            LOG.error("Using latest offer");
+            LOG.info("Using latest offer");
             offerNumber = sizeInt-1;
         }
         else {
@@ -176,7 +176,7 @@ public class EntityAcceptingOffer {
         CrosschainContext originatingTransactionContext = contextGenerator.createCrosschainContext(subordinateTransactionsAndViews);
 
         LOG.info("  Executing Crosschain Transaction");
-        TransactionReceipt transactionReceipt = this.senderContract.exchange_AsCrosschainTransaction(amountInWei, originatingTransactionContext).send();
+        TransactionReceipt transactionReceipt = this.senderContract.exchange_AsCrosschainOriginatingTransaction(amountInWei, originatingTransactionContext).send();
         LOG.info("   Transaction Receipt: {}", transactionReceipt.toString());
         if (!transactionReceipt.isStatusOK()) {
             throw new Error(transactionReceipt.getStatus());
