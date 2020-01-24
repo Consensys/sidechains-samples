@@ -49,20 +49,14 @@ contract Crosschain {
       * transactions.
       */
     function crosschainTransaction(uint256 sidechainId, address addr, bytes memory encodedFunctionCall) internal {
-
         bytes memory dataBytes = abi.encode(sidechainId, addr, encodedFunctionCall);
-        // The "bytes" type has a 32 byte header containing the size in bytes of the actual data,
-        // which is transparent to Solidity, so the bytes.length property doesn't report it.
-        // But the assembly "call" instruction gets the underlying bytes of the "bytes" data type, so the length needs
-        // to be corrected.
-        // Also, as of Solidity 0.5.11 there is no sane way to convert a dynamic type to a static array.
-        // Therefore we hackishly compensate the "bytes" length and deal with it inside the precompile.
-        uint256 dataBytesRawLength = dataBytes.length + LENGTH_OF_LENGTH_FIELD;
+        uint256 dataBytesRawLength = calculateRawLength(dataBytes);
+        address a = PRECOMPILE_SUBORDINATE_TRANSACTION;
 
         assembly {
         // Read: https://medium.com/@rbkhmrcr/precompiles-solidity-e5d29bd428c4
         //call(gasLimit, to, value, inputOffset, inputSize, outputOffset, outputSize)
-            if iszero(call(not(0), 10, 0, dataBytes, dataBytesRawLength, 0, 0)) {
+            if iszero(call(not(0), a, 0, dataBytes, dataBytesRawLength, 0, 0)) {
                 revert(0, 0)
             }
         }
@@ -72,7 +66,6 @@ contract Crosschain {
       * Generic call for crosschain views with no parameters and returning an Uint256.
       */
     function crosschainViewUint256(uint256 sidechainId, address addr, bytes memory encodedFunctionCall) internal view returns (uint256) {
-
         bytes memory dataBytes = abi.encode(sidechainId, addr, encodedFunctionCall);
         uint256 dataBytesRawLength = calculateRawLength(dataBytes);
 

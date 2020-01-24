@@ -358,7 +358,7 @@ public class ThreeChainsSixContracts {
             LOG.info("  Executing Crosschain Transaction");
             // Contract 1 is the originating transaction.
             subordinateContext = contextGenerator.createCrosschainContext(subordinateTransactionsAndViewsForC1);
-            transactionReceipt = this.contract1.doStuff_AsCrosschainTransaction(BigInteger.valueOf(val), subordinateContext).send();
+            transactionReceipt = this.contract1.doStuff_AsCrosschainOriginatingTransaction(BigInteger.valueOf(val), subordinateContext).send();
             LOG.info("  Transaction Receipt: {}", transactionReceipt.toString());
             assertTrue(transactionReceipt.isStatusOK());
 
