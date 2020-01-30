@@ -12,12 +12,12 @@
  */
 pragma solidity >=0.4.23;
 
-import "./HotelRoom.sol";
-import "./HotelRouterInterface.sol";
+import "./TrainSeat.sol";
+import "./TrainRouterInterface.sol";
 import "../erc20/ERC20Router.sol";
 
-contract HotelRouter is HotelRouterInterface {
-    HotelRoom[] private rooms;
+contract TrainRouter is TrainRouterInterface {
+    TrainSeat[] private seats;
 
     address owner;
     uint256 today;
@@ -40,42 +40,42 @@ contract HotelRouter is HotelRouterInterface {
         today = _date;
     }
 
-    function addRooms(address[] calldata _roomsToAdd) onlyOwner external {
+    function addSeats(address[] calldata _seatsToAdd) onlyOwner external {
         // TODO: there is no protection against the same hotel room being added twice!
         // TODO: this will affect functions trying to determine how many rooms are available.
-        for (uint i=0; i < _roomsToAdd.length; i++) {
-            rooms.push(HotelRoom(_roomsToAdd[i]));
+        for (uint i=0; i < _seatsToAdd.length; i++) {
+            seats.push(TrainSeat(_seatsToAdd[i]));
         }
     }
 
-    function bookRoom(uint256 _date, uint256 _uniqueId, uint256 _maxAmountToPay) external {
+    function bookSeat(uint256 _date, uint256 _uniqueId, uint256 _maxAmountToPay) external {
         require(_date >=today, "Booking date must be in the future");
         require(_date <= today+eventHorizon, "Booking date can not be beyond the event horizon");
 
         // TODO improve data structures so for loop not needed.
-        for (uint i=0; i<rooms.length; i++) {
+        for (uint i=0; i<seats.length; i++) {
             // TODO if room locked  then continue
-            uint256 rate = rooms[i].roomRate();
-            if (rate <= _maxAmountToPay && rooms[i].isAvailable(_date)) {
-                rooms[i].bookRoom(_date, _uniqueId);
+            uint256 rate = seats[i].seatRate();
+            if (rate <= _maxAmountToPay && seats[i].isAvailable(_date)) {
+                seats[i].bookSeat(_date, _uniqueId);
                 erc20.transferFrom(tx.origin, owner, rate);
                 break;
             }
         }
     }
 
-    function getRoomInformation(uint256 /*_date*/, uint256 /*_uniqueId*/) external view returns (uint256 amountPaid, uint256 roomId) {
+    function getSeatInformation(uint256 /*_date*/, uint256 /*_uniqueId*/) external view returns (uint256 amountPaid, uint256 roomId) {
         // TODO find room
         amountPaid = 0;
         roomId = 0;
     }
 
-    function getRoomRates() external view returns (uint256 lowestRate, uint256 highestRate) {
+    function getSeatRates() external view returns (uint256 lowestRate, uint256 highestRate) {
         lowestRate = 0;
         highestRate = 0;
     }
 
-    function getNumberRoomsAvailable(uint256 /*_date*/) external view returns (uint256 numRoomsAvailable) {
-        numRoomsAvailable = 0;
+    function getNumberSeatsAvailable(uint256 /*_date*/) external view returns (uint256 numSeatsAvailable) {
+        numSeatsAvailable = 0;
     }
 }

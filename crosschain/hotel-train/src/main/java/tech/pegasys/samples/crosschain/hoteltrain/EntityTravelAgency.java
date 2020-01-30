@@ -17,16 +17,16 @@ import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.core.RemoteCall;
-import org.web3j.tx.RawTransactionManager;
-import org.web3j.tx.TransactionManager;
+import org.web3j.tx.CrosschainTransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.tx.gas.StaticGasProvider;
-import tech.pegasys.samples.crosschain.atomicswapether.soliditywrappers.AtomicSwapRegistration;
+import tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers.TravelAgency;
 import tech.pegasys.samples.sidechains.common.utils.BasePropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 
 import java.math.BigInteger;
+
 
 /**
  * TODO
@@ -34,85 +34,100 @@ import java.math.BigInteger;
 public class EntityTravelAgency {
     private static final Logger LOG = LogManager.getLogger(EntityTravelAgency.class);
 
-//    private Credentials credentials;
-//    private TransactionManager tmSc1;
-//    private Besu web3jSc1;
-//    private BigInteger sc1Id;
-//
-//    // A gas provider which indicates no gas is charged for transactions.
-//    private ContractGasProvider freeGasProvider = new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
-//
-//    private String registrationContractAddress;
-//
-//
-//    public RegistrationContractOwner(final Besu web3jSc1, BigInteger sc1Id, int retry, int pollingInterval) {
-//        loadStoreProperties();
-//        this.web3jSc1 = web3jSc1;
-//        this.tmSc1 = new RawTransactionManager(this.web3jSc1, this.credentials, sc1Id.longValue(), retry, pollingInterval);
-//        this.sc1Id = sc1Id;
-//    }
-//
-//    public void deployRegistrationContract() throws Exception {
-//        LOG.info(" Deploying registration contract");
-//        RemoteCall<AtomicSwapRegistration> remoteCallRegistrationContract =
-//            AtomicSwapRegistration.deploy(this.web3jSc1, this.tmSc1, this.freeGasProvider);
-//        AtomicSwapRegistration registrationContract = remoteCallRegistrationContract.send();
-//        this.registrationContractAddress = registrationContract.getContractAddress();
-//        LOG.info("  Registration Contract deployed on sidechain 1 (id={}), at address: {}",
-//            this.sc1Id, this.registrationContractAddress);
-//        storeContractAddress();
-//    }
-//
-//    public String getRegistrationContractAddress() {
-//        return this.registrationContractAddress;
-//    }
-//
-//    private void loadStoreProperties() {
-//        RegistrationProperties props = new RegistrationProperties();
-//        if (props.propertiesFileExists()) {
-//            props.load();
-//            this.registrationContractAddress = props.registrationContractAddress;
-//        }
-//        else {
-//            // Generate a key and store it in the format required for Credentials.
-//            props.privateKey = new KeyPairGen().generateKeyPairGetPrivateKey();
-//            System.out.println("Priv2: " + props.privateKey);
-//            props.store();
-//        }
-//        this.credentials = Credentials.create(props.privateKey);
-//    }
-//
-//    private void storeContractAddress() {
-//        RegistrationProperties props = new RegistrationProperties();
-//        props.load();
-//        props.registrationContractAddress = this.registrationContractAddress;
-//        props.store();
-//    }
-//
-//
-//
-//    static class RegistrationProperties extends BasePropertiesFile {
-//        private static final String PROP_PRIV_KEY = "privateKey";
-//        private static final String PROP_REGISTRATION_CONTRACT_ADDRESS = "RegistrationContractAddress";
-//        String privateKey;
-//        String registrationContractAddress;
-//
-//        RegistrationProperties() {
-//            super("registration");
-//        }
-//
-//        void load() {
-//            loadProperties();
-//            this.privateKey = this.properties.getProperty(PROP_PRIV_KEY);
-//            this.registrationContractAddress = this.properties.getProperty(PROP_REGISTRATION_CONTRACT_ADDRESS);
-//        }
-//
-//        void store() {
-//            this.properties.setProperty(PROP_PRIV_KEY, this.privateKey);
-//            if (registrationContractAddress != null) {
-//                this.properties.setProperty(PROP_REGISTRATION_CONTRACT_ADDRESS, this.registrationContractAddress);
-//            }
-//            storeProperties();
-//        }
-//    }
+    private Credentials credentials;
+
+    private CrosschainTransactionManager tmTravelAgency;
+    private Besu web3jTravelAgency;
+    private String agencyContractAddress;
+    private BigInteger agencyBcId;
+
+
+    TravelAgency agencyContract;
+
+
+    // A gas provider which indicates no gas is charged for transactions.
+    private ContractGasProvider freeGasProvider = new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
+
+    public EntityTravelAgency(final Besu web3j, BigInteger bcId, int retry, int pollingInterval,
+        final Besu web3jCoordinationBlockchain,
+        final BigInteger coordinationBlockchainId,
+        final String coordinationContractAddress,
+        final long crosschainTransactionTimeout) {
+
+        loadStoreProperties();
+        this.web3jTravelAgency = web3j;
+        this.tmTravelAgency = new CrosschainTransactionManager(web3j, this.credentials, bcId, retry, pollingInterval,
+            web3jCoordinationBlockchain, coordinationBlockchainId, coordinationContractAddress, crosschainTransactionTimeout);
+        this.agencyBcId = bcId;
+    }
+
+    public void deploy(final BigInteger hotelBcId, final String hotelContractAddress,
+                       final BigInteger trainBcId, final String trainContractAddress) throws Exception {
+        LOG.info(" Deploying travel agency contract");
+        RemoteCall<TravelAgency> remoteCall =
+            TravelAgency.deployLockable(this.web3jTravelAgency, this.tmTravelAgency, this.freeGasProvider,
+                hotelBcId, hotelContractAddress, trainBcId, trainContractAddress);
+        this.agencyContract = remoteCall.send();
+        this.agencyContractAddress = agencyContract.getContractAddress();
+        LOG.info("  Travel Agency Contract deployed on blockchain {}, at address: {}",
+            this.agencyBcId, this.agencyContractAddress);
+        storeContractAddress();
+    }
+
+    public void load() throws Exception {
+        LOG.info(" Loading travel agency contract");
+        this.agencyContract =
+            TravelAgency.load(this.agencyContractAddress, this.web3jTravelAgency, this.tmTravelAgency, this.freeGasProvider);
+        LOG.info("  Travel Agency Contract loaded on blockchain {}, at address: {}",
+            this.agencyBcId, this.agencyContractAddress);
+    }
+
+    private void loadStoreProperties() {
+        AgencyProperties props = new AgencyProperties();
+        if (props.propertiesFileExists()) {
+            props.load();
+            this.agencyContractAddress = props.agencyContractAddress;
+        }
+        else {
+            // Generate a key and store it in the format required for Credentials.
+            props.privateKey = new KeyPairGen().generateKeyPairGetPrivateKey();
+            System.out.println("Priv2: " + props.privateKey);
+            props.store();
+        }
+        this.credentials = Credentials.create(props.privateKey);
+    }
+
+    private void storeContractAddress() {
+        AgencyProperties props = new AgencyProperties();
+        props.load();
+        props.agencyContractAddress = this.agencyContractAddress;
+        props.store();
+    }
+
+
+
+    static class AgencyProperties extends BasePropertiesFile {
+        private static final String PROP_PRIV_KEY = "privateKey";
+        private static final String PROP_AGENCY_CONTRACT_ADDRESS = "AgencyContractAddress";
+        String privateKey;
+        String agencyContractAddress;
+
+        AgencyProperties() {
+            super("ragency");
+        }
+
+        void load() {
+            loadProperties();
+            this.privateKey = this.properties.getProperty(PROP_PRIV_KEY);
+            this.agencyContractAddress = this.properties.getProperty(PROP_AGENCY_CONTRACT_ADDRESS);
+        }
+
+        void store() {
+            this.properties.setProperty(PROP_PRIV_KEY, this.privateKey);
+            if (agencyContractAddress != null) {
+                this.properties.setProperty(PROP_AGENCY_CONTRACT_ADDRESS, this.agencyContractAddress);
+            }
+            storeProperties();
+        }
+    }
 }

@@ -14,33 +14,33 @@ pragma solidity >=0.4.23;
 
 
 
-contract HotelRoom {
-    address public hotelRouterContract;
-    uint256 public roomRate;
+contract TrainSeat {
+    address public trainRouterContract;
+    uint256 public seatRate;
     mapping(uint256 => uint256) private bookings;
 
     // Only accept requests from the hotel router contract.
-    modifier onlyHotelRouterContract() {
-        require(msg.sender == hotelRouterContract);
+    modifier onlyTrainRouterContract() {
+        require(msg.sender == trainRouterContract);
         _;
     }
 
 
     constructor(address _hotelRouterContract, uint256 _roomRate) public {
-        hotelRouterContract = _hotelRouterContract;
-        roomRate = _roomRate;
+        trainRouterContract = _hotelRouterContract;
+        seatRate = _roomRate;
     }
 
-    function changeHotelRouterContract(address _hotelRouterContract) external onlyHotelRouterContract{
-        hotelRouterContract = _hotelRouterContract;
+    function changeTrainRouterContract(address _trainRouterContract) external onlyTrainRouterContract {
+        trainRouterContract = _trainRouterContract;
     }
 
-    function changeRoomRate(uint256 _roomRate) external onlyHotelRouterContract {
-        roomRate = _roomRate;
+    function changeSeatRate(uint256 _seatRate) external onlyTrainRouterContract {
+        seatRate = _seatRate;
     }
 
-    function bookRoom(uint256 _date, uint256 _uniqueId) external onlyHotelRouterContract {
-        // Check that the room isn't already booked on the specified date.
+    function bookSeat(uint256 _date, uint256 _uniqueId) external onlyTrainRouterContract {
+        // Check that the seat isn't already booked on the specified date.
         require(isAvailable(_date));
 
         // Book the room.
