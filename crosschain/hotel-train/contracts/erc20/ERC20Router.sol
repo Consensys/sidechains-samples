@@ -90,7 +90,7 @@ contract ERC20Router is IERC20 {
 
     function createAccount(address[] memory _lockableAccountContracts) public {
         for (uint256 i=0; i<_lockableAccountContracts.length; i++) {
-            ERC20LockableAccount lockableAccount = new ERC20LockableAccount(_lockableAccountContracts[i]);
+            ERC20LockableAccount lockableAccount = ERC20LockableAccount(_lockableAccountContracts[i]);
             require(lockableAccount.owner() == msg.sender);
             lockableAccounts[msg.sender].push(_lockableAccountContracts[i]);
         }

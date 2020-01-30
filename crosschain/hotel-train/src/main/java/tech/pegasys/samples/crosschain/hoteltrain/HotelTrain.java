@@ -39,7 +39,7 @@ public class HotelTrain {
     private static final BigInteger BC2_SIDECHAIN_ID = BigInteger.valueOf(22);
     private static final String BC2_IP_PORT = "127.0.0.1:8220";
     private static final String BC2_URI = "http://" + BC2_IP_PORT + "/";
-    private static final BigInteger BC3_SIDECHAIN_ID = BigInteger.valueOf(22);
+    private static final BigInteger BC3_SIDECHAIN_ID = BigInteger.valueOf(33);
     private static final String BC3_IP_PORT = "127.0.0.1:8330";
     private static final String BC3_URI = "http://" + BC3_IP_PORT + "/";
 

@@ -79,7 +79,7 @@ public class EntityHotel {
     }
 
     public void deploy() throws Exception {
-        LOG.info("Deploy and set-up hotel contracts");
+        LOG.info("Deploy and set-up hotel contracts to blockchain {}", this.bcId);
         LOG.info(" Deploy ERC20 router contract");
         RemoteCall<ERC20Router> remoteCall = ERC20Router.deploy(this.web3j, this.tm, this.freeGasProvider);
         this.erc20 = remoteCall.send();
