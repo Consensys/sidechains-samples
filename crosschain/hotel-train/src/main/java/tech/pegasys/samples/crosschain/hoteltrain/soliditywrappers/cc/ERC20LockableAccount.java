@@ -1,4 +1,4 @@
-package tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers;
+package tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers.cc;
 
 import java.io.IOException;
 import java.math.BigInteger;

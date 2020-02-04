@@ -21,13 +21,15 @@ ls -al $BUILDDIR
 
 WEB3J=../sidechains-web3j/besucodegen/build/install/besucodegen/bin/besucodegen
 
-$WEB3J solidity generate -cc -a=$BUILDDIR/HotelRoom.abi -b=$BUILDDIR/HotelRoom.bin -o=$BUILDDIR -p=$PACKAGE
+$WEB3J solidity generate -cc -a=$BUILDDIR/HotelRoom.abi -b=$BUILDDIR/HotelRoom.bin -o=$BUILDDIR -p=$PACKAGE.cc
 $WEB3J solidity generate -a=$BUILDDIR/HotelRouter.abi -b=$BUILDDIR/HotelRouter.bin -o=$BUILDDIR -p=$PACKAGE
-$WEB3J solidity generate -cc -a=$BUILDDIR/TrainSeat.abi -b=$BUILDDIR/TrainSeat.bin -o=$BUILDDIR -p=$PACKAGE
+$WEB3J solidity generate -cc -a=$BUILDDIR/HotelRouter.abi -b=$BUILDDIR/HotelRouter.bin -o=$BUILDDIR -p=$PACKAGE.cc
+$WEB3J solidity generate -cc -a=$BUILDDIR/TrainSeat.abi -b=$BUILDDIR/TrainSeat.bin -o=$BUILDDIR -p=$PACKAGE.cc
 $WEB3J solidity generate -a=$BUILDDIR/TrainRouter.abi -b=$BUILDDIR/TrainRouter.bin -o=$BUILDDIR -p=$PACKAGE
+$WEB3J solidity generate -cc -a=$BUILDDIR/TrainRouter.abi -b=$BUILDDIR/TrainRouter.bin -o=$BUILDDIR -p=$PACKAGE.cc
 $WEB3J solidity generate -a=$BUILDDIR/ERC20Router.abi -b=$BUILDDIR/ERC20Router.bin -o=$BUILDDIR -p=$PACKAGE
-$WEB3J solidity generate -cc -a=$BUILDDIR/ERC20LockableAccount.abi -b=$BUILDDIR/ERC20LockableAccount.bin -o=$BUILDDIR -p=$PACKAGE
-$WEB3J solidity generate -cc -a=$BUILDDIR/TravelAgency.abi -b=$BUILDDIR/TravelAgency.bin -o=$BUILDDIR -p=$PACKAGE
+$WEB3J solidity generate -cc -a=$BUILDDIR/ERC20LockableAccount.abi -b=$BUILDDIR/ERC20LockableAccount.bin -o=$BUILDDIR -p=$PACKAGE.cc
+$WEB3J solidity generate -cc -a=$BUILDDIR/TravelAgency.abi -b=$BUILDDIR/TravelAgency.bin -o=$BUILDDIR -p=$PACKAGE.cc
 
 cd $HERE
 

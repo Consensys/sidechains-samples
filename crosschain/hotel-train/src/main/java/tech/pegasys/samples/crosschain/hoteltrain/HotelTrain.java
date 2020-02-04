@@ -93,6 +93,8 @@ public class HotelTrain {
         CrosschainCoordinationContractSetup coordinationContractSetup = new CrosschainCoordinationContractSetup(this.web3jBc1);
 
         this.agency = new EntityTravelAgency(this.web3jBc1, BC1_SIDECHAIN_ID, RETRY, POLLING_INTERVAL,
+            this.web3jBc3, BC3_SIDECHAIN_ID, // hotel
+            this.web3jBc2, BC2_SIDECHAIN_ID, // train
             coordinationContractSetup.getCrosschainCoordinationWeb3J(),
             coordinationContractSetup.getCrosschainCoordinationContractBlockcainId(),
             coordinationContractSetup.getCrosschainCoordinationContractAddress(),
@@ -119,10 +121,13 @@ public class HotelTrain {
             System.out.println("1  Deploy all contracts.");
             System.out.println("2  Book hotel room and train seat.");
             System.out.println("3  Show booking information.");
+            System.out.println("4  Buy hotel tokens");
+            System.out.println("5  Buy train tokens");
+            System.out.println("9  Quit.");
 
             int option = 0;
             if (automatedRun) {
-              System.out.println("Executing automated run. Executing option 0.");
+              System.out.println("Executin g automated run. Executing option 0.");
               runOnce = true;
             }
             else {
@@ -137,17 +142,32 @@ public class HotelTrain {
             switch (option) {
                 case 0:
                     deploy();
-                    book();
+                    book(3);
                     break;
                 case 1:
                     deploy();
                     break;
                 case 2:
-                    book();
+                    System.out.println("What is the booking date? (0 to 365):");
+                    int date = myInput.nextInt();
+                    book(date);
                     break;
                 case 3:
                     show();
                     break;
+                case 4:
+                    System.out.println("How many tokens do you want to buy?:");
+                    int hotelTokens = myInput.nextInt();
+                    buyHotelTokens(hotelTokens);
+                    break;
+                case 5:
+                    System.out.println("How many tokens do you want to buy?:");
+                    int trainTokens = myInput.nextInt();
+                    buyTrainTokens(trainTokens);
+                    break;
+
+                case 9:
+                    return;
                 default:
                     LOG.error("Unknown option {}", option);
                     break;
@@ -165,17 +185,36 @@ public class HotelTrain {
         this.hotel.deploy();
 
         String trainContractAddress = this.train.getRouterContractAddress();
+        String trainErc20ContractAddress = this.train.getErc20ContractAddress();
         String hotelContractAddress = this.hotel.getRouterContractAddress();
+        String hotelErc20ContractAddress = this.hotel.getErc20ContractAddress();
 
-        this.agency.deploy(BC2_SIDECHAIN_ID, trainContractAddress, BC3_SIDECHAIN_ID, hotelContractAddress);
+        this.agency.deploy(this.web3jBc2, BC2_SIDECHAIN_ID, trainContractAddress, trainErc20ContractAddress,
+            this.web3jBc3, BC3_SIDECHAIN_ID, hotelContractAddress, hotelErc20ContractAddress);
     }
 
-    private void book() {
-        LOG.info("Not implemented yet");
+    private void book(int date) throws Exception {
+        LOG.info("Book a room for date: {}", date);
+        // TODO specify a room rates.
+
+        this.agency.book(date);
     }
 
-    private void show() {
-        LOG.info("Not implemented yet");
+    private void show() throws Exception {
+        String travelAgencyAccount = this.agency.getTravelAgencyAccount();
+
+        LOG.info("Hotel ERC20 Balances");
+        this.hotel.showErc20Balances(new String[]{travelAgencyAccount});
+
+    }
+
+    private void buyHotelTokens(final int number) throws Exception {
+        String travelAgencyAccount = this.agency.getTravelAgencyAccount();
+        this.hotel.buyTokens(travelAgencyAccount, number);
+    }
+    private void buyTrainTokens(final int number) throws Exception {
+        String travelAgencyAccount = this.agency.getTravelAgencyAccount();
+        this.train.buyTokens(travelAgencyAccount, number);
     }
 
 }

@@ -17,15 +17,26 @@ import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.core.RemoteCall;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tx.CrosschainContext;
+import org.web3j.tx.CrosschainContextGenerator;
 import org.web3j.tx.CrosschainTransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.tx.gas.StaticGasProvider;
-import tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers.TravelAgency;
+import tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers.cc.ERC20LockableAccount;
+import tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers.ERC20Router;
+import tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers.cc.HotelRouter;
+import tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers.cc.TrainRouter;
+import tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers.cc.TravelAgency;
 import tech.pegasys.samples.sidechains.common.utils.BasePropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
+import tech.pegasys.samples.sidechains.common.utils.PRNGSecureRandom;
 
 import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -41,28 +52,48 @@ public class EntityTravelAgency {
     private String agencyContractAddress;
     private BigInteger agencyBcId;
 
+    private PRNGSecureRandom rand;
+
+    private CrosschainTransactionManager tmTrain;
+    private CrosschainTransactionManager tmHotel;
 
     TravelAgency agencyContract;
+    HotelRouter hotelRouter;
+    TrainRouter trainRouter;
+
+    ERC20Router trainErc20;
+    ERC20Router hotelErc20;
+
 
 
     // A gas provider which indicates no gas is charged for transactions.
     private ContractGasProvider freeGasProvider = new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
 
-    public EntityTravelAgency(final Besu web3j, BigInteger bcId, int retry, int pollingInterval,
+    public EntityTravelAgency(
+        final Besu web3j, BigInteger bcId, int retry, int pollingInterval,
+        final Besu hotelWeb3j, final BigInteger hotelBcId,
+        final Besu trainWeb3j, final BigInteger trainBcId,
         final Besu web3jCoordinationBlockchain,
         final BigInteger coordinationBlockchainId,
         final String coordinationContractAddress,
-        final long crosschainTransactionTimeout) {
+        final long crosschainTransactionTimeout) throws Exception {
 
         loadStoreProperties();
         this.web3jTravelAgency = web3j;
         this.tmTravelAgency = new CrosschainTransactionManager(web3j, this.credentials, bcId, retry, pollingInterval,
             web3jCoordinationBlockchain, coordinationBlockchainId, coordinationContractAddress, crosschainTransactionTimeout);
         this.agencyBcId = bcId;
+
+        this.tmHotel = new CrosschainTransactionManager(hotelWeb3j, this.credentials, hotelBcId, retry, pollingInterval,
+            web3jCoordinationBlockchain, coordinationBlockchainId, coordinationContractAddress, crosschainTransactionTimeout);
+        this.tmTrain = new CrosschainTransactionManager(trainWeb3j, this.credentials, trainBcId, retry, pollingInterval,
+            web3jCoordinationBlockchain, coordinationBlockchainId, coordinationContractAddress, crosschainTransactionTimeout);
+
+        this.rand = new PRNGSecureRandom();
     }
 
-    public void deploy(final BigInteger hotelBcId, final String hotelContractAddress,
-                       final BigInteger trainBcId, final String trainContractAddress) throws Exception {
+    public void deploy(final Besu trainWeb3j, final BigInteger trainBcId, final String trainContractAddress, String trainErc20Address,
+                       final Besu hotelWeb3j, final BigInteger hotelBcId, final String hotelContractAddress, String hotelErc20Address) throws Exception {
         LOG.info(" Deploying travel agency contract");
         RemoteCall<TravelAgency> remoteCall =
             TravelAgency.deployLockable(this.web3jTravelAgency, this.tmTravelAgency, this.freeGasProvider,
@@ -71,6 +102,26 @@ public class EntityTravelAgency {
         this.agencyContractAddress = agencyContract.getContractAddress();
         LOG.info("  Travel Agency Contract deployed on blockchain {}, at address: {}",
             this.agencyBcId, this.agencyContractAddress);
+
+        this.trainRouter = TrainRouter.load(trainContractAddress, trainWeb3j, this.tmTrain, this.freeGasProvider);
+        this.hotelRouter = HotelRouter.load(hotelContractAddress, hotelWeb3j, this.tmHotel, this.freeGasProvider);
+
+        LOG.info(" Creating train lockable ERC account storage");
+        this.trainErc20 = ERC20Router.load(trainErc20Address, trainWeb3j, this.tmTrain, this.freeGasProvider);
+        ERC20Helper trainErc20Helper = new ERC20Helper(this.trainErc20);
+        trainErc20Helper.createAccount(trainWeb3j, this.tmTrain, this.freeGasProvider, 1);
+        LOG.info(" Checking train lockable ERC account storage");
+        trainErc20Helper.dumpRouterInformation();
+        trainErc20Helper.dumpAccountInformation(this.credentials.getAddress());
+
+        LOG.info(" Creating hotel lockable ERC account storage");
+        this.hotelErc20 = ERC20Router.load(hotelErc20Address, hotelWeb3j, this.tmHotel, this.freeGasProvider);
+        ERC20Helper hotelErc20Helper = new ERC20Helper(this.hotelErc20);
+        hotelErc20Helper.createAccount(hotelWeb3j, this.tmHotel, this.freeGasProvider, 1);
+        LOG.info(" Checking hotel lockable ERC account storage");
+        hotelErc20Helper.dumpRouterInformation();
+        hotelErc20Helper.dumpAccountInformation(this.credentials.getAddress());
+
         storeContractAddress();
     }
 
@@ -82,6 +133,37 @@ public class EntityTravelAgency {
             this.agencyBcId, this.agencyContractAddress);
     }
 
+
+    public void book(final int date) throws Exception {
+        BigInteger dateBigInt = BigInteger.valueOf(date);
+        byte[] randomBytes = new byte[32];
+        rand.nextBytes(randomBytes);
+        BigInteger uniqueBookingId = new BigInteger(1, randomBytes);
+
+        CrosschainContextGenerator contextGenerator = new CrosschainContextGenerator(this.agencyBcId);
+        // The same subordinate context applies to both calls as both calls have the same from blockchain and contract.
+        CrosschainContext subordinateTransactionContext = contextGenerator.createCrosschainContext(this.agencyBcId, this.agencyContractAddress);
+        byte[] subordinateTransHotel = this.hotelRouter.bookRoom_AsSignedCrosschainSubordinateTransaction(dateBigInt, uniqueBookingId, BigInteger.valueOf(100), subordinateTransactionContext);
+        byte[] subordinateTransTrain = this.trainRouter.bookSeat_AsSignedCrosschainSubordinateTransaction(dateBigInt, uniqueBookingId, BigInteger.valueOf(100), subordinateTransactionContext);
+
+        byte[][] subordinateTransactionsAndViews = new byte[][]{subordinateTransHotel, subordinateTransTrain};
+        CrosschainContext originatingTransactionContext = contextGenerator.createCrosschainContext(subordinateTransactionsAndViews);
+
+        LOG.info("  Executing Crosschain Transaction");
+        TransactionReceipt transactionReceipt = this.agencyContract.bookHotelAndTrain_AsCrosschainOriginatingTransaction(dateBigInt, uniqueBookingId, originatingTransactionContext).send();
+        LOG.info("   Transaction Receipt: {}", transactionReceipt.toString());
+        if (!transactionReceipt.isStatusOK()) {
+            throw new Error(transactionReceipt.getStatus());
+        }
+    }
+
+    public String getTravelAgencyAccount() {
+        return this.credentials.getAddress();
+    }
+
+
+
+    // TODO need to persist hotel and train router contract addresses.
     private void loadStoreProperties() {
         AgencyProperties props = new AgencyProperties();
         if (props.propertiesFileExists()) {

@@ -56,9 +56,7 @@ contract ERC20Router is IERC20 {
         return theTotalSupply;
     }
 
-    function getLockableAccountAddress(address _account, uint256 _instance) public view returns (address) {
-        return lockableAccounts[_account][_instance];
-    }
+
 
     /**
      * Only return the balance of the [0] account.
@@ -92,6 +90,14 @@ contract ERC20Router is IERC20 {
         for (uint256 i=0; i<_lockableAccountContracts.length; i++) {
             ERC20LockableAccount lockableAccount = ERC20LockableAccount(_lockableAccountContracts[i]);
             require(lockableAccount.owner() == msg.sender);
+            lockableAccounts[msg.sender].push(_lockableAccountContracts[i]);
+        }
+    }
+
+    function createAccountFor(address account, address[] calldata _lockableAccountContracts) external onlyOwner{
+        for (uint256 i=0; i<_lockableAccountContracts.length; i++) {
+            ERC20LockableAccount lockableAccount = ERC20LockableAccount(_lockableAccountContracts[i]);
+            require(lockableAccount.owner() == account);
             lockableAccounts[msg.sender].push(_lockableAccountContracts[i]);
         }
     }
@@ -185,6 +191,32 @@ contract ERC20Router is IERC20 {
         require(accAllowance >= _subtractedValue, "ERC20: decreased allowance below zero");
         _approve(msg.sender, _spender, accAllowance - _subtractedValue);
         return true;
+    }
+
+    // Some functions to help debug
+
+    function accSize(address _acc) external view returns (uint256) {
+        address[] memory lockableAccountAddresses = lockableAccounts[_acc];
+        return lockableAccountAddresses.length;
+    }
+
+    function getLockableAccountAddress(address _account, uint256 _instance) public view returns (address) {
+        return lockableAccounts[_account][_instance];
+    }
+    function accGetBalance(address _acc, uint256 _index) external view returns (uint256) {
+        address[] memory lockableAccountAddresses = lockableAccounts[_acc];
+        ERC20LockableAccount lockableAccount = ERC20LockableAccount(lockableAccountAddresses[_index]);
+        return lockableAccount.balance();
+    }
+    function accGetOwner(address _acc, uint256 _index) external view returns (address) {
+        address[] memory lockableAccountAddresses = lockableAccounts[_acc];
+        ERC20LockableAccount lockableAccount = ERC20LockableAccount(lockableAccountAddresses[_index]);
+        return lockableAccount.owner();
+    }
+    function accGetRouter(address _acc, uint256 _index) external view returns (address) {
+        address[] memory lockableAccountAddresses = lockableAccounts[_acc];
+        ERC20LockableAccount lockableAccount = ERC20LockableAccount(lockableAccountAddresses[_index]);
+        return lockableAccount.erc20RouterContract();
     }
 
     /**

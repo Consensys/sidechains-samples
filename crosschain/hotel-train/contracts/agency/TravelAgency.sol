@@ -12,6 +12,7 @@
  */
 pragma solidity >=0.4.23;
 import "../hotel/HotelRouterInterface.sol";
+import "../train/TrainRouterInterface.sol";
 import "../../../../common-solidity/crosschain-precompile-calls/contracts/Crosschain.sol";
 
 
@@ -21,7 +22,7 @@ contract TravelAgency is Crosschain {
     HotelRouterInterface public hotelContract;
 
     uint256 public trainBlockchainId;
-    HotelRouterInterface public trainContract;
+    TrainRouterInterface public trainContract;
 
 
 
@@ -29,12 +30,12 @@ contract TravelAgency is Crosschain {
         hotelBlockchainId = _hotelBlockchainId;
         hotelContract = HotelRouterInterface(_hotelContract);
         trainBlockchainId = _trainBlockchainId;
-        trainContract = HotelRouterInterface(_trainContract);
+        trainContract = TrainRouterInterface(_trainContract);
     }
 
     function bookHotelAndTrain(uint256 _date, uint256 _uniqueId) public {
         crosschainTransaction(hotelBlockchainId, address(hotelContract), abi.encodeWithSelector(hotelContract.bookRoom.selector, _date, _uniqueId, 100) );
-        crosschainTransaction(trainBlockchainId, address(trainContract), abi.encodeWithSelector(trainContract.bookRoom.selector, _date, _uniqueId, 100) );
+        crosschainTransaction(trainBlockchainId, address(trainContract), abi.encodeWithSelector(trainContract.bookSeat.selector, _date, _uniqueId, 100) );
     }
 
 }
