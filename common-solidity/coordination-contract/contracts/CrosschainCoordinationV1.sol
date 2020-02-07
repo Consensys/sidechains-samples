@@ -584,8 +584,10 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
         require(_encodedPublicKey.length == BN128_PUBLIC_KEY_SIZE, "Public key wrong size for algorithm");
 
         publicKey = new uint256[](NUMBER_ELEMENTS_PUBLIC_KEY);
+        uint256 j = BN128_FIELD_SIZE;
         for (uint256 i=BN128_FIELD_SIZE+LENGTH_UINT32_IN_BYTES; i<=publicKey.length*BN128_FIELD_SIZE+LENGTH_UINT32_IN_BYTES; i+=BN128_FIELD_SIZE) {
-            assembly { mstore(add(publicKey, i), mload(add(_encodedPublicKey, i))) }
+            assembly { mstore(add(publicKey, j), mload(add(_encodedPublicKey, i))) }
+            j+=BN128_FIELD_SIZE;
         }
     }
 
