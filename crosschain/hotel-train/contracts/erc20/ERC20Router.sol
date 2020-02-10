@@ -2,6 +2,7 @@ pragma solidity ^0.5.0;
 
 import "./IERC20.sol";
 import "./ERC20LockableAccount.sol";
+import "../../../../common-solidity/crosschain-precompile-calls/contracts/Crosschain.sol";
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -29,9 +30,7 @@ import "./ERC20LockableAccount.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20Router is IERC20 {
-    uint256 constant private NUM_PARALLEL_ACCOUNTS = 2;
-
+contract ERC20Router is IERC20, Crosschain {
     mapping (address => address[]) private lockableAccounts;
 
     mapping (address => mapping (address => uint256)) private allowances;
@@ -245,12 +244,13 @@ contract ERC20Router is IERC20 {
         address[] memory recipientLockableAccountAddresses = lockableAccounts[_recipient];
         require(recipientLockableAccountAddresses.length != 0);
         ERC20LockableAccount recipientLockableAccount;
-//        for (uint256 i=0; i<recipientLockableAccountAddresses.length; i++) {
-        uint256 i = 0;
-            // TODO if not recipientLockableAccountAddress[i].isLocked
-            recipientLockableAccount = ERC20LockableAccount(recipientLockableAccountAddresses[i]);
-            // TODO break; to get out of for loop
-  //      }
+        for (uint256 i=0; i<recipientLockableAccountAddresses.length; i++) {
+            if (!crosschainIsLocked(recipientLockableAccountAddresses[i])) {
+                recipientLockableAccount = ERC20LockableAccount(recipientLockableAccountAddresses[i]);
+                break;
+            }
+        }
+        require(address(recipientLockableAccount) != address(0));
         senderLockableAccount.sub(_amount);
         recipientLockableAccount.add(_amount);
         emit Transfer(_sender, _recipient, _amount);

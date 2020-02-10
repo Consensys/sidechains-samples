@@ -181,13 +181,13 @@ public class HotelTrain {
 
     private void deploy() throws Exception {
         LOG.info("Deploying All Contracts");
-        this.train.deploy();
         this.hotel.deploy();
+        this.train.deploy();
 
-        String trainContractAddress = this.train.getRouterContractAddress();
-        String trainErc20ContractAddress = this.train.getErc20ContractAddress();
         String hotelContractAddress = this.hotel.getRouterContractAddress();
         String hotelErc20ContractAddress = this.hotel.getErc20ContractAddress();
+        String trainContractAddress = this.train.getRouterContractAddress();
+        String trainErc20ContractAddress = this.train.getErc20ContractAddress();
 
         this.agency.deploy(this.web3jBc2, BC2_SIDECHAIN_ID, trainContractAddress, trainErc20ContractAddress,
             this.web3jBc3, BC3_SIDECHAIN_ID, hotelContractAddress, hotelErc20ContractAddress);

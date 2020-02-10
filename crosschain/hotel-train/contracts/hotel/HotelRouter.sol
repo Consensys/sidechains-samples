@@ -48,20 +48,21 @@ contract HotelRouter is HotelRouterInterface {
         }
     }
 
-    function bookRoom(uint256 _date, uint256 _uniqueId, uint256 _maxAmountToPay) external {
-        require(_date >=today, "Booking date must be in the future");
-        require(_date <= today+eventHorizon, "Booking date can not be beyond the event horizon");
+    // TODO improve data structures so for loop not needed.
+    function bookRoom(uint256 /*_date*/, uint256 /*_uniqueId*/, uint256 /*_maxAmountToPay*/) external {
+//        require(_date >=today, "Booking date must be in the future");
+//        require(_date <= today+eventHorizon, "Booking date can not be beyond the event horizon");
 
-        // TODO improve data structures so for loop not needed.
-        for (uint i=0; i<rooms.length; i++) {
-            // TODO if room locked  then continue
-            uint256 rate = rooms[i].roomRate();
-            if (rate <= _maxAmountToPay && rooms[i].isAvailable(_date)) {
-                rooms[i].bookRoom(_date, _uniqueId);
-                erc20.transferFrom(tx.origin, owner, rate);
-                break;
-            }
-        }
+//        for (uint i=0; i<rooms.length; i++) {
+//            if (!crosschainIsLocked(address(rooms[i]))) {
+//                uint256 rate = rooms[i].roomRate();
+//                if (rate <= _maxAmountToPay && rooms[i].isAvailable(_date)) {
+//                    rooms[i].bookRoom(_date, _uniqueId);
+//                    erc20.transferFrom(tx.origin, owner, rate);
+//                    break;
+//                }
+//            }
+//        }
     }
 
     function getRoomInformation(uint256 /*_date*/, uint256 /*_uniqueId*/) external view returns (uint256 amountPaid, uint256 roomId) {

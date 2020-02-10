@@ -143,10 +143,11 @@ public class EntityTravelAgency {
         CrosschainContextGenerator contextGenerator = new CrosschainContextGenerator(this.agencyBcId);
         // The same subordinate context applies to both calls as both calls have the same from blockchain and contract.
         CrosschainContext subordinateTransactionContext = contextGenerator.createCrosschainContext(this.agencyBcId, this.agencyContractAddress);
-        byte[] subordinateTransHotel = this.hotelRouter.bookRoom_AsSignedCrosschainSubordinateTransaction(dateBigInt, uniqueBookingId, BigInteger.valueOf(100), subordinateTransactionContext);
+//        byte[] subordinateTransHotel = this.hotelRouter.bookRoom_AsSignedCrosschainSubordinateTransaction(dateBigInt, uniqueBookingId, BigInteger.valueOf(100), subordinateTransactionContext);
         byte[] subordinateTransTrain = this.trainRouter.bookSeat_AsSignedCrosschainSubordinateTransaction(dateBigInt, uniqueBookingId, BigInteger.valueOf(100), subordinateTransactionContext);
 
-        byte[][] subordinateTransactionsAndViews = new byte[][]{subordinateTransHotel, subordinateTransTrain};
+//        byte[][] subordinateTransactionsAndViews = new byte[][]{subordinateTransHotel, subordinateTransTrain};
+        byte[][] subordinateTransactionsAndViews = new byte[][]{subordinateTransTrain};
         CrosschainContext originatingTransactionContext = contextGenerator.createCrosschainContext(subordinateTransactionsAndViews);
 
         LOG.info("  Executing Crosschain Transaction");

@@ -48,20 +48,21 @@ contract TrainRouter is TrainRouterInterface {
         }
     }
 
-    function bookSeat(uint256 _date, uint256 _uniqueId, uint256 _maxAmountToPay) external {
+
+    function bookSeat(uint256 _date, uint256 /*_uniqueId*/, uint256 /*_maxAmountToPay*/) external {
         require(_date >=today, "Booking date must be in the future");
         require(_date <= today+eventHorizon, "Booking date can not be beyond the event horizon");
 
-        // TODO improve data structures so for loop not needed.
-        for (uint i=0; i<seats.length; i++) {
-            // TODO if room locked  then continue
-            uint256 rate = seats[i].seatRate();
-            if (rate <= _maxAmountToPay && seats[i].isAvailable(_date)) {
-                seats[i].bookSeat(_date, _uniqueId);
-                erc20.transferFrom(tx.origin, owner, rate);
-                break;
-            }
-        }
+//        // TODO improve data structures so for loop not needed.
+//        for (uint i=0; i<seats.length; i++) {
+//            // TODO if room locked  then continue
+//            uint256 rate = seats[i].seatRate();
+//            if (rate <= _maxAmountToPay && seats[i].isAvailable(_date)) {
+//                seats[i].bookSeat(_date, _uniqueId);
+//                erc20.transferFrom(tx.origin, owner, rate);
+//                break;
+//            }
+//        }
     }
 
     function getSeatInformation(uint256 /*_date*/, uint256 /*_uniqueId*/) external view returns (uint256 amountPaid, uint256 roomId) {
