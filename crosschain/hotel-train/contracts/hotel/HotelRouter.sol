@@ -15,8 +15,9 @@ pragma solidity >=0.4.23;
 import "./HotelRoom.sol";
 import "./HotelRouterInterface.sol";
 import "../erc20/ERC20Router.sol";
+import "../../../../common-solidity/crosschain-precompile-calls/contracts/Crosschain.sol";
 
-contract HotelRouter is HotelRouterInterface {
+contract HotelRouter is HotelRouterInterface, Crosschain {
     HotelRoom[] private rooms;
 
     address owner;
@@ -49,26 +50,35 @@ contract HotelRouter is HotelRouterInterface {
     }
 
     // TODO improve data structures so for loop not needed.
-    function bookRoom(uint256 /*_date*/, uint256 /*_uniqueId*/, uint256 /*_maxAmountToPay*/) external {
+    function bookRoom(uint256 _date, uint256 _uniqueId, uint256 /*_maxAmountToPay*/) external {
 //        require(_date >=today, "Booking date must be in the future");
 //        require(_date <= today+eventHorizon, "Booking date can not be beyond the event horizon");
 
 //        for (uint i=0; i<rooms.length; i++) {
 //            if (!crosschainIsLocked(address(rooms[i]))) {
 //                uint256 rate = rooms[i].roomRate();
-//                if (rate <= _maxAmountToPay && rooms[i].isAvailable(_date)) {
+//        uint256 rate = rooms[0].roomRate();
+  //              if (rate <= _maxAmountToPay && rooms[i].isAvailable(_date)) {
 //                    rooms[i].bookRoom(_date, _uniqueId);
+        rooms[0].bookRoom(_date, _uniqueId);
 //                    erc20.transferFrom(tx.origin, owner, rate);
-//                    break;
+  //                  break;
 //                }
 //            }
-//        }
+    //    }
     }
 
-    function getRoomInformation(uint256 /*_date*/, uint256 /*_uniqueId*/) external view returns (uint256 amountPaid, uint256 roomId) {
-        // TODO find room
-        amountPaid = 0;
-        roomId = 0;
+    function getRoomInformation(uint256 _date, uint256 _uniqueId) external view returns (uint256 amountPaid, uint256 roomId) {
+        for (uint i=0; i<rooms.length; i++) {
+            // TODO skip if isLocked.
+            (uint256 uniqueId, address whoBooked) = rooms[i].getBookingInfo(_date);
+            if (_uniqueId == uniqueId && whoBooked == tx.origin) {
+                roomId = i;
+                amountPaid = rooms[i].roomRate();
+                return (amountPaid, roomId);
+            }
+        }
+        return (0,0);
     }
 
     function getRoomRates() external view returns (uint256 lowestRate, uint256 highestRate) {

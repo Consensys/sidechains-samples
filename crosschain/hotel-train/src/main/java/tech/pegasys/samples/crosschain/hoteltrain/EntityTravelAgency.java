@@ -18,6 +18,7 @@ import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tuples.generated.Tuple2;
 import org.web3j.tx.CrosschainContext;
 import org.web3j.tx.CrosschainContextGenerator;
 import org.web3j.tx.CrosschainTransactionManager;
@@ -134,7 +135,7 @@ public class EntityTravelAgency {
     }
 
 
-    public void book(final int date) throws Exception {
+    public BigInteger book(final int date) throws Exception {
         BigInteger dateBigInt = BigInteger.valueOf(date);
         byte[] randomBytes = new byte[32];
         rand.nextBytes(randomBytes);
@@ -143,11 +144,10 @@ public class EntityTravelAgency {
         CrosschainContextGenerator contextGenerator = new CrosschainContextGenerator(this.agencyBcId);
         // The same subordinate context applies to both calls as both calls have the same from blockchain and contract.
         CrosschainContext subordinateTransactionContext = contextGenerator.createCrosschainContext(this.agencyBcId, this.agencyContractAddress);
-//        byte[] subordinateTransHotel = this.hotelRouter.bookRoom_AsSignedCrosschainSubordinateTransaction(dateBigInt, uniqueBookingId, BigInteger.valueOf(100), subordinateTransactionContext);
+        byte[] subordinateTransHotel = this.hotelRouter.bookRoom_AsSignedCrosschainSubordinateTransaction(dateBigInt, uniqueBookingId, BigInteger.valueOf(100), subordinateTransactionContext);
         byte[] subordinateTransTrain = this.trainRouter.bookSeat_AsSignedCrosschainSubordinateTransaction(dateBigInt, uniqueBookingId, BigInteger.valueOf(100), subordinateTransactionContext);
 
-//        byte[][] subordinateTransactionsAndViews = new byte[][]{subordinateTransHotel, subordinateTransTrain};
-        byte[][] subordinateTransactionsAndViews = new byte[][]{subordinateTransTrain};
+        byte[][] subordinateTransactionsAndViews = new byte[][]{subordinateTransHotel, subordinateTransTrain};
         CrosschainContext originatingTransactionContext = contextGenerator.createCrosschainContext(subordinateTransactionsAndViews);
 
         LOG.info("  Executing Crosschain Transaction");
@@ -156,12 +156,25 @@ public class EntityTravelAgency {
         if (!transactionReceipt.isStatusOK()) {
             throw new Error(transactionReceipt.getStatus());
         }
+        return uniqueBookingId;
     }
 
     public String getTravelAgencyAccount() {
         return this.credentials.getAddress();
     }
 
+    public void showBookingInformation(int date, BigInteger bookingId) throws Exception {
+        Tuple2<BigInteger, BigInteger> retVal = this.hotelRouter.getRoomInformation(BigInteger.valueOf(date), bookingId).send();
+        BigInteger amountPaid = retVal.component1();
+        BigInteger roomId = retVal.component2();
+        LOG.info(" Booked room: {} for amount: {}", roomId, amountPaid);
+
+        retVal = this.trainRouter.getSeatInformation(BigInteger.valueOf(date), bookingId).send();
+        amountPaid = retVal.component1();
+        BigInteger seatId = retVal.component2();
+        LOG.info(" Booked seat: {} for amount: {}", seatId, amountPaid);
+
+    }
 
 
     // TODO need to persist hotel and train router contract addresses.

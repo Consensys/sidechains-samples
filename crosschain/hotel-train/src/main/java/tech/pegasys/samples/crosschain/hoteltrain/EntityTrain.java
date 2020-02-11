@@ -68,6 +68,7 @@ public class EntityTrain extends EntityBase {
             TrainRouter.deploy(this.web3j, this.tm, this.freeGasProvider, EVENT_HORIZON, this.erc20.getContractAddress());
         this.train = remoteCall2.send();
         this.routerContractAddress = this.train.getContractAddress();
+        LOG.info(" Deployed train router contract to address: {}", this.routerContractAddress);
 
         LOG.info(" Deploy train seat lockable contracts");
         List<String> addresses = new ArrayList<>();

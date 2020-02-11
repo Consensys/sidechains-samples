@@ -62,6 +62,8 @@ public class HotelTrain {
     private EntityTravelAgency agency;
 
     static boolean automatedRun = false;
+    int latestDate = 0;
+    BigInteger latestBookingId = null;
 
     public static void main(final String args[]) throws Exception {
         LOG.info("Hotel Train - started");
@@ -120,7 +122,7 @@ public class HotelTrain {
             System.out.println("0  Run entire sample.");
             System.out.println("1  Deploy all contracts.");
             System.out.println("2  Book hotel room and train seat.");
-            System.out.println("3  Show booking information.");
+            System.out.println("3  Show information.");
             System.out.println("4  Buy hotel tokens");
             System.out.println("5  Buy train tokens");
             System.out.println("9  Quit.");
@@ -142,7 +144,11 @@ public class HotelTrain {
             switch (option) {
                 case 0:
                     deploy();
+                    buyHotelTokens(300);
+                    buyTrainTokens(400);
+                    show();
                     book(3);
+                    show();
                     break;
                 case 1:
                     deploy();
@@ -197,7 +203,8 @@ public class HotelTrain {
         LOG.info("Book a room for date: {}", date);
         // TODO specify a room rates.
 
-        this.agency.book(date);
+        this.latestDate = date;
+        this.latestBookingId = this.agency.book(date);
     }
 
     private void show() throws Exception {
@@ -205,6 +212,16 @@ public class HotelTrain {
 
         LOG.info("Hotel ERC20 Balances");
         this.hotel.showErc20Balances(new String[]{travelAgencyAccount});
+        LOG.info("Train ERC20 Balances");
+        this.train.showErc20Balances(new String[]{travelAgencyAccount});
+
+        if (this.latestBookingId == null) {
+            LOG.info("No recent reservations");
+        }
+        else {
+            LOG.info("Checking reservations for date {}, booking id: {}", this.latestDate, this.latestBookingId);
+            this.agency.showBookingInformation(this.latestDate, this.latestBookingId);
+        }
 
     }
 

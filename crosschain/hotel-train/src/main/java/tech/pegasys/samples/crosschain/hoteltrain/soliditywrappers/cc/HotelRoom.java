@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
@@ -15,6 +17,7 @@ import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tuples.generated.Tuple2;
 import org.web3j.tx.CrosschainContext;
 import org.web3j.tx.CrosschainContract;
 import org.web3j.tx.CrosschainTransactionManager;
@@ -30,7 +33,7 @@ import org.web3j.tx.gas.ContractGasProvider;
  */
 @SuppressWarnings("rawtypes")
 public class HotelRoom extends CrosschainContract {
-    private static final String BINARY = "608060405234801561001057600080fd5b506040516102cb3803806102cb8339818101604052604081101561003357600080fd5b508051602090910151600080546001600160a01b0319166001600160a01b0390931692909217825560015561025d90819061006e90396000f3fe608060405234801561001057600080fd5b50600436106100625760003560e01c80633a04832a146100675780633a178d99146100815780638a3a1a18146100b25780638c8c4f3f146100d7578063b0542413146100fd578063c7f4e6d31461011a575b600080fd5b61006f61013e565b60408051918252519081900360200190f35b61009e6004803603602081101561009757600080fd5b5035610144565b604080519115158252519081900360200190f35b6100d5600480360360408110156100c857600080fd5b5080359060200135610157565b005b6100d5600480360360208110156100ed57600080fd5b50356001600160a01b03166101c4565b6100d56004803603602081101561011357600080fd5b50356101fd565b610122610219565b604080516001600160a01b039092168252519081900360200190f35b60015481565b6000908152600260205260409020541590565b6000546001600160a01b0316331461016e57600080fd5b61017782610144565b61018057600080fd5b604080513260601b60208083019190915260348083019490945282518083039094018452605490910182528251928101929092206000938452600290925290912055565b6000546001600160a01b031633146101db57600080fd5b600080546001600160a01b0319166001600160a01b0392909216919091179055565b6000546001600160a01b0316331461021457600080fd5b600155565b6000546001600160a01b03168156fea265627a7a7230582066ffd76920fb4fc252a8b98e91e86872ae876659c366dfb9485264d95e97545964736f6c634300050a0032";
+    private static final String BINARY = "608060405234801561001057600080fd5b506040516103263803806103268339818101604052604081101561003357600080fd5b508051602090910151600080546001600160a01b0319166001600160a01b039093169290921782556001556102b890819061006e90396000f3fe608060405234801561001057600080fd5b506004361061007d5760003560e01c80638c8c4f3f1161005b5780638c8c4f3f146100f2578063b054241314610118578063c7f4e6d314610135578063cac2afd7146101595761007d565b80633a04832a146100825780633a178d991461009c5780638a3a1a18146100cd575b600080fd5b61008a610197565b60408051918252519081900360200190f35b6100b9600480360360208110156100b257600080fd5b503561019d565b604080519115158252519081900360200190f35b6100f0600480360360408110156100e357600080fd5b50803590602001356101b0565b005b6100f06004803603602081101561010857600080fd5b50356001600160a01b03166101f4565b6100f06004803603602081101561012e57600080fd5b503561022d565b61013d610249565b604080516001600160a01b039092168252519081900360200190f35b6101766004803603602081101561016f57600080fd5b5035610258565b604080519283526001600160a01b0390911660208301528051918290030190f35b60015481565b6000908152600260205260409020541590565b6000546001600160a01b031633146101c757600080fd5b60009182526002602090815260408084209290925560039052902080546001600160a01b03191632179055565b6000546001600160a01b0316331461020b57600080fd5b600080546001600160a01b0319166001600160a01b0392909216919091179055565b6000546001600160a01b0316331461024457600080fd5b600155565b6000546001600160a01b031681565b60009081526002602090815260408083205460039092529091205490916001600160a01b039091169056fea265627a7a723058200477f82e8a3164c1f49cb8f51174c0c21f3d9ab7d3753df76c05b1087c102bd164736f6c634300050a0032";
 
     public static final String FUNC_ROOMRATE = "roomRate";
 
@@ -43,6 +46,8 @@ public class HotelRoom extends CrosschainContract {
     public static final String FUNC_CHANGEROOMRATE = "changeRoomRate";
 
     public static final String FUNC_HOTELROUTERCONTRACT = "hotelRouterContract";
+
+    public static final String FUNC_GETBOOKINGINFO = "getBookingInfo";
 
     @Deprecated
     protected HotelRoom(String contractAddress, Besu besu, CrosschainTransactionManager crosschainTransactionManager, BigInteger gasPrice, BigInteger gasLimit) {
@@ -167,6 +172,29 @@ public class HotelRoom extends CrosschainContract {
         final Function function = new Function(FUNC_HOTELROUTERCONTRACT, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
+        return createSignedSubordinateView(function, crosschainContext);
+    }
+
+    public RemoteFunctionCall<Tuple2<BigInteger, String>> getBookingInfo(BigInteger _date) {
+        final Function function = new Function(FUNC_GETBOOKINGINFO, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_date)), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}, new TypeReference<Address>() {}));
+        return new RemoteFunctionCall<Tuple2<BigInteger, String>>(function,
+                new Callable<Tuple2<BigInteger, String>>() {
+                    @Override
+                    public Tuple2<BigInteger, String> call() throws Exception {
+                        List<Type> results = executeCallMultipleValueReturn(function);
+                        return new Tuple2<BigInteger, String>(
+                                (BigInteger) results.get(0).getValue(), 
+                                (String) results.get(1).getValue());
+                    }
+                });
+    }
+
+    public byte[] getBookingInfo_AsSignedCrosschainSubordinateView(BigInteger _date, final CrosschainContext crosschainContext) throws IOException {
+        final Function function = new Function(FUNC_GETBOOKINGINFO, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_date)), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
         return createSignedSubordinateView(function, crosschainContext);
     }
 

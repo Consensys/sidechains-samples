@@ -105,10 +105,14 @@ public class EntityBase {
         this.erc20.transfer(account, BigInteger.valueOf(number)).send();
         BigInteger balance1 = this.erc20.balanceOf(account).send();
         LOG.info(" New balance of account: {}", balance1);
+
+        this.erc20.increaseAllowance(this.routerContractAddress, BigInteger.valueOf(number)).send();
+        LOG.info(" Increased allowance of router contract {} by {}", this.routerContractAddress, number);
     }
 
     public void showErc20Balances(String[] accounts) throws Exception {
-        this.erc20.condense(this.credentials.getAddress()).send();
+        // TODO Disable temporarily
+        // this.erc20.condense(this.credentials.getAddress()).send();
         BigInteger myBal = this.erc20.balanceOf(this.credentials.getAddress()).send();
         LOG.info(" Owner account {} balance: {}", this.credentials.getAddress(), myBal);
 

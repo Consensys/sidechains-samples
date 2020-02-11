@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
@@ -15,6 +17,7 @@ import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tuples.generated.Tuple2;
 import org.web3j.tx.CrosschainContext;
 import org.web3j.tx.CrosschainContract;
 import org.web3j.tx.CrosschainTransactionManager;
@@ -30,7 +33,7 @@ import org.web3j.tx.gas.ContractGasProvider;
  */
 @SuppressWarnings("rawtypes")
 public class TrainSeat extends CrosschainContract {
-    private static final String BINARY = "608060405234801561001057600080fd5b506040516102cb3803806102cb8339818101604052604081101561003357600080fd5b508051602090910151600080546001600160a01b0319166001600160a01b0390931692909217825560015561025d90819061006e90396000f3fe608060405234801561001057600080fd5b50600436106100625760003560e01c8063080f94e9146100675780630ebb44971461008c5780632058e15f146100a65780633a178d99146100ca57806356b65dc6146100fb578063fa7d2b4514610121575b600080fd5b61008a6004803603604081101561007d57600080fd5b508035906020013561013e565b005b6100946101ab565b60408051918252519081900360200190f35b6100ae6101b1565b604080516001600160a01b039092168252519081900360200190f35b6100e7600480360360208110156100e057600080fd5b50356101c0565b604080519115158252519081900360200190f35b61008a6004803603602081101561011157600080fd5b50356001600160a01b03166101d3565b61008a6004803603602081101561013757600080fd5b503561020c565b6000546001600160a01b0316331461015557600080fd5b61015e826101c0565b61016757600080fd5b604080513260601b60208083019190915260348083019490945282518083039094018452605490910182528251928101929092206000938452600290925290912055565b60015481565b6000546001600160a01b031681565b6000908152600260205260409020541590565b6000546001600160a01b031633146101ea57600080fd5b600080546001600160a01b0319166001600160a01b0392909216919091179055565b6000546001600160a01b0316331461022357600080fd5b60015556fea265627a7a7230582080f3debcb136f07bdec7994aee22d5968b6626578b15c555ec17a4d36401acd964736f6c634300050a0032";
+    private static final String BINARY = "608060405234801561001057600080fd5b506040516103263803806103268339818101604052604081101561003357600080fd5b508051602090910151600080546001600160a01b0319166001600160a01b039093169290921782556001556102b890819061006e90396000f3fe608060405234801561001057600080fd5b506004361061007d5760003560e01c80633a178d991161005b5780633a178d99146100e557806356b65dc614610116578063cac2afd71461013c578063fa7d2b451461017a5761007d565b8063080f94e9146100825780630ebb4497146100a75780632058e15f146100c1575b600080fd5b6100a56004803603604081101561009857600080fd5b5080359060200135610197565b005b6100af6101db565b60408051918252519081900360200190f35b6100c96101e1565b604080516001600160a01b039092168252519081900360200190f35b610102600480360360208110156100fb57600080fd5b50356101f0565b604080519115158252519081900360200190f35b6100a56004803603602081101561012c57600080fd5b50356001600160a01b0316610203565b6101596004803603602081101561015257600080fd5b503561023c565b604080519283526001600160a01b0390911660208301528051918290030190f35b6100a56004803603602081101561019057600080fd5b5035610267565b6000546001600160a01b031633146101ae57600080fd5b60009182526002602090815260408084209290925560039052902080546001600160a01b03191632179055565b60015481565b6000546001600160a01b031681565b6000908152600260205260409020541590565b6000546001600160a01b0316331461021a57600080fd5b600080546001600160a01b0319166001600160a01b0392909216919091179055565b60009081526002602090815260408083205460039092529091205490916001600160a01b0390911690565b6000546001600160a01b0316331461027e57600080fd5b60015556fea265627a7a723058203a0cb6d5f2fcb65fe89201f89e2f3f857ff35fd6c74f8444786e764d7b41536564736f6c634300050a0032";
 
     public static final String FUNC_BOOKSEAT = "bookSeat";
 
@@ -41,6 +44,8 @@ public class TrainSeat extends CrosschainContract {
     public static final String FUNC_ISAVAILABLE = "isAvailable";
 
     public static final String FUNC_CHANGETRAINROUTERCONTRACT = "changeTrainRouterContract";
+
+    public static final String FUNC_GETBOOKINGINFO = "getBookingInfo";
 
     public static final String FUNC_CHANGESEATRATE = "changeSeatRate";
 
@@ -144,6 +149,29 @@ public class TrainSeat extends CrosschainContract {
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _trainRouterContract)), 
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallCrosschainTransaction(function, crosschainContext);
+    }
+
+    public RemoteFunctionCall<Tuple2<BigInteger, String>> getBookingInfo(BigInteger _date) {
+        final Function function = new Function(FUNC_GETBOOKINGINFO, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_date)), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}, new TypeReference<Address>() {}));
+        return new RemoteFunctionCall<Tuple2<BigInteger, String>>(function,
+                new Callable<Tuple2<BigInteger, String>>() {
+                    @Override
+                    public Tuple2<BigInteger, String> call() throws Exception {
+                        List<Type> results = executeCallMultipleValueReturn(function);
+                        return new Tuple2<BigInteger, String>(
+                                (BigInteger) results.get(0).getValue(), 
+                                (String) results.get(1).getValue());
+                    }
+                });
+    }
+
+    public byte[] getBookingInfo_AsSignedCrosschainSubordinateView(BigInteger _date, final CrosschainContext crosschainContext) throws IOException {
+        final Function function = new Function(FUNC_GETBOOKINGINFO, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_date)), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
+        return createSignedSubordinateView(function, crosschainContext);
     }
 
     public RemoteFunctionCall<TransactionReceipt> changeSeatRate(BigInteger _seatRate) {

@@ -16,7 +16,7 @@ interface TrainRouterInterface {
 
     function bookSeat(uint256 _date, uint256 _uniqueId, uint256 _maxAmountToPay) external;
 
-    function getSeatInformation(uint256 _date, uint256 _uniqueId) external view returns (uint256 amountPaid, uint256 roomId);
+    function getSeatInformation(uint256 _date, uint256 _uniqueId) external view returns (uint256 amountPaid, uint256 seatId);
 
     function getSeatRates() external view returns (uint256 lowestRate, uint256 highestRate);
 

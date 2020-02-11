@@ -18,6 +18,7 @@ contract HotelRoom {
     address public hotelRouterContract;
     uint256 public roomRate;
     mapping(uint256 => uint256) private bookings;
+    mapping(uint256 => address) private bookedBy;
 
     // Only accept requests from the hotel router contract.
     modifier onlyHotelRouterContract() {
@@ -41,14 +42,20 @@ contract HotelRoom {
 
     function bookRoom(uint256 _date, uint256 _uniqueId) external onlyHotelRouterContract {
         // Check that the room isn't already booked on the specified date.
-        require(isAvailable(_date));
+        // TODO
+        //require(isAvailable(_date));
 
         // Book the room.
-        uint256 bookingId = uint256(keccak256(abi.encodePacked(tx.origin, _uniqueId)));
-        bookings[_date] = bookingId;
+        bookings[_date] = _uniqueId;
+        bookedBy[_date] = tx.origin;
     }
 
     function isAvailable(uint256 _date) public view returns (bool) {
         return bookings[_date] == 0;
+    }
+
+    function getBookingInfo(uint256 _date) external view returns (uint256 uniqueId, address whoBooked) {
+        uniqueId = bookings[_date];
+        whoBooked = bookedBy[_date];
     }
 }

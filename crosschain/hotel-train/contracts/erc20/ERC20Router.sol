@@ -147,9 +147,10 @@ contract ERC20Router is IERC20, Crosschain {
      */
     function transferFrom(address _sender, address _recipient, uint256 _amount) public returns (bool) {
         _transfer(_sender, _recipient, _amount);
-        uint256 accAllowance = allowances[_sender][msg.sender];
-        require(accAllowance >= _amount, "ERC20: transfer amount exceeds allowance");
-        _approve(_sender, msg.sender, accAllowance - _amount);
+//TODO
+//        uint256 accAllowance = allowances[_sender][msg.sender];
+//        require(accAllowance >= _amount, "ERC20: transfer amount exceeds allowance");
+//        _approve(_sender, msg.sender, accAllowance - _amount);
         return true;
     }
 
@@ -244,12 +245,13 @@ contract ERC20Router is IERC20, Crosschain {
         address[] memory recipientLockableAccountAddresses = lockableAccounts[_recipient];
         require(recipientLockableAccountAddresses.length != 0);
         ERC20LockableAccount recipientLockableAccount;
-        for (uint256 i=0; i<recipientLockableAccountAddresses.length; i++) {
-            if (!crosschainIsLocked(recipientLockableAccountAddresses[i])) {
-                recipientLockableAccount = ERC20LockableAccount(recipientLockableAccountAddresses[i]);
-                break;
-            }
-        }
+//        for (uint256 i=0; i<recipientLockableAccountAddresses.length; i++) {
+//            if (!crosschainIsLocked(recipientLockableAccountAddresses[i])) {
+//                recipientLockableAccount = ERC20LockableAccount(recipientLockableAccountAddresses[i]);
+        recipientLockableAccount = ERC20LockableAccount(recipientLockableAccountAddresses[0]);
+//                break;
+//            }
+  //      }
         require(address(recipientLockableAccount) != address(0));
         senderLockableAccount.sub(_amount);
         recipientLockableAccount.add(_amount);
