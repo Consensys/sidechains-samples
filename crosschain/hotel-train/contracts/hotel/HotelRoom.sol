@@ -42,8 +42,7 @@ contract HotelRoom {
 
     function bookRoom(uint256 _date, uint256 _uniqueId) external onlyHotelRouterContract {
         // Check that the room isn't already booked on the specified date.
-        // TODO
-        //require(isAvailable(_date));
+        require(isAvailable(_date));
 
         // Book the room.
         bookings[_date] = _uniqueId;

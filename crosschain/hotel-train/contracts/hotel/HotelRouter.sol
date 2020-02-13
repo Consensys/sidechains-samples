@@ -50,22 +50,20 @@ contract HotelRouter is HotelRouterInterface, Crosschain {
     }
 
     // TODO improve data structures so for loop not needed.
-    function bookRoom(uint256 _date, uint256 _uniqueId, uint256 /*_maxAmountToPay*/) external {
-//        require(_date >=today, "Booking date must be in the future");
-//        require(_date <= today+eventHorizon, "Booking date can not be beyond the event horizon");
+    function bookRoom(uint256 _date, uint256 _uniqueId, uint256 _maxAmountToPay) external {
+        require(_date >=today, "Booking date must be in the future");
+        require(_date <= today+eventHorizon, "Booking date can not be beyond the event horizon");
 
-//        for (uint i=0; i<rooms.length; i++) {
+        for (uint i=0; i<rooms.length; i++) {
 //            if (!crosschainIsLocked(address(rooms[i]))) {
-//                uint256 rate = rooms[i].roomRate();
-//        uint256 rate = rooms[0].roomRate();
-  //              if (rate <= _maxAmountToPay && rooms[i].isAvailable(_date)) {
-//                    rooms[i].bookRoom(_date, _uniqueId);
-        rooms[0].bookRoom(_date, _uniqueId);
-//                    erc20.transferFrom(tx.origin, owner, rate);
-  //                  break;
-//                }
+                uint256 rate = rooms[i].roomRate();
+                if (rate <= _maxAmountToPay && rooms[i].isAvailable(_date)) {
+                    rooms[i].bookRoom(_date, _uniqueId);
+                    erc20.transferFrom(tx.origin, owner, rate);
+                    break;
+                }
 //            }
-    //    }
+        }
     }
 
     function getRoomInformation(uint256 _date, uint256 _uniqueId) external view returns (uint256 amountPaid, uint256 roomId) {
@@ -86,7 +84,13 @@ contract HotelRouter is HotelRouterInterface, Crosschain {
         highestRate = 0;
     }
 
-    function getNumberRoomsAvailable(uint256 /*_date*/) external view returns (uint256 numRoomsAvailable) {
-        numRoomsAvailable = 0;
+    function getNumberRoomsAvailable(uint256 _date) external view returns (uint256 numRoomsAvailable) {
+        for (uint i=0; i<rooms.length; i++) {
+            // TODO skip if isLocked.
+            (uint256 uniqueId, ) = rooms[i].getBookingInfo(_date);
+            if (uniqueId == 0) {
+                numRoomsAvailable++;
+            }
+        }
     }
 }

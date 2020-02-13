@@ -42,10 +42,10 @@ contract TrainSeat {
 
     function bookSeat(uint256 _date, uint256 _uniqueId) external onlyTrainRouterContract {
         // Check that the seat isn't already booked on the specified date.
-        // TODO require(isAvailable(_date));
+        require(isAvailable(_date));
 
         // Book the seat.
-        bookings[_date] = _uniqueId + 13;
+        bookings[_date] = _uniqueId;
         bookedBy[_date] = tx.origin;
     }
 

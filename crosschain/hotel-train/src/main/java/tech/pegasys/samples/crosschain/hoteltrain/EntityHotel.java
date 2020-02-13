@@ -33,8 +33,8 @@ public class EntityHotel extends EntityBase {
     // How far in the future can people book?
     public static final BigInteger EVENT_HORIZON = BigInteger.valueOf(365);
 
-    public static final BigInteger STANDARD_RATE = BigInteger.valueOf(5);
-    public static final int NUM_SEATS = 4;
+    public static final BigInteger STANDARD_RATE = BigInteger.valueOf(13);
+    public static final int NUM_ROOMS = 3;
 
     private HotelRouter hotel;
 
@@ -56,11 +56,11 @@ public class EntityHotel extends EntityBase {
             HotelRouter.deploy(this.web3j, this.tm, this.freeGasProvider, EVENT_HORIZON, this.erc20.getContractAddress());
         this.hotel = remoteCall2.send();
         this.routerContractAddress = this.hotel.getContractAddress();
-        LOG.info(" vDeployed hotel router contract to address: {}", this.routerContractAddress);
+        LOG.info(" Deployed hotel router contract to address: {}", this.routerContractAddress);
 
         LOG.info(" Deploy hotel room lockable contracts");
         List<String> addresses = new ArrayList<>();
-        for (int i=0; i < NUM_SEATS; i++) {
+        for (int i = 0; i < NUM_ROOMS; i++) {
             RemoteCall<HotelRoom> remoteCall3 =
                 HotelRoom.deployLockable(this.web3j, this.xtm, this.freeGasProvider, this.hotel.getContractAddress(), STANDARD_RATE);
             HotelRoom room = remoteCall3.send();

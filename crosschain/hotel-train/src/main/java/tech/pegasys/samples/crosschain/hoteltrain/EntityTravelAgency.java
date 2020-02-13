@@ -152,7 +152,8 @@ public class EntityTravelAgency {
         byte[][] subordinateTransactionsAndViews = new byte[][]{subordinateTransHotel, subordinateTransTrain};
         CrosschainContext originatingTransactionContext = contextGenerator.createCrosschainContext(subordinateTransactionsAndViews);
 
-        LOG.info("  Executing Crosschain Transaction");
+        LOG.info("  Executing Crosschain Transaction, using booking ID {}", uniqueBookingId);
+
         TransactionReceipt transactionReceipt = this.agencyContract.bookHotelAndTrain_AsCrosschainOriginatingTransaction(dateBigInt, uniqueBookingId, originatingTransactionContext).send();
         LOG.info("   Transaction Receipt: {}", transactionReceipt.toString());
         if (!transactionReceipt.isStatusOK()) {
@@ -161,6 +162,9 @@ public class EntityTravelAgency {
 
         waitForUnlock(this.web3jTravelAgency, this.agencyContractAddress);
 
+        boolean bookingConfirmed = this.agencyContract.bookingConfirmed(uniqueBookingId).send();
+        LOG.info(" Booking number {} confirmation status: {}", uniqueBookingId, bookingConfirmed);
+
         return uniqueBookingId;
     }
 
@@ -168,17 +172,43 @@ public class EntityTravelAgency {
         return this.credentials.getAddress();
     }
 
-    public void showBookingInformation(int date, BigInteger bookingId) throws Exception {
-        Tuple2<BigInteger, BigInteger> retVal = this.hotelRouter.getRoomInformation(BigInteger.valueOf(date), bookingId).send();
-        BigInteger amountPaid = retVal.component1();
-        BigInteger roomId = retVal.component2();
-        LOG.info(" Booked room: {} for amount: {}", roomId, amountPaid);
+    public void showBookingInformation(int date) throws Exception {
+        BigInteger bDate = BigInteger.valueOf(date);
+        boolean done = false;
+        BigInteger offset = BigInteger.ZERO;
+        boolean noBookingsFound = true;
+        while (!done) {
+            Tuple2<BigInteger, BigInteger> retVal = this.agencyContract.findBookingIds(bDate, offset).send();
+            offset = retVal.component1().add(BigInteger.ONE);
+            BigInteger bookingId = retVal.component2();
 
-        retVal = this.trainRouter.getSeatInformation(BigInteger.valueOf(date), bookingId).send();
-        amountPaid = retVal.component1();
-        BigInteger seatId = retVal.component2();
-        LOG.info(" Booked seat: {} for amount: {}", seatId, amountPaid);
+            if (bookingId.equals(BigInteger.ZERO)) {
+                done = true;
+            }
+            else {
+                noBookingsFound = false;
 
+                retVal = this.hotelRouter.getRoomInformation(bDate, bookingId).send();
+                BigInteger amountPaid = retVal.component1();
+                BigInteger roomId = retVal.component2();
+                LOG.info(" Booked room: {} for amount: {} with booking ID: {}", roomId, amountPaid, bookingId);
+
+                retVal = this.trainRouter.getSeatInformation(bDate, bookingId).send();
+                amountPaid = retVal.component1();
+                BigInteger seatId = retVal.component2();
+                LOG.info(" Booked seat: {} for amount: {} with booking ID: {}", seatId, amountPaid, bookingId);
+            }
+        }
+
+        if (noBookingsFound) {
+            LOG.info(" No bookings found for date: {}", date);
+        }
+
+        BigInteger numberOfRoomsAvailable = this.hotelRouter.getNumberRoomsAvailable(bDate).send();
+        LOG.info(" {} rooms are available on date {}", numberOfRoomsAvailable, date);
+
+        BigInteger numberOfSeatsAvailable = this.trainRouter.getNumberSeatsAvailable(bDate).send();
+        LOG.info(" {} seats available on date {}", numberOfSeatsAvailable, date);
     }
 
     public void waitForUnlock(Besu web3j, String address) throws Exception {

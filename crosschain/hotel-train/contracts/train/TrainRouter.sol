@@ -50,38 +50,34 @@ contract TrainRouter is TrainRouterInterface, Crosschain {
     }
 
 
-    function bookSeat(uint256 _date, uint256 _uniqueId, uint256 /*_maxAmountToPay*/) external {
-//        require(_date >=today, "Booking date must be in the future");
-//        require(_date <= today+eventHorizon, "Booking date can not be beyond the event horizon");
+    function bookSeat(uint256 _date, uint256 _uniqueId, uint256 _maxAmountToPay) external {
+        require(_date >=today, "Booking date must be in the future");
+        require(_date <= today+eventHorizon, "Booking date can not be beyond the event horizon");
 
         // TODO improve data structures so for loop not needed.
-//        for (uint i=0; i<seats.length; i++) {
+        for (uint i=0; i<seats.length; i++) {
 //            if (!crosschainIsLocked(address(seats[i]))) {
-//                uint256 rate = seats[i].seatRate();
-//                if (rate <= _maxAmountToPay && seats[i].isAvailable(_date)) {
-//                    seats[i].bookSeat(_date, _uniqueId);
-        seats[0].bookSeat(_date, _uniqueId);
-//                    erc20.transferFrom(tx.origin, owner, rate);
-//                    break;
-//                }
+                uint256 rate = seats[i].seatRate();
+                if (rate <= _maxAmountToPay && seats[i].isAvailable(_date)) {
+                    seats[i].bookSeat(_date, _uniqueId);
+                    erc20.transferFrom(tx.origin, owner, rate);
+                    break;
+                }
 //            }
-//        }
+        }
     }
 
-    function getSeatInformation(uint256 _date, uint256 /*_uniqueId*/) external view returns (uint256 amountPaid, uint256 seatId) {
-//        for (uint i=0; i<seats.length; i++) {
+    function getSeatInformation(uint256 _date, uint256 _uniqueId) external view returns (uint256 amountPaid, uint256 seatId) {
+        for (uint i=0; i<seats.length; i++) {
             // TODO skip if isLocked.
-//        (uint256 uniqueId, address whoBooked) = seats[i].getBookingInfo(_date);
-            (uint256 uniqueId, /*address whoBooked*/) = seats[0].getBookingInfo(_date);
-//            if (_uniqueId == uniqueId && whoBooked == tx.origin) {
-//        seatId = i;
-        seatId = uniqueId;
-//                amountPaid = seats[i].seatRate();
-        amountPaid = seats[0].seatRate();
+            (uint256 uniqueId, address whoBooked) = seats[i].getBookingInfo(_date);
+            if (_uniqueId == uniqueId && whoBooked == tx.origin) {
+                seatId = i;
+                amountPaid = seats[i].seatRate();
                 return (amountPaid, seatId);
-//            }
-//        }
-//        return (0,0);
+            }
+        }
+        return (0,0);
     }
 
     function getSeatRates() external view returns (uint256 lowestRate, uint256 highestRate) {
@@ -89,7 +85,13 @@ contract TrainRouter is TrainRouterInterface, Crosschain {
         highestRate = 0;
     }
 
-    function getNumberSeatsAvailable(uint256 /*_date*/) external view returns (uint256 numSeatsAvailable) {
-        numSeatsAvailable = 0;
+    function getNumberSeatsAvailable(uint256 _date) external view returns (uint256 numSeatsAvailable) {
+        for (uint i=0; i<seats.length; i++) {
+            // TODO skip if isLocked.
+            (uint256 uniqueId, ) = seats[i].getBookingInfo(_date);
+            if (uniqueId == 0) {
+                numSeatsAvailable++;
+            }
+        }
     }
 }

@@ -45,4 +45,22 @@ contract TravelAgency is Crosschain {
         confirmedBookingDates.push(_date);
     }
 
+    function findBookingIds(uint256 _date, uint256 _offset) public view returns (uint256 offset, uint256 bookingId) {
+        for (uint i = _offset; i < confirmedBookingDates.length; i++) {
+            if (confirmedBookingDates[i] == _date) {
+                return (i, confirmedBookingIds[i]);
+            }
+        }
+        return (0, 0);
+    }
+
+    function bookingConfirmed(uint256 _bookingId) public view returns (bool) {
+        // TODO use a maps as well as array
+        for (uint i = 0; i < confirmedBookingDates.length; i++) {
+            if (confirmedBookingIds[i] == _bookingId) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

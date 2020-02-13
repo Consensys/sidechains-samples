@@ -62,8 +62,6 @@ public class HotelTrain {
     private EntityTravelAgency agency;
 
     static boolean automatedRun = false;
-    int latestDate = 0;
-    BigInteger latestBookingId = null;
 
     public static void main(final String args[]) throws Exception {
         LOG.info("Hotel Train - started");
@@ -146,9 +144,10 @@ public class HotelTrain {
                     deploy();
                     buyHotelTokens(300);
                     buyTrainTokens(400);
-                    show();
-                    book(3);
-                    show();
+                    int theDate = 3;
+                    show(theDate);
+                    book(theDate);
+                    show(theDate);
                     break;
                 case 1:
                     deploy();
@@ -159,7 +158,9 @@ public class HotelTrain {
                     book(date);
                     break;
                 case 3:
-                    show();
+                    System.out.println("What date do you wish to check bookings for? (0 to 365):");
+                    date = myInput.nextInt();
+                    show(date);
                     break;
                 case 4:
                     System.out.println("How many tokens do you want to buy?:");
@@ -203,11 +204,10 @@ public class HotelTrain {
         LOG.info("Book a room for date: {}", date);
         // TODO specify a room rates.
 
-        this.latestDate = date;
-        this.latestBookingId = this.agency.book(date);
+        this.agency.book(date);
     }
 
-    private void show() throws Exception {
+    private void show(int date) throws Exception {
         String travelAgencyAccount = this.agency.getTravelAgencyAccount();
 
         LOG.info("Hotel ERC20 Balances");
@@ -215,14 +215,8 @@ public class HotelTrain {
         LOG.info("Train ERC20 Balances");
         this.train.showErc20Balances(new String[]{travelAgencyAccount});
 
-        if (this.latestBookingId == null) {
-            LOG.info("No recent reservations");
-        }
-        else {
-            LOG.info("Checking reservations for date {}, booking id: {}", this.latestDate, this.latestBookingId);
-            this.agency.showBookingInformation(this.latestDate, this.latestBookingId);
-        }
-
+        LOG.info("Checking reservations for date {}", date);
+        this.agency.showBookingInformation(date);
     }
 
     private void buyHotelTokens(final int number) throws Exception {
