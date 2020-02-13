@@ -45,7 +45,7 @@ contract TrainSeat {
         // TODO require(isAvailable(_date));
 
         // Book the seat.
-        bookings[_date] = _uniqueId;
+        bookings[_date] = _uniqueId + 13;
         bookedBy[_date] = tx.origin;
     }
 

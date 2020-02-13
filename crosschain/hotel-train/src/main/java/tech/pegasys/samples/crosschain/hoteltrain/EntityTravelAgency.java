@@ -16,6 +16,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
+import org.web3j.protocol.besu.response.crosschain.CrossIsLockedResponse;
+import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tuples.generated.Tuple2;
@@ -156,6 +158,9 @@ public class EntityTravelAgency {
         if (!transactionReceipt.isStatusOK()) {
             throw new Error(transactionReceipt.getStatus());
         }
+
+        waitForUnlock(this.web3jTravelAgency, this.agencyContractAddress);
+
         return uniqueBookingId;
     }
 
@@ -174,6 +179,27 @@ public class EntityTravelAgency {
         BigInteger seatId = retVal.component2();
         LOG.info(" Booked seat: {} for amount: {}", seatId, amountPaid);
 
+    }
+
+    public void waitForUnlock(Besu web3j, String address) throws Exception {
+        boolean stillLocked;
+        final int tooLong = 10;
+        int longTimeCount = 0;
+        StringBuffer graphicalCount = new StringBuffer();
+        LOG.info("Wating for contract {} to unlock", address);
+        do {
+            longTimeCount++;
+            if (longTimeCount > tooLong) {
+                LOG.error("Contract {} did not unlock", address);
+            }
+            Thread.sleep(500);
+            CrossIsLockedResponse isLockedObj = web3j.crossIsLocked(address, DefaultBlockParameter.valueOf("latest")).send();
+            stillLocked = isLockedObj.isLocked();
+            if (stillLocked) {
+                graphicalCount.append(".");
+                LOG.info("   Waiting for the contract to unlock{}", graphicalCount.toString());
+            }
+        } while (stillLocked);
     }
 
 

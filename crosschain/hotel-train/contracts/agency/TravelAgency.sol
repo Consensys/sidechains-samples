@@ -24,6 +24,10 @@ contract TravelAgency is Crosschain {
     uint256 public trainBlockchainId;
     TrainRouterInterface public trainContract;
 
+    uint256[] public confirmedBookingIds;
+    uint256[] public confirmedBookingDates;
+
+
 
 
     constructor(uint256 _hotelBlockchainId, address _hotelContract, uint256 _trainBlockchainId, address _trainContract) public {
@@ -36,6 +40,9 @@ contract TravelAgency is Crosschain {
     function bookHotelAndTrain(uint256 _date, uint256 _uniqueId) public {
         crosschainTransaction(hotelBlockchainId, address(hotelContract), abi.encodeWithSelector(hotelContract.bookRoom.selector, _date, _uniqueId, 100) );
         crosschainTransaction(trainBlockchainId, address(trainContract), abi.encodeWithSelector(trainContract.bookSeat.selector, _date, _uniqueId, 100) );
+
+        confirmedBookingIds.push(_uniqueId);
+        confirmedBookingDates.push(_date);
     }
 
 }

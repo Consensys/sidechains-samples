@@ -56,7 +56,7 @@ public class EntityHotel extends EntityBase {
             HotelRouter.deploy(this.web3j, this.tm, this.freeGasProvider, EVENT_HORIZON, this.erc20.getContractAddress());
         this.hotel = remoteCall2.send();
         this.routerContractAddress = this.hotel.getContractAddress();
-        LOG.info(" Deployed hotel router contract to address: {}", this.routerContractAddress);
+        LOG.info(" vDeployed hotel router contract to address: {}", this.routerContractAddress);
 
         LOG.info(" Deploy hotel room lockable contracts");
         List<String> addresses = new ArrayList<>();
@@ -65,6 +65,7 @@ public class EntityHotel extends EntityBase {
                 HotelRoom.deployLockable(this.web3j, this.xtm, this.freeGasProvider, this.hotel.getContractAddress(), STANDARD_RATE);
             HotelRoom room = remoteCall3.send();
             addresses.add(room.getContractAddress());
+            LOG.info("  Deployed hotel room contract [{}] to address {}", i, room.getContractAddress());
         }
         LOG.info(" Linking hotel room lockable contracts to hotel contract");
         TransactionReceipt receipt = this.hotel.addRooms(addresses).send();
