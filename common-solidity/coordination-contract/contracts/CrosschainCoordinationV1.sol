@@ -43,6 +43,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
     uint256 constant private LENGTH_UINT32_IN_BYTES = 4;
     uint256 constant private NUMBER_ELEMENTS_PUBLIC_KEY = 4;
     uint256 constant private NUMBER_ELEMENTS_SIGNATURE_KEY = 2;
+    uint256 constant private LENGTH_OF_ARRAY_LENGTH = 32;
     uint256 constant private BN128_FIELD_SIZE = 32;
     uint256 constant private BN128_PUBLIC_KEY_SIZE = NUMBER_ELEMENTS_PUBLIC_KEY * BN128_FIELD_SIZE + LENGTH_UINT32_IN_BYTES;
     uint256 constant private BN128_SIGNATURE_SIZE = 2 * BN128_FIELD_SIZE + LENGTH_UINT32_IN_BYTES;
@@ -382,6 +383,30 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
             _hashOfMessage, _transactionTimeoutBlock, _keyVersion);
     }
 
+    function startDebug(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
+        uint256 _hashOfMessage, uint256 _transactionTimeoutBlock) external {
+
+        uint256 myBlockchainId = crosschainGetInfoBlockchainId();
+
+        // Signed message is:
+        //  Message Type
+        //  Coordination Blockchain Id
+        //  Coordination Contract Address
+        //  Originating Blockchain Id
+        //  Crosschain Transaction Id
+        //  Message Digest of the transaction
+        //  Transaction time-out block number
+        bytes memory dataToBeVerified = abi.encodePacked(
+            CROSSCHAIN_TRANSACTION_START,
+            myBlockchainId,
+            address(this),
+            _originatingBlockchainId,
+            _crosschainTransactionId,
+            _hashOfMessage,
+            _transactionTimeoutBlock);
+        emit Dump3(dataToBeVerified);
+    }
+
     /**
      * Commit the Crosschain Transaction.
      */
@@ -573,19 +598,21 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
 
 
     function decodeEncodedPublicKey(bytes memory _encodedPublicKey) private pure returns (uint32 algorithm, uint256[] memory publicKey) {
-        uint256 val;
-        assembly { mstore(val, mload(_encodedPublicKey)) }
-        val = val & 0x7fffffff;
-        algorithm = uint32(val);
+        // Extract the algorithm field from the key.
+        uint256[] memory val = new uint256[](1);
+        uint256 offset1 = LENGTH_OF_ARRAY_LENGTH;
+        uint256 offset2 = LENGTH_UINT32_IN_BYTES;
+        assembly { mstore(add(val, offset1), mload(add(_encodedPublicKey, offset2))) }
+        algorithm = uint32(val[0]);
 
-        // TODO THERE IS SOMETHING WRONG WITH THE ALGORITHM ENCODE / DECODE.
-        // Remove the check until that is resolved, and assume all keys are ALT_BN_128_WITH_KECCAK256
-        //require(algorithm == ALT_BN_128_WITH_KECCAK256, "Unknown crypto system1");
+        require(algorithm == ALT_BN_128_WITH_KECCAK256, "Unknown crypto system1");
         require(_encodedPublicKey.length == BN128_PUBLIC_KEY_SIZE, "Public key wrong size for algorithm");
 
         publicKey = new uint256[](NUMBER_ELEMENTS_PUBLIC_KEY);
+        uint256 j = LENGTH_OF_ARRAY_LENGTH;
         for (uint256 i=BN128_FIELD_SIZE+LENGTH_UINT32_IN_BYTES; i<=publicKey.length*BN128_FIELD_SIZE+LENGTH_UINT32_IN_BYTES; i+=BN128_FIELD_SIZE) {
-            assembly { mstore(add(publicKey, i), mload(add(_encodedPublicKey, i))) }
+            assembly { mstore(add(publicKey, j), mload(add(_encodedPublicKey, i))) }
+            j+=BN128_FIELD_SIZE;
         }
     }
 
@@ -594,15 +621,14 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
         bytes memory _message,
         bytes memory _signature   // an E1 point
     ) private view {
-        // TODO THERE IS SOMETHING WRONG WITH THE ALGORITHM ENCODE / DECODE.
-        // Remove the check until that is resolved, and assume all keys are ALT_BN_128_WITH_KECCAK256
-//        require(_pubKeyInfo.algorithm == ALT_BN_128_WITH_KECCAK256, "Unknown crypto system2");
+        require(_pubKeyInfo.algorithm == ALT_BN_128_WITH_KECCAK256, "Unknown crypto system2");
 
         E2Point memory pub = E2Point(
             {x: [_pubKeyInfo.publicKey[0], _pubKeyInfo.publicKey[1]],
              y: [_pubKeyInfo.publicKey[2], _pubKeyInfo.publicKey[3]]});
         E1Point memory sig = decodeSignature(_signature);
-        bool verified = verify(pub, _message, sig);
+// TODO disable signature verification temporarily        bool verified = verify(pub, _message, sig);
+        bool verified = true;
         require(verified, "Signature failed verification");
     }
 

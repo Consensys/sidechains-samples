@@ -5,6 +5,7 @@ dependencies {
     compile project(':crosschain-three-chains-six-contracts')
     compile project(':crosschain-simple')
     compile project(':crosschain-multichain')
+    compile project(':crosschain-hoteltrain')
    // ,
    //         project(':besu')
     compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.12.0'
