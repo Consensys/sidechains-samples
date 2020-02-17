@@ -10,9 +10,12 @@ import org.web3j.protocol.besu.response.crosschain.ListCoordinationContractsResp
 import tech.pegasys.samples.crosschain.multichain.MultichainManager;
 import tech.pegasys.samples.crosschain.multichain.config.ConfigControl;
 import tech.pegasys.samples.sidechains.common.BlockchainInfo;
+import tech.pegasys.samples.sidechains.common.CrosschainCoordinationContractInfo;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class OptionConfig extends AbstractOption {
@@ -154,9 +157,34 @@ public class OptionConfig extends AbstractOption {
       return;
     }
 
+    // Start by removing all coordination contracts and linked nodes.
+    // Note that there will still be keys that have been generated.
     ConfigControl config = ConfigControl.getInstance();
-    config.removeAllCoordContracts();
-    config.removeAllLinkedNodes();
+    Map<String, CrosschainCoordinationContractInfo> coordContracts = config.coordContracts();
+    class CoordInfo {
+      BigInteger bcId;
+      String addr;
+      public CoordInfo(final BigInteger bcId, final String addr) {
+        this.addr = addr;
+        this.bcId = bcId;
+      }
+    }
+    List<CoordInfo> coords = new ArrayList<>();
+    for (CrosschainCoordinationContractInfo info: coordContracts.values()) {
+      coords.add(new CoordInfo(info.blockchainId, info.contractAddress));
+    }
+    for (CoordInfo info: coords) {
+      MultichainManager.main(new String[]{"coord", "remove", info.bcId.toString(16), info.addr});
+    }
+
+    Map<BigInteger, BlockchainInfo> linkedNodes = config.linkedNodes();
+    List<BigInteger> bcIds = new ArrayList<>();
+    for (BlockchainInfo info: linkedNodes.values()) {
+      bcIds.add(info.blockchainId);
+    }
+    for (BigInteger bcId: bcIds) {
+      MultichainManager.main(new String[]{"linked", "remove", bcId.toString(16)});
+    }
 
     String bc1Id = "b";
     String bc2Id = "16";

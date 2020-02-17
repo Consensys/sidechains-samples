@@ -229,7 +229,6 @@ public class CrosschainTransactionNoParams {
         Thread.sleep(3000);
 
         checkExpectedValues(sim.c2Get());
-
     }
 
 

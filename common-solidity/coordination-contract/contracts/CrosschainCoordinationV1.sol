@@ -653,15 +653,15 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
 
     function verifySignature(
         PublicKey storage _pubKeyInfo,
-        bytes memory _message,
-        bytes memory _signature   // an E1 point
+        bytes memory /* _message */,
+        bytes memory /* _signature */   // an E1 point
     ) private view {
         require(_pubKeyInfo.algorithm == ALT_BN_128_WITH_KECCAK256, "Unknown crypto system2");
 
-        E2Point memory pub = E2Point(
-            {x: [_pubKeyInfo.publicKey[0], _pubKeyInfo.publicKey[1]],
-             y: [_pubKeyInfo.publicKey[2], _pubKeyInfo.publicKey[3]]});
-        E1Point memory sig = decodeSignature(_signature);
+//        E2Point memory pub = E2Point(
+//            {x: [_pubKeyInfo.publicKey[0], _pubKeyInfo.publicKey[1]],
+//             y: [_pubKeyInfo.publicKey[2], _pubKeyInfo.publicKey[3]]});
+//        E1Point memory sig = decodeSignature(_signature);
 // TODO disable signature verification temporarily        bool verified = verify(pub, _message, sig);
         bool verified = true;
         require(verified, "Signature failed verification");

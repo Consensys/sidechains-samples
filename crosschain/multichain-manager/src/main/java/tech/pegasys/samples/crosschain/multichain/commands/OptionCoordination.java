@@ -209,8 +209,11 @@ public class OptionCoordination extends AbstractOption {
     }
 
     // Add each blockchain to coordination contract.
+    LOG.info(" Add each blockchain to the coordination contract");
     for (BlockchainInfo bc: ConfigControl.getInstance().linkedNodes().values()) {
-      coordinationContract.addBlockchain(bc.blockchainId, votingContract.getContractAddress(), SHORT_VOTING_PERIOD).send();
+      LOG.info("  adding blockchain {} with voting contract: {}", bc.blockchainId, votingContract.getContractAddress());
+      TransactionReceipt receipt = coordinationContract.addBlockchain(bc.blockchainId, votingContract.getContractAddress(), SHORT_VOTING_PERIOD).send();
+      LOG.info("   tx receipt: {}", receipt.toString());
       boolean registered = coordinationContract.getBlockchainExists(bc.blockchainId).send();
       LOG.info("  Blockchain {} now registered with coordination contract: {}", bc.blockchainId, registered);
     }
