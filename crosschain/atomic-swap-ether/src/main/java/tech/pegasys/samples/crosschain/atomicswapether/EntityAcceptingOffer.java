@@ -200,6 +200,8 @@ public class EntityAcceptingOffer {
                 LOG.info("   Waiting for the sender contract to unlock{}", graphicalCount.toString());
             }
         } while (stillLocked);
+        // TODO remove when unlock working properly
+        Thread.sleep(5000);
     }
 
 
