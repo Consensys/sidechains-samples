@@ -410,23 +410,40 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
     /**
      * Commit the Crosschain Transaction.
      */
-    function commit(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId, bytes calldata /*_signedCommitMessage*/) external {
+    function commit(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
+        uint256 _hashOfMessage, uint64 _keyVersion, bytes calldata _signature) external {
+
         uint256 index = uint256(keccak256(abi.encodePacked(_originatingBlockchainId, _crosschainTransactionId)));
         // The transaction must be started and the time-out block must be in the future.
         require(txMap[index].state == XTX_STATE.STARTED);
         require(txMap[index].timeoutBlockNumber >= block.number);
 
+        uint256 myBlockchainId = crosschainGetInfoBlockchainId();
 
-        // TODO validate the signed commit message.
-        // TODO check signature verifies, given the public key of the originating blockchain.
-        // TODO check that the originating blockchain id in the message matches the parameter value.
-        // TODO check that the Coordination Blockchain Identifier in the message matches the parameter value.
-        // TODO check that the Crosschain Coordination Contract address in the message matches the parameter value.
-        //   use   address(this)
-        // TODO check that the it is a commit message.
+        // Signed message is:
+        //  Message Type
+        //  Coordination Blockchain Id
+        //  Coordination Contract Address
+        //  Originating Blockchain Id
+        //  Crosschain Transaction Id
+        //  Message Digest of the transaction
+        //  Transaction time-out block number
+        bytes memory dataToBeVerified = abi.encodePacked(
+            CROSSCHAIN_TRANSACTION_COMMIT,
+            myBlockchainId,
+            address(this),
+            _originatingBlockchainId,
+            _crosschainTransactionId,
+            _hashOfMessage);
+        emit Dump3(dataToBeVerified);
+
+
+        verifySignature(
+            blockchains[_originatingBlockchainId].publicKeys[_keyVersion],
+            dataToBeVerified,
+            _signature);
 
         // TODO allow for use of the active or previous key version
-
 
         txMap[index].state = XTX_STATE.COMMITTED;
     }
@@ -435,19 +452,37 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
     /**
      * Ignore the Crosschain Transaction.
      */
-    function ignore(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId, bytes calldata /*_signedIgnoreMessage*/) external {
+    function ignore(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
+        uint256 _hashOfMessage, uint64 _keyVersion, bytes calldata _signature) external {
+
         uint256 index = uint256(keccak256(abi.encodePacked(_originatingBlockchainId, _crosschainTransactionId)));
         // The transaction must be started and the time-out block must be in the future.
         require(txMap[index].state == XTX_STATE.STARTED);
         require(txMap[index].timeoutBlockNumber >= block.number);
 
-        // TODO validate the signed ignore message.
-        // TODO check signature verifies, given the public key of the originating blockchain.
-        // TODO check that the originating blockchain id in the message matches the parameter value.
-        // TODO check that the Coordination Blockchain Identifier in the message matches the parameter value.
-        // TODO check that the Crosschain Coordination Contract address in the message matches the parameter value.
-        //   use   address(this)
-        // TODO check that the it is a commit message.
+        uint256 myBlockchainId = crosschainGetInfoBlockchainId();
+
+        // Signed message is:
+        //  Message Type
+        //  Coordination Blockchain Id
+        //  Coordination Contract Address
+        //  Originating Blockchain Id
+        //  Crosschain Transaction Id
+        //  Message Digest of the transaction
+        //  Transaction time-out block number
+        bytes memory dataToBeVerified = abi.encodePacked(
+            CROSSCHAIN_TRANSACTION_IGNORE,
+            myBlockchainId,
+            address(this),
+            _originatingBlockchainId,
+            _crosschainTransactionId,
+            _hashOfMessage);
+        emit Dump3(dataToBeVerified);
+
+        verifySignature(
+            blockchains[_originatingBlockchainId].publicKeys[_keyVersion],
+            dataToBeVerified,
+            _signature);
 
         // TODO allow for use of the active or previous key version
 
