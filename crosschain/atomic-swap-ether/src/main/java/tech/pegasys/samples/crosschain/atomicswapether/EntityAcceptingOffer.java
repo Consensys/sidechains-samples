@@ -224,7 +224,7 @@ public class EntityAcceptingOffer {
 
 
     private void loadStoreProperties() {
-        EntityOfferingProperties props = new EntityOfferingProperties();
+        EntityAcceptingProperties props = new EntityAcceptingProperties();
         if (props.propertiesFileExists()) {
             props.load();
         }
@@ -239,11 +239,11 @@ public class EntityAcceptingOffer {
 
 
 
-    static class EntityOfferingProperties extends BasePropertiesFile {
+    static class EntityAcceptingProperties extends BasePropertiesFile {
         private static final String PROP_PRIV_KEY = "privateKey";
         String privateKey;
 
-        EntityOfferingProperties() {
+        EntityAcceptingProperties() {
             super("accepting");
         }
 

@@ -24,7 +24,6 @@ import tech.pegasys.samples.sidechains.common.coordination.CrosschainCoordinatio
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 
@@ -89,7 +88,7 @@ public class AtomicSwapEther {
 
     private static void deleteAllPropertiesFile() throws IOException {
         // Delete all properties files as a starting point. This will ensure all contracts are redeployed.
-        (new EntityAcceptingOffer.EntityOfferingProperties()).deletePropertiesFile(); //TODO: repeated EntityOfferingProperties??
+        (new EntityAcceptingOffer.EntityAcceptingProperties()).deletePropertiesFile();
         (new EntityOfferingEther.EntityOfferingProperties()).deletePropertiesFile();
         (new Faucet.FaucetProperties()).deletePropertiesFile();
         (new RegistrationContractOwner.RegistrationProperties()).deletePropertiesFile();
