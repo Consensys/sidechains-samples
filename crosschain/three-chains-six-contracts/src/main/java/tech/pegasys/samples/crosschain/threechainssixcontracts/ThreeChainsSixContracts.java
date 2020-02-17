@@ -379,6 +379,8 @@ public class ThreeChainsSixContracts {
                     LOG.info("   Waiting for the contract to unlock{}", graphicalCount.toString());
                 }
             } while (stillLocked);
+            // TODO until new unlock logic using crosschain coordination contract - just wait!
+            Thread.sleep(5000);
 
             checkExpectedValues(sim.val1, sim.val2, sim.val3, sim.val4, sim.val5, sim.val6);
 

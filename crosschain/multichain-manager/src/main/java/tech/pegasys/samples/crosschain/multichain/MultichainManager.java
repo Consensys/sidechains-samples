@@ -74,16 +74,16 @@ public class MultichainManager {
   // Run the "config auto" set-up if there is no coordination contract set-up of the node
   // as 127.0.0.1:8110.
   public static void automatedSetup() throws Exception {
-    final String SC1_IP_PORT = "127.0.0.1:8110";
-    final String SC1_URI = "http://" + SC1_IP_PORT + "/";
-    final int POLLING_INTERVAL = 2000;
-    Besu blockchainNodeWeb3j = Besu.build(new HttpService(SC1_URI), POLLING_INTERVAL);
-    ListCoordinationContractsResponse resp = blockchainNodeWeb3j.crossListCoordinationContracts().send();
-    List<CoordinationContractInformation> info = resp.getInfo();
-    if (info.isEmpty()) {
+//    final String SC1_IP_PORT = "127.0.0.1:8110";
+//    final String SC1_URI = "http://" + SC1_IP_PORT + "/";
+//    final int POLLING_INTERVAL = 2000;
+//    Besu blockchainNodeWeb3j = Besu.build(new HttpService(SC1_URI), POLLING_INTERVAL);
+//    ListCoordinationContractsResponse resp = blockchainNodeWeb3j.crossListCoordinationContracts().send();
+//    List<CoordinationContractInformation> info = resp.getInfo();
+//    if (info.isEmpty()) {
       new MultichainManager().run(new String[]{OptionConfig.COMMAND, OptionConfig.AUTO});
+//  }
     }
-  }
 
 
 

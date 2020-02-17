@@ -14,6 +14,7 @@ package tech.pegasys.samples.sidechains;
 
 import org.junit.Test;
 import tech.pegasys.samples.crosschain.atomicswapether.AtomicSwapEther;
+import tech.pegasys.samples.crosschain.hoteltrain.HotelTrain;
 import tech.pegasys.samples.crosschain.multichain.MultichainManager;
 import tech.pegasys.samples.crosschain.simple.transaction.CrosschainTransactionNoParams;
 import tech.pegasys.samples.crosschain.simple.views.CrosschainViewNoParamsReturnUint256;
@@ -53,6 +54,12 @@ public class CrosschainTests {
 	public void crosschainViewNoParamsReturnUint256() throws Exception {
 		MultichainManager.automatedSetup();
 		CrosschainViewNoParamsReturnUint256.automatedRun();
+	}
+
+	@Test
+	public void hotelTrain() throws Exception {
+		MultichainManager.automatedSetup();
+		HotelTrain.automatedRun();
 	}
 
 	@Test

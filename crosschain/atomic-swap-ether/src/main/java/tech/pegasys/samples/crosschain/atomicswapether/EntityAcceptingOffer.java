@@ -200,6 +200,8 @@ public class EntityAcceptingOffer {
                 LOG.info("   Waiting for the sender contract to unlock{}", graphicalCount.toString());
             }
         } while (stillLocked);
+        // TODO remove when unlock working properly
+        Thread.sleep(5000);
     }
 
 
@@ -222,7 +224,7 @@ public class EntityAcceptingOffer {
 
 
     private void loadStoreProperties() {
-        EntityOfferingProperties props = new EntityOfferingProperties();
+        EntityAcceptingProperties props = new EntityAcceptingProperties();
         if (props.propertiesFileExists()) {
             props.load();
         }
@@ -237,11 +239,11 @@ public class EntityAcceptingOffer {
 
 
 
-    static class EntityOfferingProperties extends BasePropertiesFile {
+    static class EntityAcceptingProperties extends BasePropertiesFile {
         private static final String PROP_PRIV_KEY = "privateKey";
         String privateKey;
 
-        EntityOfferingProperties() {
+        EntityAcceptingProperties() {
             super("accepting");
         }
 

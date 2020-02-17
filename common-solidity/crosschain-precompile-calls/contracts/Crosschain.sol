@@ -31,6 +31,7 @@ contract Crosschain {
 
     address constant private PRECOMPILE_SUBORDINATE_VIEW = address(11);
     address constant private PRECOMPILE_SUBORDINATE_TRANSACTION = address(10);
+    address constant private PRECOMPILE_IS_LOCKED = address(121);
 
 
     /**
@@ -82,6 +83,25 @@ contract Crosschain {
         return result[0];
     }
 
+    /**
+     * Indicates if the contract at the address is locked.
+     */
+    function crosschainIsLocked(address addr) internal view returns (bool) {
+        bytes memory dataBytes = abi.encode(addr);
+        uint256 dataBytesRawLength = calculateRawLength(dataBytes);
+
+        uint256[1] memory result;
+        uint256 resultLength = LENGTH_OF_UINT256;
+        address a = PRECOMPILE_IS_LOCKED;
+
+        assembly {
+            if iszero(staticcall(not(0), a, dataBytes, dataBytesRawLength, result, resultLength)) {
+                revert(0, 0)
+            }
+        }
+
+        return result[0] != 0;
+    }
 
     function calculateRawLength(bytes memory b) internal pure returns (uint256){
         // The "bytes" type has a 32 byte header containing the size in bytes of the actual data,

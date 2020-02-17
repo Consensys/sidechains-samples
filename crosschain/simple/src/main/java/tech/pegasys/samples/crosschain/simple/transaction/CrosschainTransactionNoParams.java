@@ -218,7 +218,7 @@ public class CrosschainTransactionNoParams {
             if (longTimeCount > tooLong) {
                 LOG.error("Contract {} did not unlock", this.contract1Address);
             }
-            Thread.sleep(500);
+            Thread.sleep(100);
             CrossIsLockedResponse isLockedObj = this.web3jSc1.crossIsLocked(this.contract1Address, DefaultBlockParameter.valueOf("latest")).send();
             stillLocked = isLockedObj.isLocked();
             if (stillLocked) {
@@ -226,9 +226,9 @@ public class CrosschainTransactionNoParams {
                 LOG.info("   Waiting for the contract to unlock{}", graphicalCount.toString());
             }
         } while (stillLocked);
+        Thread.sleep(3000);
 
         checkExpectedValues(sim.c2Get());
-
     }
 
 

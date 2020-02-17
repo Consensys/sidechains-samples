@@ -39,10 +39,7 @@ const VOTE_CHANGE_PUBLIC_KEY = "5";
 
 const REVERT = "Returned error: VM Exception while processing transaction: revert";
 
-//TODO create a valid public key.
 const PUBLIC_KEY = "0x0000000122ba85ba642ba6291c551a495e6a9ad955cde2651460299a7ffd306d4cf9e02b02a0925ba57a3674f1a667688528342fa2637584aa0ffed7f116678967806825006bb55a0fbb9b3190ae9a71ccdbca3ce3a9c6ab8a88720e31fd56d5080985102715a194b474f16cbb005050e4e359e13182dbe8b4f7aeffd5d5a9d65a846ee5";
-const SIGNATURE = "0x1234567";
-const TX_HASH1 = "0x1234567";
 const KEY_VERSION = "1";
 
 const mineOneBlock = async function() {
@@ -98,8 +95,6 @@ module.exports = {
     REVERT: REVERT,
 
     PUBLIC_KEY: PUBLIC_KEY,
-    SIGNATURE: SIGNATURE,
-    TX_HASH1: TX_HASH1,
 
 
     getNewCrosschainCoordination: async function() {

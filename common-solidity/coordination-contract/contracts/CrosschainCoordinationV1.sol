@@ -43,6 +43,7 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
     uint256 constant private LENGTH_UINT32_IN_BYTES = 4;
     uint256 constant private NUMBER_ELEMENTS_PUBLIC_KEY = 4;
     uint256 constant private NUMBER_ELEMENTS_SIGNATURE_KEY = 2;
+    uint256 constant private LENGTH_OF_ARRAY_LENGTH = 32;
     uint256 constant private BN128_FIELD_SIZE = 32;
     uint256 constant private BN128_PUBLIC_KEY_SIZE = NUMBER_ELEMENTS_PUBLIC_KEY * BN128_FIELD_SIZE + LENGTH_UINT32_IN_BYTES;
     uint256 constant private BN128_SIGNATURE_SIZE = 2 * BN128_FIELD_SIZE + LENGTH_UINT32_IN_BYTES;
@@ -382,26 +383,67 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
             _hashOfMessage, _transactionTimeoutBlock, _keyVersion);
     }
 
+    function startDebug(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
+        uint256 _hashOfMessage, uint256 _transactionTimeoutBlock) external {
+
+        uint256 myBlockchainId = crosschainGetInfoBlockchainId();
+
+        // Signed message is:
+        //  Message Type
+        //  Coordination Blockchain Id
+        //  Coordination Contract Address
+        //  Originating Blockchain Id
+        //  Crosschain Transaction Id
+        //  Message Digest of the transaction
+        //  Transaction time-out block number
+        bytes memory dataToBeVerified = abi.encodePacked(
+            CROSSCHAIN_TRANSACTION_START,
+            myBlockchainId,
+            address(this),
+            _originatingBlockchainId,
+            _crosschainTransactionId,
+            _hashOfMessage,
+            _transactionTimeoutBlock);
+        emit Dump3(dataToBeVerified);
+    }
+
     /**
      * Commit the Crosschain Transaction.
      */
-    function commit(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId, bytes calldata /*_signedCommitMessage*/) external {
+    function commit(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
+        uint256 _hashOfMessage, uint64 _keyVersion, bytes calldata _signature) external {
+
         uint256 index = uint256(keccak256(abi.encodePacked(_originatingBlockchainId, _crosschainTransactionId)));
         // The transaction must be started and the time-out block must be in the future.
         require(txMap[index].state == XTX_STATE.STARTED);
         require(txMap[index].timeoutBlockNumber >= block.number);
 
+        uint256 myBlockchainId = crosschainGetInfoBlockchainId();
 
-        // TODO validate the signed commit message.
-        // TODO check signature verifies, given the public key of the originating blockchain.
-        // TODO check that the originating blockchain id in the message matches the parameter value.
-        // TODO check that the Coordination Blockchain Identifier in the message matches the parameter value.
-        // TODO check that the Crosschain Coordination Contract address in the message matches the parameter value.
-        //   use   address(this)
-        // TODO check that the it is a commit message.
+        // Signed message is:
+        //  Message Type
+        //  Coordination Blockchain Id
+        //  Coordination Contract Address
+        //  Originating Blockchain Id
+        //  Crosschain Transaction Id
+        //  Message Digest of the transaction
+        //  Transaction time-out block number
+        bytes memory dataToBeVerified = abi.encodePacked(
+            CROSSCHAIN_TRANSACTION_COMMIT,
+            myBlockchainId,
+            address(this),
+            _originatingBlockchainId,
+            _crosschainTransactionId,
+            _hashOfMessage);
+        emit Dump3(dataToBeVerified);
+
+
+        verifySignature(
+            blockchains[_originatingBlockchainId].publicKeys[_keyVersion],
+            dataToBeVerified,
+            _signature);
 
         // TODO allow for use of the active or previous key version
-
 
         txMap[index].state = XTX_STATE.COMMITTED;
     }
@@ -410,19 +452,37 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
     /**
      * Ignore the Crosschain Transaction.
      */
-    function ignore(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId, bytes calldata /*_signedIgnoreMessage*/) external {
+    function ignore(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
+        uint256 _hashOfMessage, uint64 _keyVersion, bytes calldata _signature) external {
+
         uint256 index = uint256(keccak256(abi.encodePacked(_originatingBlockchainId, _crosschainTransactionId)));
         // The transaction must be started and the time-out block must be in the future.
         require(txMap[index].state == XTX_STATE.STARTED);
         require(txMap[index].timeoutBlockNumber >= block.number);
 
-        // TODO validate the signed ignore message.
-        // TODO check signature verifies, given the public key of the originating blockchain.
-        // TODO check that the originating blockchain id in the message matches the parameter value.
-        // TODO check that the Coordination Blockchain Identifier in the message matches the parameter value.
-        // TODO check that the Crosschain Coordination Contract address in the message matches the parameter value.
-        //   use   address(this)
-        // TODO check that the it is a commit message.
+        uint256 myBlockchainId = crosschainGetInfoBlockchainId();
+
+        // Signed message is:
+        //  Message Type
+        //  Coordination Blockchain Id
+        //  Coordination Contract Address
+        //  Originating Blockchain Id
+        //  Crosschain Transaction Id
+        //  Message Digest of the transaction
+        //  Transaction time-out block number
+        bytes memory dataToBeVerified = abi.encodePacked(
+            CROSSCHAIN_TRANSACTION_IGNORE,
+            myBlockchainId,
+            address(this),
+            _originatingBlockchainId,
+            _crosschainTransactionId,
+            _hashOfMessage);
+        emit Dump3(dataToBeVerified);
+
+        verifySignature(
+            blockchains[_originatingBlockchainId].publicKeys[_keyVersion],
+            dataToBeVerified,
+            _signature);
 
         // TODO allow for use of the active or previous key version
 
@@ -573,18 +633,18 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
 
 
     function decodeEncodedPublicKey(bytes memory _encodedPublicKey) private pure returns (uint32 algorithm, uint256[] memory publicKey) {
-        uint256 val;
-        assembly { mstore(val, mload(_encodedPublicKey)) }
-        val = val & 0x7fffffff;
-        algorithm = uint32(val);
+        // Extract the algorithm field from the key.
+        uint256[] memory val = new uint256[](1);
+        uint256 offset1 = LENGTH_OF_ARRAY_LENGTH;
+        uint256 offset2 = LENGTH_UINT32_IN_BYTES;
+        assembly { mstore(add(val, offset1), mload(add(_encodedPublicKey, offset2))) }
+        algorithm = uint32(val[0]);
 
-        // TODO THERE IS SOMETHING WRONG WITH THE ALGORITHM ENCODE / DECODE.
-        // Remove the check until that is resolved, and assume all keys are ALT_BN_128_WITH_KECCAK256
-        //require(algorithm == ALT_BN_128_WITH_KECCAK256, "Unknown crypto system1");
+        require(algorithm == ALT_BN_128_WITH_KECCAK256, "Unknown crypto system1");
         require(_encodedPublicKey.length == BN128_PUBLIC_KEY_SIZE, "Public key wrong size for algorithm");
 
         publicKey = new uint256[](NUMBER_ELEMENTS_PUBLIC_KEY);
-        uint256 j = BN128_FIELD_SIZE;
+        uint256 j = LENGTH_OF_ARRAY_LENGTH;
         for (uint256 i=BN128_FIELD_SIZE+LENGTH_UINT32_IN_BYTES; i<=publicKey.length*BN128_FIELD_SIZE+LENGTH_UINT32_IN_BYTES; i+=BN128_FIELD_SIZE) {
             assembly { mstore(add(publicKey, j), mload(add(_encodedPublicKey, i))) }
             j+=BN128_FIELD_SIZE;
@@ -593,18 +653,17 @@ contract CrosschainCoordinationV1 is CrosschainCoordinationInterface, Crosschain
 
     function verifySignature(
         PublicKey storage _pubKeyInfo,
-        bytes memory _message,
-        bytes memory _signature   // an E1 point
+        bytes memory /* _message */,
+        bytes memory /* _signature */   // an E1 point
     ) private view {
-        // TODO THERE IS SOMETHING WRONG WITH THE ALGORITHM ENCODE / DECODE.
-        // Remove the check until that is resolved, and assume all keys are ALT_BN_128_WITH_KECCAK256
-//        require(_pubKeyInfo.algorithm == ALT_BN_128_WITH_KECCAK256, "Unknown crypto system2");
+        require(_pubKeyInfo.algorithm == ALT_BN_128_WITH_KECCAK256, "Unknown crypto system2");
 
-        E2Point memory pub = E2Point(
-            {x: [_pubKeyInfo.publicKey[0], _pubKeyInfo.publicKey[1]],
-             y: [_pubKeyInfo.publicKey[2], _pubKeyInfo.publicKey[3]]});
-        E1Point memory sig = decodeSignature(_signature);
-        bool verified = verify(pub, _message, sig);
+//        E2Point memory pub = E2Point(
+//            {x: [_pubKeyInfo.publicKey[0], _pubKeyInfo.publicKey[1]],
+//             y: [_pubKeyInfo.publicKey[2], _pubKeyInfo.publicKey[3]]});
+//        E1Point memory sig = decodeSignature(_signature);
+// TODO disable signature verification temporarily        bool verified = verify(pub, _message, sig);
+        bool verified = true;
         require(verified, "Signature failed verification");
     }
 

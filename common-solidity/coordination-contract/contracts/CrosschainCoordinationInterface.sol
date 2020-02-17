@@ -105,12 +105,14 @@ interface CrosschainCoordinationInterface {
     /*
      * Commit the Crosschain Transaction.
      */
-    function commit(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId, bytes calldata _signedCommitMessage) external;
+    function commit(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
+        uint256 _hashOfMessage, uint64 _keyVersion, bytes calldata _signature) external;
 
     /**
      * Ignore the Crosschain Transaction.
      */
-    function ignore(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId, bytes calldata _signedIgnoreMessage) external;
+    function ignore(uint256 _originatingBlockchainId, uint256 _crosschainTransactionId,
+        uint256 _hashOfMessage, uint64 _keyVersion, bytes calldata _signature) external;
 
 
     /**
