@@ -17,7 +17,9 @@ import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.besu.Besu;
 import org.web3j.protocol.besu.response.crosschain.CoordinationContractInformation;
+import org.web3j.protocol.besu.response.crosschain.CrossIsLockedResponse;
 import org.web3j.protocol.besu.response.crosschain.ListCoordinationContractsResponse;
+import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.RawTransactionManager;
@@ -68,6 +70,14 @@ public class CrosschainCoordinationContractSetup {
         this.crosschainCoordinationBesu = Besu.build(new HttpService(uri), POLLING_INTERVAL);
     }
 
+    public CrosschainCoordinationContractSetup(final Besu coordBesu, final String coordAddress, final BigInteger coordBcId) throws Exception {
+        this.crosschainCoordinationBesu = coordBesu;
+        this.crosschainCoordinationContractAddress = coordAddress;
+        this.crosschainCoordinationContractBlockcainId = coordBcId;
+    }
+
+
+
     public String getCrosschainCoordinationContractAddress() {
         return this.crosschainCoordinationContractAddress;
     }
@@ -79,4 +89,65 @@ public class CrosschainCoordinationContractSetup {
     public Besu getCrosschainCoordinationWeb3J() {
         return this.crosschainCoordinationBesu;
     }
+
+
+    public boolean waitForCrosschainTransactionComplete(
+        final Credentials credentials,
+        final BigInteger originatingBlockchainId, final BigInteger crosschainTransactionId) throws Exception {
+
+        final long coordBlockchainPeriod = 2000;
+        final long incrementalSleepPeriod = 500;
+
+        TransactionManager tm = new RawTransactionManager(this.crosschainCoordinationBesu,
+            credentials, this.crosschainCoordinationContractBlockcainId.longValue(), 3,
+            coordBlockchainPeriod);
+
+        ContractGasProvider freeGasProvider =  new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
+
+        CrosschainCoordinationV1 coordContract = CrosschainCoordinationV1.load(
+            this.crosschainCoordinationContractAddress, this.crosschainCoordinationBesu, tm, freeGasProvider);
+
+        BigInteger timeoutBlock = coordContract.getCrosschainTransactionTimeout(
+            originatingBlockchainId, crosschainTransactionId).send();
+
+        LOG.info("   Waiting for Crosschain Transaction to complete. Timeout block number: {}", timeoutBlock);
+
+        int numNotStarted = 0;
+        do {
+            BigInteger currentBlockNumber = coordContract.getBlockNumber().send();
+            BigInteger statusB = coordContract.getCrosschainTransactionStatus(originatingBlockchainId, crosschainTransactionId).send();
+            int status = (int) statusB.longValue();
+
+            switch (status) {
+                case 0:   // NOT_STARTED
+                    LOG.info("Crosschain Transaction state: NOT STARTED, Coordination Blockchain Block Number: {}",
+                        currentBlockNumber);
+                    numNotStarted++;
+                    if (numNotStarted == 5) {
+                        LOG.error("Unexpectedly, still not started.");
+                        throw new Error("Crosschain Transaction didn't start");
+                    }
+                    break;
+                case 1:  // STARTED
+                    LOG.info("Crosschain Transaction state: STARTED, Coordination Blockchain Block Number: {}",
+                        currentBlockNumber);
+                    break;
+                case 2:  // COMMITTED
+                    LOG.info("Crosschain Transaction state: COMMITTED, Coordination Blockchain Block Number: {}",
+                        currentBlockNumber);
+                    return true;
+                case 3:  // IGNORED
+                    LOG.info("Crosschain Transaction state: IGNORED, Coordination Blockchain Block Number: {}",
+                        currentBlockNumber);
+                    return false;
+                default:
+                    LOG.info("Crosschain Transaction state: UNKNOWN: {}, Coordination Blockchain Block Number: {}",
+                        status, currentBlockNumber);
+                    throw new Error("Unknown state");
+            }
+            Thread.sleep(2000);
+        } while (true);
+
+    }
+
 }

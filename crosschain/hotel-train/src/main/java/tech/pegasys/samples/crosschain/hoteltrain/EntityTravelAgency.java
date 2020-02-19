@@ -32,6 +32,7 @@ import tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers.ERC20Router;
 import tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers.cc.HotelRouter;
 import tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers.cc.TrainRouter;
 import tech.pegasys.samples.crosschain.hoteltrain.soliditywrappers.cc.TravelAgency;
+import tech.pegasys.samples.sidechains.common.coordination.CrosschainCoordinationContractSetup;
 import tech.pegasys.samples.sidechains.common.utils.BasePropertiesFile;
 import tech.pegasys.samples.sidechains.common.utils.KeyPairGen;
 import tech.pegasys.samples.sidechains.common.utils.PRNGSecureRandom;
@@ -67,7 +68,7 @@ public class EntityTravelAgency {
     ERC20Router trainErc20;
     ERC20Router hotelErc20;
 
-
+    CrosschainCoordinationContractSetup coord;
 
     // A gas provider which indicates no gas is charged for transactions.
     private ContractGasProvider freeGasProvider = new StaticGasProvider(BigInteger.ZERO, DefaultGasProvider.GAS_LIMIT);
@@ -93,6 +94,9 @@ public class EntityTravelAgency {
             web3jCoordinationBlockchain, coordinationBlockchainId, coordinationContractAddress, crosschainTransactionTimeout);
 
         this.rand = new PRNGSecureRandom();
+
+        this.coord = new CrosschainCoordinationContractSetup(
+            web3jCoordinationBlockchain, coordinationContractAddress, coordinationBlockchainId);
     }
 
     public void deploy(final Besu trainWeb3j, final BigInteger trainBcId, final String trainContractAddress, String trainErc20Address,
@@ -160,7 +164,13 @@ public class EntityTravelAgency {
             throw new Error(transactionReceipt.getStatus());
         }
 
-        waitForUnlock(this.web3jTravelAgency, this.agencyContractAddress);
+        //waitForUnlock(this.web3jTravelAgency, this.agencyContractAddress);
+
+
+        boolean committed = this.coord.waitForCrosschainTransactionComplete(
+            this.credentials, this.agencyBcId, originatingTransactionContext.getCrosschainTransactionId());
+        // TODO do something with committed.
+
 
         boolean bookingConfirmed = this.agencyContract.bookingConfirmed(uniqueBookingId).send();
         LOG.info(" Booking number {} confirmation status: {}", uniqueBookingId, bookingConfirmed);
