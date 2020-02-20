@@ -158,20 +158,22 @@ public class EntityTravelAgency {
 
         LOG.info("  Executing Crosschain Transaction, using booking ID {}", uniqueBookingId);
 
-        TransactionReceipt transactionReceipt = this.agencyContract.bookHotelAndTrain_AsCrosschainOriginatingTransaction(dateBigInt, uniqueBookingId, originatingTransactionContext).send();
-        LOG.info("   Transaction Receipt: {}", transactionReceipt.toString());
-        if (!transactionReceipt.isStatusOK()) {
-            throw new Error(transactionReceipt.getStatus());
+        try {
+            TransactionReceipt transactionReceipt = this.agencyContract.bookHotelAndTrain_AsCrosschainOriginatingTransaction(dateBigInt, uniqueBookingId, originatingTransactionContext).send();
+            LOG.info("   Transaction Receipt: {}", transactionReceipt.toString());
+            if (!transactionReceipt.isStatusOK()) {
+                throw new Error(transactionReceipt.getStatus());
+            }
+        } catch (Throwable th) {
+            LOG.info("Error reported during Crosschain Transaction: {}", th.toString());
         }
 
-        //waitForUnlock(this.web3jTravelAgency, this.agencyContractAddress);
 
 
         boolean committed = this.coord.waitForCrosschainTransactionComplete(
             this.credentials, this.agencyBcId, originatingTransactionContext.getCrosschainTransactionId());
-        // TODO do something with committed.
-
-
+        // The contract will unlock up to a block or two after the crosschain transaction has been committed.
+        waitForUnlock(this.web3jTravelAgency, this.agencyContractAddress);
         boolean bookingConfirmed = this.agencyContract.bookingConfirmed(uniqueBookingId).send();
         LOG.info(" Booking number {} confirmation status: {}", uniqueBookingId, bookingConfirmed);
 

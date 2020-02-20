@@ -55,15 +55,16 @@ contract HotelRouter is HotelRouterInterface, Crosschain {
         require(_date <= today+eventHorizon, "Booking date can not be beyond the event horizon");
 
         for (uint i=0; i<rooms.length; i++) {
-//            if (!crosschainIsLocked(address(rooms[i]))) {
+            if (!crosschainIsLocked(address(rooms[i]))) {
                 uint256 rate = rooms[i].roomRate();
                 if (rate <= _maxAmountToPay && rooms[i].isAvailable(_date)) {
                     rooms[i].bookRoom(_date, _uniqueId);
                     erc20.transferFrom(tx.origin, owner, rate);
-                    break;
+                    return;
                 }
-//            }
+            }
         }
+        require(false, "No rooms available");
     }
 
     function getRoomInformation(uint256 _date, uint256 _uniqueId) external view returns (uint256 amountPaid, uint256 roomId) {
