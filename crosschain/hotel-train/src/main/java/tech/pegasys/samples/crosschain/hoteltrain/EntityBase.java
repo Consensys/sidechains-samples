@@ -95,12 +95,12 @@ public class EntityBase {
         LOG.info("Buy some tokens to be used for bookings: Account: {}, Number: {}", account, number);
         String myAccount = this.credentials.getAddress();
 
-        ERC20Helper helper = new ERC20Helper(this.erc20);
-        helper.dumpRouterInformation();
-        LOG.info(" Transfer from account / my account");
-        helper.dumpAccountInformation(myAccount);
-        LOG.info(" Transfer destination account");
-        helper.dumpAccountInformation(account);
+//        ERC20Helper helper = new ERC20Helper(this.erc20);
+//        helper.dumpRouterInformation();
+//        LOG.info(" Transfer from account / my account");
+//        helper.dumpAccountInformation(myAccount);
+//        LOG.info(" Transfer destination account");
+//        helper.dumpAccountInformation(account);
 
         this.erc20.transfer(account, BigInteger.valueOf(number)).send();
         BigInteger balance1 = this.erc20.balanceOf(account).send();
@@ -122,7 +122,18 @@ public class EntityBase {
         }
     }
 
+    public void showErc20Detail(String[] accounts) throws Exception {
+        ERC20Helper helper = new ERC20Helper(this.erc20);
+        helper.dumpRouterInformation();
 
+        String myAccount = this.credentials.getAddress();
+        LOG.info(" Owner Account");
+        helper.dumpAccountInformation(myAccount);
+        for (String acc: accounts) {
+            LOG.info(" Other Account");
+            helper.dumpAccountInformation(acc);
+        }
+    }
 
     protected void loadStoreProperties(String name) {
         EntityProperties props = new EntityProperties(name);

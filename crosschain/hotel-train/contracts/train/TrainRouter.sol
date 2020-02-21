@@ -56,15 +56,16 @@ contract TrainRouter is TrainRouterInterface, Crosschain {
 
         // TODO improve data structures so for loop not needed.
         for (uint i=0; i<seats.length; i++) {
-//            if (!crosschainIsLocked(address(seats[i]))) {
+            if (!crosschainIsLocked(address(seats[i]))) {
                 uint256 rate = seats[i].seatRate();
                 if (rate <= _maxAmountToPay && seats[i].isAvailable(_date)) {
                     seats[i].bookSeat(_date, _uniqueId);
                     erc20.transferFrom(tx.origin, owner, rate);
-                    break;
+                    return;
                 }
-//            }
+            }
         }
+        require(false, "No seats available");
     }
 
     function getSeatInformation(uint256 _date, uint256 _uniqueId) external view returns (uint256 amountPaid, uint256 seatId) {

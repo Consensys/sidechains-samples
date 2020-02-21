@@ -86,16 +86,17 @@ contract Crosschain {
     /**
      * Indicates if the contract at the address is locked.
      */
-    function crosschainIsLocked(address addr) internal view returns (bool) {
-        bytes memory dataBytes = abi.encode(addr);
-        uint256 dataBytesRawLength = calculateRawLength(dataBytes);
+    function crosschainIsLocked(address _addr) internal view returns (bool) {
+        uint256 inputLength = LENGTH_OF_UINT256;
+        uint256[1] memory input;
+        input[0] = uint256(_addr);
 
         uint256[1] memory result;
         uint256 resultLength = LENGTH_OF_UINT256;
         address a = PRECOMPILE_IS_LOCKED;
 
         assembly {
-            if iszero(staticcall(not(0), a, dataBytes, dataBytesRawLength, result, resultLength)) {
+            if iszero(staticcall(not(0), a, input, inputLength, result, resultLength)) {
                 revert(0, 0)
             }
         }

@@ -120,14 +120,15 @@ public class HotelTrain {
             System.out.println("0  Run entire sample.");
             System.out.println("1  Deploy all contracts.");
             System.out.println("2  Book hotel room and train seat.");
-            System.out.println("3  Show information.");
-            System.out.println("4  Buy hotel tokens");
-            System.out.println("5  Buy train tokens");
+            System.out.println("3  Buy hotel tokens");
+            System.out.println("4  Buy train tokens");
+            System.out.println("5  Show information.");
+            System.out.println("6  Show detailed information.");
             System.out.println("9  Quit.");
 
             int option = 0;
             if (automatedRun) {
-              System.out.println("Executin g automated run. Executing option 0.");
+              System.out.println("Executing automated run. Executing option 0.");
               runOnce = true;
             }
             else {
@@ -142,12 +143,21 @@ public class HotelTrain {
             switch (option) {
                 case 0:
                     deploy();
-                    buyHotelTokens(300);
-                    buyTrainTokens(400);
+                    buyHotelTokens(20);
+                    buyTrainTokens(100);
                     int theDate = 3;
+                    int anotherDate = 20;
                     show(theDate);
-                    book(theDate);
+                    book(theDate); // will be committed
+                    book(theDate); // will be ignored - not enough hotel tokens
+                    buyHotelTokens(200);
+                    book(theDate); // will be committed
+                    book(theDate); // will be committed
+                    book(theDate); // will be ignored - not enough train seats available
+                    book(theDate); // will be committed
+                    book(anotherDate); // will be committed
                     show(theDate);
+                    show(anotherDate);
                     break;
                 case 1:
                     deploy();
@@ -158,19 +168,23 @@ public class HotelTrain {
                     book(date);
                     break;
                 case 3:
-                    System.out.println("What date do you wish to check bookings for? (0 to 365):");
-                    date = myInput.nextInt();
-                    show(date);
-                    break;
-                case 4:
                     System.out.println("How many tokens do you want to buy?:");
                     int hotelTokens = myInput.nextInt();
                     buyHotelTokens(hotelTokens);
                     break;
-                case 5:
+                case 4:
                     System.out.println("How many tokens do you want to buy?:");
                     int trainTokens = myInput.nextInt();
                     buyTrainTokens(trainTokens);
+                    break;
+                case 5:
+                    System.out.println("What date do you wish to check bookings for? (0 to 365):");
+                    date = myInput.nextInt();
+                    show(date);
+                    break;
+                case 6:
+                    System.out.println("Showing detailed information:");
+                    detail();
                     break;
 
                 case 9:
@@ -203,7 +217,6 @@ public class HotelTrain {
     private void book(int date) throws Exception {
         LOG.info("Book a room for date: {}", date);
         // TODO specify a room rates.
-
         this.agency.book(date);
     }
 
@@ -217,6 +230,14 @@ public class HotelTrain {
 
         LOG.info("Checking reservations for date {}", date);
         this.agency.showBookingInformation(date);
+    }
+
+    private void detail() throws Exception {
+        String travelAgencyAccount = this.agency.getTravelAgencyAccount();
+        LOG.info("Hotel ERC20 Balances");
+        this.hotel.showErc20Detail(new String[]{travelAgencyAccount});
+        LOG.info("Train ERC20 Balances");
+        this.train.showErc20Detail(new String[]{travelAgencyAccount});
     }
 
     private void buyHotelTokens(final int number) throws Exception {
