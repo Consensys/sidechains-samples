@@ -1,6 +1,9 @@
-# Sidechains and Atomic Crosschain Transaction Sample Code
+# Atomic Crosschain Transaction Sample Code
 The repository contains sample code to demonstrate how to use Sidechains and 
 Atomic Crosschain Transaction technology.
+
+Atomic Crosschain Transactions are explained in our white paper [https://github.com/PegaSysEng/sidechains-samples/AtomicCrosschainTransactions-WhitePaper.pdf]
+and in this YouTube video [https://www.youtube.com/watch?v=MrrUHC-d6lc].
 
 The samples in this repo should be used in conjunction with 
 [https://github.com/PegaSysEng/sidechains-besu], a modified version of Hyperledger Besu
