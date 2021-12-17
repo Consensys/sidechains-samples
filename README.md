@@ -1,3 +1,7 @@
+**This repo is no longer in use. It contains historical information about Atomic Crosschain Transactions for Ethereum Private Sidechains. Please see https://github.com/ConsenSys/gpact for information about the General Purpose Atomic Crosschain Transaction protocol.**
+
+**NOTE: The version of log4j in this repo has a known vulnerability. If you choose to use the code in this repo, you will need to upgrade log4j.**
+
 # Atomic Crosschain Transaction Sample Code
 The repository contains sample code to demonstrate how to use Sidechains and 
 Atomic Crosschain Transaction technology.
